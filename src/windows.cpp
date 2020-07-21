@@ -1,0 +1,84 @@
+#include "windows.hpp"
+
+#include<cassert>
+#include<iostream>
+
+#include<glad/glad.h>
+#include<GLFW/glfw3.h>
+
+#include "engine.hpp"
+
+
+Window::Window(int width, int height) : width_(width), height_(height) {
+    // Initialize GLFW
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+
+    glfw_window_ = glfwCreateWindow(
+        width_,
+        height_, "WCSim",
+        NULL,
+        NULL);
+    if (glfw_window_ == NULL)
+    {
+        assert("Failed to create GLFW window");
+        glfwTerminate();
+    }
+    glfwMakeContextCurrent(glfw_window_);
+    glfwSetFramebufferSizeCallback(glfw_window_, FrameBufferSizeCallback);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+    }
+
+    // Intialize Engine
+    engine_ = new Engine(this);
+
+}
+void Window::FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+;
+
+Window::~Window() {
+    free(glfw_window_);
+}
+
+void Window::Run() {
+    if (glfw_window_ == NULL)
+    {
+        assert("cannot open the window");
+        glfwTerminate();
+        return;
+    }
+    if (engine_ == nullptr) return;
+    /*----------------------------------------------------------------*/
+
+    /*--------------------------------------------------------------------------*/
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    glEnable(GL_DEPTH_TEST);
+    while (!glfwWindowShouldClose(glfw_window_))
+    {
+        /*Render from Engine*/
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        engine_->Simulate();
+
+        /*Swap frames*/
+        glfwSwapBuffers(glfw_window_);
+        glfwPollEvents();
+    }
+    engine_->Destroy();
+    glfwTerminate();
+
+};

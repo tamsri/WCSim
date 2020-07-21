@@ -1,6 +1,10 @@
 #include<iostream>
-#include "someheader.hpp"
+
+#include "windows.hpp"
+
 int main(){
-    std::cout << "Initialized project.\n";
+    Window * window = new Window(800, 600);
+    window->Run();
+    delete window;
     return 0;
 }

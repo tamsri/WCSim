@@ -1,0 +1,20 @@
+# ninja log v5
+19	955	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/vulkan.c.obj	7918367730eb7ef8
+26	956	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/window.c.obj	e7418afc88cf5918
+9	960	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/init.c.obj	b782b882e6341eb5
+30	963	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/win32_joystick.c.obj	c5775a3ffc0cd62a
+13	964	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/input.c.obj	c3de085cb372032d
+16	966	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/monitor.c.obj	eeb3f031fcaa5a03
+6	967	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/context.c.obj	28e113226bc5957e
+23	968	617032061	dependencies/glfw/src/CMakeFiles/glfw.dir/win32_init.c.obj	c9a7b0717989d730
+1	974	617032061	CMakeFiles/glad.dir/dependencies/glad/src/glad.c.obj	189da0a8b5a54001
+9	97	617032247	glad.lib	a031e158508a49df
+6	175	617032247	CMakeFiles/WCSim.dir/src/windows.cpp.obj	5b5ee7abe419bec4
+16	596	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/win32_thread.c.obj	77c3584c396cd8f5
+19	610	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/win32_time.c.obj	c36b78294cd7f79b
+12	619	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/win32_monitor.c.obj	50b020a1a9aba66f
+24	640	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/egl_context.c.obj	5e61d6d1edf08efa
+30	646	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/osmesa_context.c.obj	30adfe2e767b2716
+38	650	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/win32_window.c.obj	178e72298c03ce82
+34	665	617032247	dependencies/glfw/src/CMakeFiles/glfw.dir/wgl_context.c.obj	9c9cc246f42b1ec
+665	707	617032247	dependencies/glfw/src/glfw3.lib	cd6f77f748d674d7
