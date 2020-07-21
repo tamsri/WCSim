@@ -11,6 +11,7 @@ public:
     Window(int width, int height);
     ~Window();
     void Run();
+    void AssignEngine(Engine * engine);
     static void FrameBufferSizeCallback(GLFWwindow* window, int width, int height);
 private:
 

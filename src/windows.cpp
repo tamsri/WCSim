@@ -81,4 +81,8 @@ void Window::Run() {
     engine_->Destroy();
     glfwTerminate();
 
-};
+}
+void Window::AssignEngine(Engine* engine)
+{
+    engine_ = engine;
+}
