@@ -10,7 +10,7 @@ class Window;
 class GLFWwindow;
 
 enum CameraDirection : int {
-	kForward,
+	kForward = 0,
 	kBackward,
 	kLeft,
 	kRight,
@@ -18,7 +18,7 @@ enum CameraDirection : int {
 	kDown
 };
 enum CameraRotation : int {
-	kYaw,
+	kYaw = 0,
 	kRoll,
 	kPitch
 };

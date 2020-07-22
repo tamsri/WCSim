@@ -76,7 +76,7 @@ void Engine::Update()
 }
 
 
-void Engine::Simulate() {
+void Engine::Visualize() {
 
 
 }

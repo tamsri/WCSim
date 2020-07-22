@@ -80,9 +80,8 @@ void Window::Run() {
         /*Render from Engine*/
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        engine_->Simulate();
-
+        engine_->Visualize();
+        engine_->Update();
         /*Swap frames*/
         glfwSwapBuffers(glfw_window_);
         glfwPollEvents();

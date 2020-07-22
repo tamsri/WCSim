@@ -6,6 +6,7 @@
 class Window;
 class Camera;
 
+
 class Engine{
     public:
         Engine();
@@ -18,7 +19,7 @@ class Engine{
         void LoadObjects();
         void LoadShaders();
         void LoadTexture();
-        void Simulate();
+        void Visualize();
         // Ray Tracer
         void InitializeRays();
         void InitializeVoxels();
@@ -30,6 +31,9 @@ class Engine{
         unsigned int engine_id_;
         Window * window_;
         static unsigned int global_engine_id_;
+        
+        // Engine Simulation
+
 
         // Engine Visualisation
         Camera * main_camera_;
