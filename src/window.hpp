@@ -1,6 +1,5 @@
 #ifndef WINDOW_H
 #define WINDOW_H
-#include "engine.hpp"
 
 class GLFWwindow;
 class Engine;
@@ -13,6 +12,9 @@ public:
     void Run();
     void AssignEngine(Engine * engine);
     static void FrameBufferSizeCallback(GLFWwindow* window, int width, int height);
+    
+    unsigned int GetWindowWidth() const;
+    unsigned int GetWindowHeight() const;
 private:
 
     GLFWwindow * glfw_window_;

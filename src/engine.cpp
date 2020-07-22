@@ -2,14 +2,17 @@
 
 #include <iostream>
 
-#include "windows.hpp"
+#include "window.hpp"
+#include "camera.hpp"
 
 unsigned int Engine::global_engine_id_ = 0;
 
 Engine::Engine():window_(nullptr), engine_id_(++global_engine_id_) {
+	main_camera_ = nullptr;
 	std::cout << "Initalize Engine without window. (ID: " << engine_id_ << ")." << std::endl;
 }
 Engine::Engine(Window* window) :window_(window), engine_id_(++global_engine_id_) {
+	main_camera_ = new Camera(window_);
 	std::cout << "Initialize Engine with window. (ID: " << engine_id_ << ")." << std::endl;
 }
 
@@ -60,6 +63,18 @@ void Engine::InitializeVoxels()
 	std::cout << "Engine:Initializing voxels" << std::endl;
 
 }
+
+void Engine::TracePathFrom(glm::vec3 position)
+{
+	std::cout << "Engine: Tracing Path" << std::endl;
+
+}
+
+void Engine::Update()
+{
+
+}
+
 
 void Engine::Simulate() {
 

@@ -1,6 +1,7 @@
 #include<iostream>
 
-#include "windows.hpp"
+#include "window.hpp"
+#include "engine.hpp"
 
 int main(){
     Window * window = new Window(800, 600);

@@ -1,4 +1,4 @@
-#include "windows.hpp"
+#include "window.hpp"
 
 #include<cassert>
 #include<iostream>
@@ -7,6 +7,7 @@
 #include<GLFW/glfw3.h>
 
 #include "engine.hpp"
+
 
 
 Window::Window(int width, int height) : width_(width), height_(height) {
@@ -45,6 +46,14 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 void Window::FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+unsigned int Window::GetWindowWidth() const
+{
+    return width_;
+}
+unsigned int Window::GetWindowHeight() const
+{
+    return height_;
 }
 ;
 
