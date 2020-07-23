@@ -7,6 +7,7 @@ class Engine;
 class Window{
 
 public:
+
     Window(int width, int height);
     ~Window();
     void Run();
@@ -15,6 +16,8 @@ public:
     
     unsigned int GetWindowWidth() const;
     unsigned int GetWindowHeight() const;
+    GLFWwindow * GetGLFWWindow() const;
+
 private:
 
     GLFWwindow * glfw_window_;

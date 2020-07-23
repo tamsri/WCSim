@@ -16,21 +16,23 @@ Window::Window(int width, int height) : width_(width), height_(height) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
 
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
 
     glfw_window_ = glfwCreateWindow(
         width_,
         height_, "WCSim",
         NULL,
         NULL);
+
     if (glfw_window_ == NULL)
     {
         assert("Failed to create GLFW window");
         glfwTerminate();
     }
+
     glfwMakeContextCurrent(glfw_window_);
     glfwSetFramebufferSizeCallback(glfw_window_, FrameBufferSizeCallback);
 
@@ -38,7 +40,6 @@ Window::Window(int width, int height) : width_(width), height_(height) {
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
     }
-
     // Intialize Engine
     engine_ = new Engine(this);
 
@@ -54,6 +55,10 @@ unsigned int Window::GetWindowWidth() const
 unsigned int Window::GetWindowHeight() const
 {
     return height_;
+}
+GLFWwindow* Window::GetGLFWWindow() const
+{
+    return glfw_window_;
 }
 ;
 
@@ -78,17 +83,16 @@ void Window::Run() {
     while (!glfwWindowShouldClose(glfw_window_))
     {
         /*Render from Engine*/
-        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         engine_->Visualize();
         engine_->Update();
+
         /*Swap frames*/
         glfwSwapBuffers(glfw_window_);
         glfwPollEvents();
     }
-    engine_->Destroy();
     glfwTerminate();
-
 }
 void Window::AssignEngine(Engine* engine)
 {
