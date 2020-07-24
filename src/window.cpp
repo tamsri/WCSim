@@ -77,7 +77,7 @@ void Window::Run() {
     /*----------------------------------------------------------------*/
 
     /*--------------------------------------------------------------------------*/
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(glfw_window_))

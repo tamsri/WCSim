@@ -6,7 +6,11 @@
 
 #include <glm/glm.hpp>
 
-#include "triangle.hpp"
+#include "object.hpp"
+
+class Triangle;
+class Shader;
+class Camera;
 
 struct Vertex {
 	glm::vec3 position;
@@ -19,14 +23,19 @@ struct Texture{
 	std::string type;
 };
 
-class PolygonMesh {
+class PolygonMesh : public Object {
 
 public:
-	PolygonMesh(const std::string & path);
-
+	PolygonMesh(const std::string & path, Shader * shader);
+	bool LoadObj(	const std::string& path, 
+					std::vector <glm::vec3> & vertices,
+					std::vector <glm::vec3> & uvs,
+					std::vector <glm::vec3> & normals);
+	virtual void Draw() const;
 	void SetupMesh();
 private:
-	std::vector<glm::vec3> vertices_, normal_;
+	// for ray tracer
+	std::vector<glm::vec3> vertices_, normals_;
 	std::vector<std::vector<int>> faces_;
 	std::vector<const Triangle*> objects;
 

@@ -7,6 +7,10 @@ class Window;
 class Camera;
 class Shader;
 class GLFWwindow;
+class PolygonMesh;
+class Cube;
+class Ray;
+
 
 enum EngineMode : int {
     kView = 0,
@@ -25,6 +29,7 @@ class Engine{
     public:
         Engine();
         Engine(Window* window);
+        ~Engine();
         void AssignWindow(Window * window);
         void Destroy();
         // Visualization
@@ -51,6 +56,10 @@ class Engine{
         
         // Engine Simulation
         Shader * default_shader_;
+        PolygonMesh * map_;
+        Cube * test_cube_;
+        Ray * test_ray_;
+        unsigned int test_vao, test_vbo, test_ebo;
 
         float last_time_;
         void KeyActions();

@@ -8,8 +8,11 @@
 #include "window.hpp"
 #include "camera.hpp"
 #include "shader.hpp"
-#include "polygon_mesh.hpp"
+#include "object.hpp"
 
+#include "polygon_mesh.hpp"
+#include "cube.hpp"
+#include "ray.hpp"
 
 unsigned int Engine::global_engine_id_ = 0;
 
@@ -31,7 +34,15 @@ Engine::Engine(Window* window) :
 {
 	main_camera_ = new Camera(window_);
 	std::cout << "Initialize Engine with window. (ID: " << engine_id_ << ")." << std::endl;
+	InitalizeWindowController();
 }
+
+Engine::~Engine()
+{
+	delete main_camera_;
+	delete map_;
+}
+
 
 void Engine::AssignWindow(Window* window)
 {
@@ -52,16 +63,20 @@ void Engine::InitalizeWindowController()
 
 void Engine::LoadComponents()
 {
-	LoadMap();
 	LoadObjects();
 	LoadShaders();
 	LoadTexture();
+	LoadMap();
+
 }
 
 void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
-	PolygonMesh * map = new PolygonMesh("../assets/obj/map.obj");
+	map_ = new PolygonMesh("../assets/obj/map.obj", default_shader_);
+	test_cube_ = new Cube(glm::vec3(0.0f), glm::vec3(2.0f, 1.0f, 1.0f), glm::vec3(0.0f), default_shader_);
+	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
+	test_ray_->InitializeRay(10.0f);
 }
 
 void Engine::LoadObjects()
@@ -79,7 +94,7 @@ void Engine::LoadShaders()
 void Engine::LoadTexture()
 {
 	std::cout << "Engine:Loading textures" << std::endl;
-
+	
 }
 
 void Engine::InitializeRays()
@@ -91,7 +106,7 @@ void Engine::InitializeRays()
 void Engine::InitializeVoxels()
 {
 	std::cout << "Engine:Initializing voxels" << std::endl;
-
+	
 }
 
 void Engine::TracePathFrom(glm::vec3 position)
@@ -234,6 +249,9 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 
 void Engine::Visualize() 
 {
+	map_->DrawObject(main_camera_);
+	test_cube_->DrawObject(main_camera_);
+	test_ray_->DrawObject(main_camera_);
 }
 
 void Engine::Destroy()
