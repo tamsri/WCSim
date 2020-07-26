@@ -41,9 +41,9 @@ glm::vec3 Ray::PointAtLength(float length) const
 void Ray::InitializeRay(float length)
 {
 	glm::vec3 destination = PointAtLength(length);
-	std::cout << destination.x << " ";
-	std::cout << destination.y << " ";
-	std::cout << destination.z << std::endl;
+	//std::cout << destination.x << " ";
+	//std::cout << destination.y << " ";
+	//std::cout << destination.z << std::endl;
 	float line[] = {
 		origin_.x, origin_.y, origin_.z,
 		destination.x, destination.y, destination.z

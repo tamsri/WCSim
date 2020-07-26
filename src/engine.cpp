@@ -13,6 +13,8 @@
 #include "polygon_mesh.hpp"
 #include "cube.hpp"
 #include "ray.hpp"
+#include "transmitter.hpp"
+
 
 #include "transform.hpp"
 
@@ -84,9 +86,10 @@ void Engine::LoadMap()
 	test_cube_ = new Cube(Transform{ glm::vec3(0.0f), glm::vec3(10.0f, 0.01f, 10.0f), glm::vec3(0.0f) }, default_shader_);
 	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
 	test_ray_->InitializeRay(10.0f);
+	Transform transmitter_transform{ glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) };
+	test_transmitter_ = new Transmitter(transmitter_transform, default_shader_);
 
 	render_objects_.push_back(test_cube_);
-	
 	render_objects_.push_back(map_);
 	render_objects_.push_back(test_ray_);
 	for (int i = 0; i < 3; i++) {
@@ -268,6 +271,7 @@ void Engine::Visualize()
 	for (auto& object : render_objects_) {
 		object->DrawObject(main_camera_);
 	}
+	test_transmitter_->DrawRadiationPattern(main_camera_);
 }
 
 void Engine::Destroy()

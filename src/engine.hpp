@@ -13,6 +13,7 @@ class PolygonMesh;
 class Cube;
 class Ray;
 class Object;
+class Transmitter;
 
 enum EngineMode : int {
     kView = 0,
@@ -62,6 +63,8 @@ class Engine{
         PolygonMesh * map_;
         Cube * test_cube_;
         Ray * test_ray_;
+        Transmitter* test_transmitter_;
+
         std::vector<Object*> render_objects_;
         unsigned int test_vao, test_vbo, test_ebo;
 
