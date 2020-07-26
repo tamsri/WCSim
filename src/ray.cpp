@@ -7,6 +7,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "shader.hpp"
+#include "transform.hpp"
 
 Ray::Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader)
 {
@@ -14,14 +15,12 @@ Ray::Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader)
 	origin_ = origin;
 	direction_ = direction;
 	// Visualize
-	position_ = glm::vec3(0.0f, 0.0f, 0.0f);
-	scale_ = glm::vec3(1.0f, 1.0f, 1.0f);
-	rotation_ = glm::vec3(0.0f);
+	transform_.position = glm::vec3(0.0f);
+	transform_.scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	transform_.rotation = glm::vec3(0.0f);
 	shader_ = shader;
 
-	model_ = glm::translate(glm::mat4(1.0f), position_);
-	model_ = glm::scale(model_, scale_);
-
+	model_ = glm::mat4(1.0f);
 }
 
 glm::vec3 Ray::GetOrigin() const
@@ -34,9 +33,14 @@ glm::vec3 Ray::GetDirection() const
 	return glm::vec3(direction_);
 }
 
+glm::vec3 Ray::PointAtLength(float length) const
+{
+	return glm::vec3(origin_+direction_*length);
+}
+
 void Ray::InitializeRay(float length)
 {
-	glm::vec3 destination = origin_ + length * direction_;
+	glm::vec3 destination = PointAtLength(length);
 	std::cout << destination.x << " ";
 	std::cout << destination.y << " ";
 	std::cout << destination.z << std::endl;

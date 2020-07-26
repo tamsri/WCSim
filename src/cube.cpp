@@ -3,16 +3,19 @@
 #include "glad/glad.h"
 #include "glfw/glfw3.h"
 
-Cube::Cube(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation, Shader* shader)
+#include "transform.hpp"
+
+Cube::Cube(Transform transform, Shader* shader)
 {
 
-	position_= position;
-	scale_= scale;
-	rotation_ =rotation;
+	transform_.position = transform.position;
+	transform_.scale = transform.scale;
+	transform_.rotation = transform.rotation;
+
 	shader_ = shader;
 
-	model_ = glm::translate(glm::mat4(1.0f), position_);
-	model_ = glm::scale(model_, scale);
+	model_ = glm::translate(glm::mat4(1.0f), transform_.position);
+	model_ = glm::scale(model_, transform_.scale);
 
 	float vertices[] = {
 		-0.5f, -0.5f, -0.5f,

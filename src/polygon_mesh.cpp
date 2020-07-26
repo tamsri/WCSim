@@ -7,6 +7,10 @@
 #include<assert.h>
 #include<iostream>
 
+
+#include "kdtree.hpp"
+#include "ray.hpp"
+
 #include "triangle.hpp"
 #include "shader.hpp"
 #include "camera.hpp"
@@ -40,13 +44,19 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
                 for (auto i = 0; i < 3; ++i) {
                     input_file_stream >> faces_.back()[i];
                     faces_.back()[i]--;
-                    std::cout << i;
                 }
             }
 		}
         input_file_stream.close();
 
 	}
+    for (auto & face : faces_) {
+        //auto points = glm::vec3(vertices_[face[0]], vertices_[face[1]], vertices_[face[2]]);
+        /*objects_.push_back(
+            new Triangle(points)
+        );*/
+    }
+    tree_ = new KDTree(objects_);
     SetupMesh();
 }
 
@@ -70,7 +80,9 @@ void PolygonMesh::SetupMesh()
     glBindVertexArray(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(glm::vec3), &vertices_[0], GL_STATIC_DRAW);
-    //glVertexAttribPointer(vao_, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+   
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(vao_, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 
   
     // vertex positions
@@ -84,6 +96,11 @@ void PolygonMesh::SetupMesh()
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+bool PolygonMesh::IsHit(Ray & ray) const
+{
+    return tree_->IsHit(ray);
 }
 
 void PolygonMesh::Draw() const {

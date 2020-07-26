@@ -11,6 +11,9 @@
 class Triangle;
 class Shader;
 class Camera;
+class KDTree;
+class Ray;
+
 
 struct Vertex {
 	glm::vec3 position;
@@ -33,12 +36,14 @@ public:
 					std::vector <glm::vec3> & normals);
 	virtual void Draw() const;
 	void SetupMesh();
+	bool IsHit(Ray& ray) const;
 private:
 	// for ray tracer
 	std::vector<glm::vec3> vertices_, normals_;
 	std::vector<std::vector<int>> faces_;
-	std::vector<const Triangle*> objects;
+	std::vector<const Triangle*> objects_;
 
+	KDTree * tree_;
 	unsigned int vao_, vbo_;
 };
 #endif // !POLYGON_H

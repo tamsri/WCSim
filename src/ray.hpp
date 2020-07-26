@@ -11,7 +11,7 @@ public:
 	Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader);
 	glm::vec3 GetOrigin() const;
 	glm::vec3 GetDirection() const;
-	
+	glm::vec3 PointAtLength(float length) const;
 	//Visualisation
 	void InitializeRay(float length);
 	virtual void Draw() const;

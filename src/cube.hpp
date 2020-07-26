@@ -7,12 +7,13 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+struct Transform;
 class Camera;
 class Shader;
 
 class Cube : public Object {
 public:
-	Cube(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation, Shader * shader);
+	Cube(Transform transform, Shader * shader);
 	virtual void Draw() const;
 private:
 	unsigned int vao_, vbo_, ebo_;

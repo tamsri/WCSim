@@ -14,6 +14,8 @@
 #include "cube.hpp"
 #include "ray.hpp"
 
+#include "transform.hpp"
+
 unsigned int Engine::global_engine_id_ = 0;
 
 Engine::Engine():	
@@ -49,9 +51,14 @@ void Engine::AssignWindow(Window* window)
 	window_ = window;
 }
 
+void Engine::Reset()
+{
+	std::cout << "Engine: Reset the simulation" << std::endl;
+}
+
 void Engine::InitalizeWindowController()
 {
-	engine_mode_ = kView;
+	engine_mode_ = EngineMode::kView;
 	on_first_right_click_ = true;
 	on_first_left_click_ = true;
 	on_right_click_ = false;
@@ -74,9 +81,18 @@ void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
 	map_ = new PolygonMesh("../assets/obj/map.obj", default_shader_);
-	test_cube_ = new Cube(glm::vec3(0.0f), glm::vec3(2.0f, 1.0f, 1.0f), glm::vec3(0.0f), default_shader_);
+	test_cube_ = new Cube(Transform{ glm::vec3(0.0f), glm::vec3(10.0f, 0.01f, 10.0f), glm::vec3(0.0f) }, default_shader_);
 	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
 	test_ray_->InitializeRay(10.0f);
+
+	render_objects_.push_back(test_cube_);
+	
+	render_objects_.push_back(map_);
+	render_objects_.push_back(test_ray_);
+	for (int i = 0; i < 3; i++) {
+		Cube* another_cube = new Cube(Transform{ glm::vec3(2.0f * i, 0.5f, 2.0), glm::vec3(0.75f, 1.0f, 0.5f), glm::vec3(0.0f) }, default_shader_);
+		render_objects_.push_back(another_cube);
+	};
 }
 
 void Engine::LoadObjects()
@@ -249,9 +265,9 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 
 void Engine::Visualize() 
 {
-	map_->DrawObject(main_camera_);
-	test_cube_->DrawObject(main_camera_);
-	test_ray_->DrawObject(main_camera_);
+	for (auto& object : render_objects_) {
+		object->DrawObject(main_camera_);
+	}
 }
 
 void Engine::Destroy()

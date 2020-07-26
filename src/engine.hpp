@@ -1,6 +1,8 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#include <vector>
+
 #include "glm/glm.hpp"
 
 class Window;
@@ -10,7 +12,7 @@ class GLFWwindow;
 class PolygonMesh;
 class Cube;
 class Ray;
-
+class Object;
 
 enum EngineMode : int {
     kView = 0,
@@ -31,6 +33,7 @@ class Engine{
         Engine(Window* window);
         ~Engine();
         void AssignWindow(Window * window);
+        void Reset();
         void Destroy();
         // Visualization
         void InitalizeWindowController();
@@ -59,6 +62,7 @@ class Engine{
         PolygonMesh * map_;
         Cube * test_cube_;
         Ray * test_ray_;
+        std::vector<Object*> render_objects_;
         unsigned int test_vao, test_vbo, test_ebo;
 
         float last_time_;
