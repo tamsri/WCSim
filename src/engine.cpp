@@ -82,7 +82,7 @@ void Engine::LoadComponents()
 void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
-	map_ = new PolygonMesh("../assets/obj/map.obj", default_shader_);
+	map_ = new PolygonMesh("../assets/obj/test-mesh.obj", default_shader_);
 	test_cube_ = new Cube(Transform{ glm::vec3(0.0f), glm::vec3(10.0f, 0.01f, 10.0f), glm::vec3(0.0f) }, default_shader_);
 	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
 	test_ray_->InitializeRay(10.0f);
@@ -268,6 +268,7 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 
 void Engine::Visualize() 
 {
+	map_->DrawObject(main_camera_);
 	for (auto& object : render_objects_) {
 		object->DrawObject(main_camera_);
 	}

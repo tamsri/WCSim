@@ -40,10 +40,12 @@ public:
 private:
 	// for ray tracer
 	std::vector<glm::vec3> vertices_, normals_;
+	std::vector<glm::vec2> uvs_;
+	std::vector<unsigned int> vertex_indices_, uv_indices_, normal_indices_;
 	std::vector<std::vector<int>> faces_;
 	std::vector<const Triangle*> objects_;
 
 	KDTree * tree_;
-	unsigned int vao_, vbo_;
+	unsigned int vao_, vbo_, vuo_;
 };
 #endif // !POLYGON_H

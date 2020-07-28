@@ -15,6 +15,8 @@
 #include "shader.hpp"
 #include "camera.hpp"
 
+
+
 PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
 {
     shader_ = shader;
@@ -26,9 +28,13 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
     else 
     {
         std::ifstream input_file_stream(path, std::ios::in);
+
+
         
-		for (std::string buffer; input_file_stream >> buffer;) {
+
+        for (std::string buffer; input_file_stream >> buffer;) {
             //std::cout << "buffer" << buffer << std::endl;
+
             if (buffer == "v") {
                 float x, y, z;
                 input_file_stream >> x >> y >> z;
@@ -39,23 +45,35 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
                 input_file_stream >> x >> y >> z;
                 normals_.push_back(glm::vec3(x, y, z));
             }
+            else if (buffer == "vt") {
+                float x, y;
+                input_file_stream >> x >> y;
+                uvs_.push_back(glm::vec2(x, y));
+            }
             else if (buffer == "f") {
-                faces_.emplace_back(std::vector<int>(3, 0));
+                unsigned int vertex_index[3], uv_index[3], normal_index[3];
                 for (auto i = 0; i < 3; ++i) {
-                    input_file_stream >> faces_.back()[i];
-                    faces_.back()[i]--;
+                    char trash_char;
+                    input_file_stream   >> vertex_index[i] >> trash_char
+                                        >> uv_index[i] >> trash_char
+                                        >> normal_index[i];
+                    // Define indices for resterizer
+                    vertex_indices_.push_back(vertex_index[i]);
+                    uv_indices_.push_back(uv_index[i]);
+                    normal_indices_.push_back(normal_index[i]);
+
                 }
+                // Build triangles for ray tracer
+                const std::vector<glm::vec3> points = { vertices_[vertex_index[0]-1], vertices_[vertex_index[1]-1], vertices_[vertex_index[2]-1] };
+                objects_.push_back(new Triangle(points, normals_[normal_index[0]-1]));
+
             }
 		}
+
         input_file_stream.close();
 
+
 	}
-    for (auto & face : faces_) {
-        //auto points = glm::vec3(vertices_[face[0]], vertices_[face[1]], vertices_[face[2]]);
-        /*objects_.push_back(
-            new Triangle(points)
-        );*/
-    }
     tree_ = new KDTree(objects_);
     SetupMesh();
 }
@@ -70,19 +88,21 @@ void PolygonMesh::SetupMesh()
 {
     std::cout << "DEBUG OBJ" << std::endl;
 
-    for (auto& ver : vertices_) {
-        std::cout << ver.x << ',' << ver.y << ',' << ver.z << std::endl;
-    }
     std::cout << "Setting up mesh" << std::endl;
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
+    glGenBuffers(1, &vuo_);
 
     glBindVertexArray(vao_);
+
+    glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(glm::vec3), &vertices_[0], GL_STATIC_DRAW);
    
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(vao_, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, vuo_);
+    glBufferData(GL_ARRAY_BUFFER, uvs_.size() * sizeof(glm::vec2), &uvs_[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(vao_, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 
   
     // vertex positions
@@ -105,7 +125,7 @@ bool PolygonMesh::IsHit(Ray & ray) const
 
 void PolygonMesh::Draw() const {
     glBindVertexArray(vao_);
-    glDrawArrays(GL_TRIANGLES, 0, vertices_.size());
+    glDrawElements(GL_TRIANGLES, vertex_indices_.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 
 }

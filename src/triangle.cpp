@@ -1,10 +1,15 @@
 #include "triangle.hpp"
 
+#include <iostream>
+
 #include "ray.hpp"
 
-Triangle::Triangle(const std::vector<glm::vec3>& points)
+
+Triangle::Triangle(const std::vector<glm::vec3>& points, glm::vec3 normal)
 {
 	points_ = points;
+	normal_ = normal;
+	//std::cout << "Triangle making" << std::endl;
 }
 
 bool Triangle::IsHit(const Ray& ray) const
