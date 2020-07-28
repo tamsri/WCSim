@@ -17,8 +17,9 @@ class Ray;
 
 struct Vertex {
 	glm::vec3 position;
+	glm::vec2 uv;
 	glm::vec3 normal;
-	glm::vec3 texture_coord;
+
 };
 
 struct Texture{
@@ -39,13 +40,15 @@ public:
 	bool IsHit(Ray& ray) const;
 private:
 	// for ray tracer
-	std::vector<glm::vec3> vertices_, normals_;
+	std::vector<glm::vec3> full_vertices_, normals_;
 	std::vector<glm::vec2> uvs_;
-	std::vector<unsigned int> vertex_indices_, uv_indices_, normal_indices_;
+	
 	std::vector<std::vector<int>> faces_;
 	std::vector<const Triangle*> objects_;
 
 	KDTree * tree_;
-	unsigned int vao_, vbo_, vuo_;
+	unsigned int vao_, vbo_;
+
+	std::vector<Vertex> vertices_;
 };
 #endif // !POLYGON_H
