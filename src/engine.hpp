@@ -3,7 +3,9 @@
 
 #include <vector>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 class Window;
 class Camera;
@@ -46,6 +48,7 @@ class Engine{
         void Visualize();
 
         // Ray Tracer
+        void Trace();
         void InitializeRays();
         void InitializeVoxels();
         void TracePathFrom(glm::vec3 position);
@@ -63,6 +66,7 @@ class Engine{
         PolygonMesh * map_;
         Cube * test_cube_;
         Ray * test_ray_;
+        std::vector<Ray*> rays_;
         Transmitter* test_transmitter_;
 
         std::vector<Object*> render_objects_;

@@ -17,7 +17,9 @@
 
 
 
-PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
+PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullptr), 
+                                                                     vao_(0),
+                                                                      vbo_(0)
 {
     shader_ = shader;
     model_ = glm::mat4(1.0f);
@@ -64,12 +66,6 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
                     --uv_index[i];
                     --normal_index[i];
 
-                    // Define indices for resterizer
-                    vertex_indices.push_back(vertex_index[i]);
-                    //uv_indices.push_back(uv_index[i]);
-                    //normal_indices.push_back(normal_index[i]);
-
-                    // create vertex for the rasterizer
                     vertices_.push_back({ vertices[vertex_index[i]], uvs[uv_index[i]], normals[normal_index[i]]});
                 }
  
@@ -81,13 +77,6 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader)
 		}
 
         input_file_stream.close();
-        // Process Vertice
-        //for (int i = 0; i < vertex_indices.size(); ++i) {
-        //    full_vertices_.push_back(vertices[vertex_indices[i]]);
-        //}
-        //for (int i = 0; i < uv_indices.size(); ++i) {
-        //    uvs_.push_back(uvs[uv_indices[i]]);
-        //}
 
 	}
     tree_ = new KDTree(objects_);
@@ -125,34 +114,15 @@ void PolygonMesh::SetupMesh()
 
     glBindVertexArray(0);
 
-    //glEnableVertexAttribArray(vao_);
-    //glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    //glBufferData(GL_ARRAY_BUFFER, full_vertices_.size() * sizeof(glm::vec3), &full_vertices_[0], GL_STATIC_DRAW);
-   
-    ////glEnableVertexAttribArray(1);
-    //glBindBuffer(GL_ARRAY_BUFFER, vuo_);
-    //glBufferData(GL_ARRAY_BUFFER, uvs_.size() * sizeof(glm::vec2), &uvs_[0], GL_STATIC_DRAW);
-    //glVertexAttribPointer(vao_, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
-
-  
-    // vertex positions
-    //glEnableVertexAttribArray(vao_);
-    //glVertexAttribPointer(vao_, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-    // vertex normals
-    //glEnableVertexAttribArray(1);
-    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
 }
 
-bool PolygonMesh::IsHit(Ray & ray) const
+bool PolygonMesh::IsHit(Ray & ray, float & t) const
 {
-    return tree_->IsHit(ray);
+    return tree_->IsHit(ray, t);
 }
 
 void PolygonMesh::Draw() const {
-    //std::cout << vertices_.size() << std::endl;
     glBindVertexArray(vao_);
-    //glDrawElements(GL_TRIANGLES, vertices_.size(), GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, vertices_.size());
     glBindVertexArray(0);
 }

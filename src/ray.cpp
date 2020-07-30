@@ -14,7 +14,7 @@ Ray::Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader)
 	// Ray - Tracer
 	origin_ = origin;
 	direction_ = direction;
-	// Visualize
+	// Visualizer
 	transform_.position = glm::vec3(0.0f);
 	transform_.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	transform_.rotation = glm::vec3(0.0f);
@@ -41,9 +41,7 @@ glm::vec3 Ray::PointAtLength(float length) const
 void Ray::InitializeRay(float length)
 {
 	glm::vec3 destination = PointAtLength(length);
-	//std::cout << destination.x << " ";
-	//std::cout << destination.y << " ";
-	//std::cout << destination.z << std::endl;
+
 	float line[] = {
 		origin_.x, origin_.y, origin_.z,
 		destination.x, destination.y, destination.z

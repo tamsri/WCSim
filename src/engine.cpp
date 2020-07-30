@@ -2,8 +2,9 @@
 
 #include <iostream>
 
-#include<glad/glad.h>
-#include<GLFW/glfw3.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 
 #include "window.hpp"
 #include "camera.hpp"
@@ -72,11 +73,11 @@ void Engine::InitalizeWindowController()
 
 void Engine::LoadComponents()
 {
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	LoadObjects();
 	LoadShaders();
 	LoadTexture();
 	LoadMap();
-
 }
 
 void Engine::LoadMap()
@@ -114,6 +115,29 @@ void Engine::LoadTexture()
 {
 	std::cout << "Engine:Loading textures" << std::endl;
 	
+}
+
+void Engine::Trace()
+{
+	glm::vec3 position = { -4.0f, 1.0f, 0.0f };
+	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f};
+
+	for (int i = 0; i < 360; ++i) {
+		float t = 0;
+		auto trans_direction = glm::rotate(glm::mat4(1.0f), (float)i, glm::vec3(1.0f, 0.0f, 0.0f));
+		auto new_direction = trans_direction * direction;
+		glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
+		Ray * ray = new Ray (position, i_direction, default_shader_);
+		if (map_->IsHit(*ray, t)) {
+			std::cout << "Hit!! "<< i_direction.x << " t = " << t << std::endl;
+			
+		}
+		else {
+			std::cout << "Doesn't hit" << std::endl;
+		};
+		ray->InitializeRay(1.0f);
+		rays_.push_back(ray);
+	}
 }
 
 void Engine::InitializeRays()
@@ -269,10 +293,13 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
-	for (auto& object : render_objects_) {
+	/*for (auto& object : render_objects_) {
 		object->DrawObject(main_camera_);
+	}*/
+	for (auto& ray : rays_) {
+		ray->DrawObject(main_camera_);
 	}
-	test_transmitter_->DrawRadiationPattern(main_camera_);
+	//test_transmitter_->DrawRadiationPattern(main_camera_);
 }
 
 void Engine::Destroy()

@@ -19,7 +19,6 @@ struct Vertex {
 	glm::vec3 position;
 	glm::vec2 uv;
 	glm::vec3 normal;
-
 };
 
 struct Texture{
@@ -37,13 +36,12 @@ public:
 					std::vector <glm::vec3> & normals);
 	virtual void Draw() const;
 	void SetupMesh();
-	bool IsHit(Ray& ray) const;
+	bool IsHit(Ray & ray, float & t) const;
 private:
 	// for ray tracer
 	std::vector<glm::vec3> full_vertices_, normals_;
 	std::vector<glm::vec2> uvs_;
 	
-	std::vector<std::vector<int>> faces_;
 	std::vector<const Triangle*> objects_;
 
 	KDTree * tree_;

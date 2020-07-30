@@ -1,6 +1,8 @@
 #include "kdtree.hpp"
 
 #include "triangle.hpp"
+#include "ray.hpp"
+
 
 KDTree::KDTree(const std::vector<const Triangle*>& objects)
 {
@@ -12,14 +14,58 @@ KDTree::~KDTree()
     delete root_;
 }
 
-bool KDTree::IsHit(const Ray& ray) const
+bool KDTree::IsHit(const Ray& ray, float & t) const
 {
-    return IsHit(ray, root_, false, 0);
+    return IsHit(ray, root_, t, 0);
 }
 
-bool KDTree::IsHit(const Ray& ray, KDNode* node, bool is_hit, int depth) const
+bool KDTree::IsHit(const Ray& ray, KDNode* node, float & t, int depth) const
 {
-    return false;
+    glm::vec3 direction = ray.GetDirection();
+    glm::vec3 origin = ray.GetOrigin();
+    glm::vec3 point_1 = node->GetCorner(0);
+    glm::vec3 point_2 = node->GetCorner(1);
+
+    float distances[6] = {
+      direction.x ? (point_1.x - origin.x) / direction.x : 0,
+      direction.x ? (point_2.x - origin.x) / direction.x : 0,
+      direction.y ? (point_1.y - origin.y) / direction.y : 0,
+      direction.y ? (point_2.y - origin.y) / direction.y : 0,
+      direction.z ? (point_1.z - origin.z) / direction.z : 0,
+      direction.z ? (point_2.z - origin.z) / direction.z : 0
+    };
+    auto distance = std::numeric_limits<float>::max();
+    const float k_epsilon = 0.000001f;
+    for (int i = 0; i < 6; ++i) {
+        if (distances[i] == 0) continue;
+        
+        auto point = origin + distances[i] * direction;
+        if (point.x < point_1.x || point.x > point_2.x + k_epsilon) continue;
+        if (point.y < point_1.y || point.y > point_2.y + k_epsilon) continue;
+        if (point.z < point_1.z || point.z > point_2.z + k_epsilon) continue;
+
+        if (distances[i] < distance) distance = distances[i];
+    
+        if (distance >= t) return false;
+     
+        if (node->GetChildren(0) && node->GetChildren(1)) {
+            auto point = ray.GetOrigin() + ray.GetDirection() * t;
+            auto prefer = point[node->GetAxis()] <= node->GetPivot() ? 0 : 1;
+            for (auto i : { prefer, prefer ^ 1 }) {
+                float temp_t;
+                bool result = IsHit(ray, node->GetChildren(i), temp_t, depth + 1);
+                if (temp_t < t) t = temp_t;
+            }
+        }
+        else {
+            for (auto& Object : node->objects_) {
+                float temp_t;
+                auto result = Object->IsHit(ray, temp_t);
+                if (temp_t < t) t = temp_t;
+            }
+        }
+    }
+    return true;
 }
 
 KDNode* KDTree::Build(const std::vector<const Triangle*>& objects, int depth) const
@@ -95,6 +141,11 @@ KDNode* KDNode::GetChildren(unsigned int i)
 void KDNode::SetChildren(unsigned int index, KDNode * node)
 {
     children_[index] = node;
+}
+
+glm::vec3 KDNode::GetCorner(unsigned int index)
+{
+    return glm::vec3(corners_[index]);
 }
 
 float KDNode::GetPivot()

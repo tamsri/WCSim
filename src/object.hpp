@@ -8,8 +8,6 @@
 class Camera;
 class Shader;
 
-
-
 class Object {
 public:
 	virtual void Draw() const = 0;
