@@ -87,8 +87,8 @@ void Engine::LoadMap()
 	test_cube_ = new Cube(Transform{ glm::vec3(0.0f), glm::vec3(10.0f, 0.01f, 10.0f), glm::vec3(0.0f) }, default_shader_);
 	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
 	test_ray_->InitializeRay(10.0f);
-	Transform transmitter_transform{ glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) };
-	test_transmitter_ = new Transmitter(transmitter_transform, default_shader_);
+	//Transform transmitter_transform{ glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) };
+	//test_transmitter_ = new Transmitter(transmitter_transform, default_shader_);
 
 	render_objects_.push_back(test_cube_);
 	render_objects_.push_back(map_);
@@ -119,23 +119,24 @@ void Engine::LoadTexture()
 
 void Engine::Trace()
 {
-	glm::vec3 position = { -4.0f, 1.0f, 0.0f };
+	glm::vec3 position = { -4.0f, 0.0f, 0.0f };
 	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f};
 
 	for (int i = 0; i < 360; ++i) {
 		float t = 0;
-		auto trans_direction = glm::rotate(glm::mat4(1.0f), (float)i, glm::vec3(1.0f, 0.0f, 0.0f));
+		auto trans_direction = glm::rotate(glm::mat4(1.0f), (float)i, glm::vec3(0.0f, 1.0f, 0.0f));
 		auto new_direction = trans_direction * direction;
 		glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
 		Ray * ray = new Ray (position, i_direction, default_shader_);
 		if (map_->IsHit(*ray, t)) {
-			std::cout << "Hit!! "<< i_direction.x << " t = " << t << std::endl;
-			
+			std::cout << i << ".) Hit!! t = " << t << std::endl;
+			ray->InitializeRay(t);
 		}
 		else {
-			std::cout << "Doesn't hit" << std::endl;
+			std::cout << i << ".) Doesn't hit" << std::endl;
 		};
-		ray->InitializeRay(1.0f);
+		//ray->InitializeRay(10.0f);
+
 		rays_.push_back(ray);
 	}
 }

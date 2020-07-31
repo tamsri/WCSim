@@ -54,14 +54,14 @@ bool KDTree::IsHit(const Ray& ray, KDNode* node, float & t, int depth) const
             for (auto i : { prefer, prefer ^ 1 }) {
                 float temp_t;
                 bool result = IsHit(ray, node->GetChildren(i), temp_t, depth + 1);
-                if (temp_t < t) t = temp_t;
+                if (result) t = temp_t;
             }
         }
         else {
             for (auto& Object : node->objects_) {
                 float temp_t;
-                auto result = Object->IsHit(ray, temp_t);
-                if (temp_t < t) t = temp_t;
+                bool result = Object->IsHit(ray, temp_t);
+                if (result) t = temp_t;
             }
         }
     }

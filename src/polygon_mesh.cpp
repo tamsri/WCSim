@@ -118,7 +118,11 @@ void PolygonMesh::SetupMesh()
 
 bool PolygonMesh::IsHit(Ray & ray, float & t) const
 {
-    return tree_->IsHit(ray, t);
+    //return tree_->IsHit(ray, t);
+    for (auto object : objects_) {
+        if(object->IsHit(ray, t)) return true;
+    }
+    return false;
 }
 
 void PolygonMesh::Draw() const {

@@ -82,7 +82,7 @@ void Window::Run() {
     while (!glfwWindowShouldClose(glfw_window_))
     {
         /*Render from Engine*/
-        glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
+        glClearColor(0.95f, 0.95f, 0.95f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         engine_->Visualize();
         engine_->Update();
