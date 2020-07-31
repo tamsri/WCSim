@@ -16,7 +16,7 @@ Triangle::Triangle(const std::vector<glm::vec3>& points, glm::vec3 normal)
 
 bool Triangle::IsHit(const Ray& ray, float & t) const
 {
-	const float k_epsilon = 0.000001f; /// ?? is it ok?
+	const float k_epsilon = 0.00000001f; /// ?? is it ok?
 	// moller trumbore
 	//glm::vec3 p0p1 = points_[1] - points_[0];
 	//glm::vec3 p0p2 = points_[2] - points_[0];
@@ -48,7 +48,7 @@ bool Triangle::IsHit(const Ray& ray, float & t) const
 	h = glm::cross(ray.GetDirection(), edge_2);
 	a = glm::dot(edge_1, h);
 
-	if (a > fabs(k_epsilon)) return false;
+	//if (a > k_epsilon) return false; // able to get both side of the triangle
 	f = 1.0f / a;
 	s = ray.GetOrigin() - v0;
 	u = f * glm::dot(s, h);

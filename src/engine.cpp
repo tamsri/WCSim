@@ -1,6 +1,7 @@
 #include "engine.hpp"
 
 #include <iostream>
+#include <set>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -78,12 +79,13 @@ void Engine::LoadComponents()
 	LoadShaders();
 	LoadTexture();
 	LoadMap();
+	TestSpace();
 }
 
 void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
-	map_ = new PolygonMesh("../assets/obj/test-mesh.obj", default_shader_);
+	map_ = new PolygonMesh("../assets/obj/map-test.obj", default_shader_);
 	test_cube_ = new Cube(Transform{ glm::vec3(0.0f), glm::vec3(10.0f, 0.01f, 10.0f), glm::vec3(0.0f) }, default_shader_);
 	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
 	test_ray_->InitializeRay(10.0f);
@@ -117,23 +119,29 @@ void Engine::LoadTexture()
 	
 }
 
+void Engine::TestSpace()
+{
+	std::set < float> set = { 1.2f, 9.3f,0.1f };
+	std::cout << "min: " << *set.begin() << std::endl;
+}
+
 void Engine::Trace()
 {
 	glm::vec3 position = { -4.0f, 0.0f, 0.0f };
 	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f};
 
-	for (int i = 0; i < 360; ++i) {
+	for (float i = 0; i < 360; i+= 0.1f) {
 		float t = 0;
 		auto trans_direction = glm::rotate(glm::mat4(1.0f), (float)i, glm::vec3(0.0f, 1.0f, 0.0f));
 		auto new_direction = trans_direction * direction;
 		glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
 		Ray * ray = new Ray (position, i_direction, default_shader_);
 		if (map_->IsHit(*ray, t)) {
-			std::cout << i << ".) Hit!! t = " << t << std::endl;
+			//std::cout << i << ".) Hit!! t = " << t << std::endl;
 			ray->InitializeRay(t);
 		}
 		else {
-			std::cout << i << ".) Doesn't hit" << std::endl;
+			//std::cout << i << ".) Doesn't hit" << std::endl;
 		};
 		//ray->InitializeRay(10.0f);
 

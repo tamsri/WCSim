@@ -48,6 +48,7 @@ class Engine{
         void Visualize();
 
         // Ray Tracer
+        void TestSpace();
         void Trace();
         void InitializeRays();
         void InitializeVoxels();

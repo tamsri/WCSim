@@ -6,7 +6,7 @@
 #include<fstream>
 #include<assert.h>
 #include<iostream>
-
+#include<set>
 
 #include "kdtree.hpp"
 #include "ray.hpp"
@@ -118,11 +118,18 @@ void PolygonMesh::SetupMesh()
 
 bool PolygonMesh::IsHit(Ray & ray, float & t) const
 {
-    //return tree_->IsHit(ray, t);
+    float temp_t;
+    std::set<float> t_list;
+    //return tree_->IsHit(ray, t); ; /// to implement later, it hits but doesn't give correct t
     for (auto object : objects_) {
-        if(object->IsHit(ray, t)) return true;
+        if (object->IsHit(ray, temp_t)) {
+            t_list.insert(temp_t);
+        }
     }
-    return false;
+    if (t_list.size() == 0) return false;
+    std::cout << "set size: " << t_list.size() << std::endl;
+    t = *t_list.begin();
+    return true;
 }
 
 void PolygonMesh::Draw() const {
