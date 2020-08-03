@@ -13,6 +13,8 @@ class PolygonMesh;
 class Ray;
 class Triangle;
 class Shader;
+class Object;
+class Camera;
 
 struct FragmentRay {
 	std::vector<glm::vec3> path_points; // ray and lenght
@@ -20,6 +22,8 @@ struct FragmentRay {
 
 class FragmentVoxel {
 public:
+	FragmentVoxel(glm::vec3 position);
+
 	glm::vec3 position_;
 	std::map<Triangle *, bool> possible_hit_triangles;
 	std::map<FragmentVoxel *, std::vector<FragmentRay>> rays_to_neighbours;
@@ -40,8 +44,12 @@ public:
 	bool IsOutdoor(glm::vec3 start_point) const;
 	glm::vec3 ReflectedPointOnTriangle(Triangle* triangle, glm::vec3 point) const;
 
+	void DrawObjects(Camera * main_camera) const;
+
+	unsigned int width_, depth_, height_;
+	std::vector<Object*> objects_;
 	Shader * ray_shader_;
-	std::map<glm::vec3, FragmentVoxel *> voxels_;
+	std::map<std::string, FragmentVoxel *> voxels_;
 	PolygonMesh * map_;
 };
 #endif // !RAY_TRACER_H

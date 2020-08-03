@@ -315,6 +315,7 @@ void Engine::Visualize()
 		ray->DrawObject(main_camera_);
 	}*/
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
+	ray_tracer_->DrawObjects(main_camera_);
 }
 
 void Engine::Destroy()

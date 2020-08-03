@@ -2,15 +2,19 @@
 
 #include <iostream>
 
+#include "object.hpp"
 #include "ray.hpp"
 #include "triangle.hpp"
 #include "polygon_mesh.hpp"
 #include "shader.hpp"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/hash.hpp"
 RayTracer::RayTracer(PolygonMesh * map,  Shader * ray_shader):map_(map), ray_shader_(ray_shader)
 {
     // Initialize voxel spaces; ?
     Test();
+    InitializeVoxels(100, 100, 5);
 }
 
 void RayTracer::Test()
@@ -32,13 +36,21 @@ void RayTracer::Test()
 
 }
 
-void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigned int height)
+void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigned int height) 
 {
-    for(float x = 0; x < width; ++x)
-        for(float y = 0; y < depth; ++y)
-            for (int z = 0; z < height; ++z) {
-                
+    width_ = width; depth_ = depth; height_ = height;
+    std::cout << "Initializing voxels." << std::endl;
+    float voxels_per_m_sq = 1.0f;
+    float increase = 1.0f / (float)voxels_per_m_sq;
+    for(float x = -(width/2.0f); x < width/2.0f; x += increase)
+        for(float y = -(depth/2.0f); y < depth/2.0f; y += increase)
+            for (float z = -(height/2.0f); z < height/2.0f; z+= increase) {
+                glm::vec3 position = glm::vec3{ x,y,z };
+                std::cout << position.x << "," << position.y << "," << position.z << std::endl;
+                FragmentVoxel * voxel = new FragmentVoxel(position);
+                voxels_.insert(std::pair<glm::vec3, FragmentVoxel *>( position, voxel ) );
             }
+    std::cout << "Initializing voxels completed." << std::endl;
 
     return;
 }
@@ -55,6 +67,7 @@ void RayTracer::Trace(FragmentVoxel & start_voxel, FragmentVoxel & end_voxel)
     glm::vec3 end_point = end_voxel.position_;
     // find LOS
     if (IsDirectHit(start_point, end_point)) start_voxel.rays_to_neighbours[&end_voxel].push_back(FragmentRay{ std::vector<glm::vec3>{start_point, end_point} });
+    // find NLOS
 }
 
 bool RayTracer::IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const
@@ -68,7 +81,7 @@ bool RayTracer::IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const
     // trace the ray on this direction 
     // check if the direction hit something and the t is not betwen start_point to end_point length
     if (map_->IsHit(ray, distance) && distance != -1 && distance < start_to_end_distance) {
-        std::cout << "hit something distance: " << distance << std::endl;
+        std::cout << "hit something at distance: " << distance << std::endl;
         return false;
     }
     return true;
@@ -109,7 +122,17 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 poi
 
     glm::vec3 m = glm::vec3 (points.x + t * n.x, points.y + t * n.y, points.z + t * n.z); // points on mirror
 
-    glm::vec3 point_reflect = m * 2.0f - points; // reverse average point from average point
 
-    return point_reflect;
+    return  m * 2.0f - points; // reverse average point from average point
+}
+
+void RayTracer::DrawObjects(Camera * main_camera) const
+{
+    for (auto & object : objects_) {
+        object->DrawObject(main_camera);
+    }
+}
+
+FragmentVoxel::FragmentVoxel(glm::vec3 position) :position_(position)
+{
 }
