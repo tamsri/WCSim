@@ -17,6 +17,7 @@
 #include "ray.hpp"
 #include "transmitter.hpp"
 
+#include "ray_tracer.hpp"
 
 #include "transform.hpp"
 
@@ -70,6 +71,12 @@ void Engine::InitalizeWindowController()
 	glfwSetWindowUserPointer(window_->GetGLFWWindow(), this);
 	glfwSetCursorPosCallback(window_->GetGLFWWindow(), MousePositionCallback);
 	glfwSetMouseButtonCallback(window_->GetGLFWWindow(), MouseButtonCallback);
+	glfwSetScrollCallback(window_->GetGLFWWindow(), MouseScrollCallback);
+}
+
+void Engine::LoadRayTracer()
+{
+	ray_tracer_ = new RayTracer(map_, default_shader_);
 }
 
 void Engine::LoadComponents()
@@ -79,26 +86,25 @@ void Engine::LoadComponents()
 	LoadShaders();
 	LoadTexture();
 	LoadMap();
-	TestSpace();
+	LoadRayTracer(); // LoadRayTracer() tracer must be after LoadMap()
 }
 
 void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
 	map_ = new PolygonMesh("../assets/obj/map-test.obj", default_shader_);
-	test_cube_ = new Cube(Transform{ glm::vec3(0.0f), glm::vec3(10.0f, 0.01f, 10.0f), glm::vec3(0.0f) }, default_shader_);
-	test_ray_ = new Ray(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f), default_shader_);
-	test_ray_->InitializeRay(10.0f);
+	Cube * test_cube_1 = new Cube(Transform{ glm::vec3(10.0f, 10.0f, 2.0f), glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) }, default_shader_);
+	Cube * test_cube_2 = new Cube(Transform{ glm::vec3(-10.0f, 5.0f, 10.0f), glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) }, default_shader_);
+
+
 	//Transform transmitter_transform{ glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) };
 	//test_transmitter_ = new Transmitter(transmitter_transform, default_shader_);
 
-	render_objects_.push_back(test_cube_);
+	render_objects_.push_back(test_cube_1);
+	render_objects_.push_back(test_cube_2);
 	render_objects_.push_back(map_);
-	render_objects_.push_back(test_ray_);
-	for (int i = 0; i < 3; i++) {
-		Cube* another_cube = new Cube(Transform{ glm::vec3(2.0f * i, 0.5f, 2.0), glm::vec3(0.75f, 1.0f, 0.5f), glm::vec3(0.0f) }, default_shader_);
-		render_objects_.push_back(another_cube);
-	};
+	//render_objects_.push_back(test_ray_);
+
 }
 
 void Engine::LoadObjects()
@@ -119,33 +125,31 @@ void Engine::LoadTexture()
 	
 }
 
-void Engine::TestSpace()
-{
-	std::set < float> set = { 1.2f, 9.3f,0.1f };
-	std::cout << "min: " << *set.begin() << std::endl;
-}
 
 void Engine::Trace()
 {
-	glm::vec3 position = { -4.0f, 0.0f, 0.0f };
+	glm::vec3 position = { -4.0f, 1.0f, 0.0f };
 	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f};
 
-	for (float i = 0; i < 360; i+= 0.1f) {
-		float t = 0;
-		auto trans_direction = glm::rotate(glm::mat4(1.0f), (float)i, glm::vec3(0.0f, 1.0f, 0.0f));
-		auto new_direction = trans_direction * direction;
-		glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
-		Ray * ray = new Ray (position, i_direction, default_shader_);
-		if (map_->IsHit(*ray, t)) {
-			//std::cout << i << ".) Hit!! t = " << t << std::endl;
-			ray->InitializeRay(t);
-		}
-		else {
-			//std::cout << i << ".) Doesn't hit" << std::endl;
-		};
-		//ray->InitializeRay(10.0f);
+	for (float i = 0; i < 360; i += 10) {
+		for (float j = 0; j < 360; j += 1) {
+			float t = 0;
+			auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
+			trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
+			auto new_direction = trans_direction * direction;
+			glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
+			Ray* ray = new Ray(position, i_direction, default_shader_);
+			if (map_->IsHit(*ray, t)) {
+				//std::cout << i << ".) Hit!! t = " << t << std::endl;
+				ray->InitializeRay(t);
+			}
+			else {
+				//std::cout << i << ".) Doesn't hit" << std::endl;
+			};
+			//ray->InitializeRay(10.0f);
 
-		rays_.push_back(ray);
+			rays_.push_back(ray);
+		}
 	}
 }
 
@@ -249,6 +253,8 @@ void Engine::MousePosition(double xpos, double ypos)
 void Engine::MouseScroll(double xoffset, double yoffset)
 {
 	/// Implement later
+	std::cout << "scroll " << yoffset << std::endl;
+	main_camera_->camera_move_speed_ += yoffset;
 }
 
 void Engine::MouseBottonToggler(MouseBottons action)
@@ -302,12 +308,12 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
-	/*for (auto& object : render_objects_) {
+	for (auto& object : render_objects_) {
 		object->DrawObject(main_camera_);
-	}*/
-	for (auto& ray : rays_) {
-		ray->DrawObject(main_camera_);
 	}
+	/*for (auto& ray : rays_) {
+		ray->DrawObject(main_camera_);
+	}*/
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
 }
 

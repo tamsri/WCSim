@@ -16,7 +16,7 @@ class Cube;
 class Ray;
 class Object;
 class Transmitter;
-
+class RayTracer;
 enum EngineMode : int {
     kView = 0,
     kMoveObjects,
@@ -48,7 +48,7 @@ class Engine{
         void Visualize();
 
         // Ray Tracer
-        void TestSpace();
+        void LoadRayTracer();
         void Trace();
         void InitializeRays();
         void InitializeVoxels();
@@ -63,6 +63,7 @@ class Engine{
         static unsigned int global_engine_id_;
         
         // Engine Simulation
+        RayTracer* ray_tracer_;
         Shader * default_shader_;
         PolygonMesh * map_;
         Cube * test_cube_;

@@ -63,6 +63,12 @@ bool Triangle::IsHit(const Ray& ray, float & t) const
 	return false;
 }
 
+bool Triangle::IsHit(const Ray& ray, float& t, Triangle & hit_triangle) const
+{
+	hit_triangle = *this;
+	return IsHit(ray, t);
+}
+
 glm::vec3 Triangle::GetNormal() const
 {
 	return glm::vec3(normal_);

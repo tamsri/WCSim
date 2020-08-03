@@ -10,6 +10,7 @@ class Triangle {
 public:
 	Triangle(const std::vector<glm::vec3>& points, glm::vec3 normal);
 	bool IsHit(const Ray & ray, float & t) const;
+	bool IsHit(const Ray& ray, float& t, Triangle & hit_triangle) const;
 	glm::vec3 GetNormal()const;
 	std::vector<glm::vec3> GetPoints() const;
 	//static unsigned int global_id_;

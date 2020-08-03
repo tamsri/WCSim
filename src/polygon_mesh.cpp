@@ -127,7 +127,7 @@ bool PolygonMesh::IsHit(Ray & ray, float & t) const
         }
     }
     if (t_list.size() == 0) return false;
-    std::cout << "set size: " << t_list.size() << std::endl;
+    //std::cout << "set size: " << t_list.size() << std::endl;
     t = *t_list.begin();
     return true;
 }
