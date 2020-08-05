@@ -63,9 +63,9 @@ bool Triangle::IsHit(const Ray& ray, float & t) const
 	return false;
 }
 
-bool Triangle::IsHit(const Ray& ray, float& t, Triangle & hit_triangle) const
+bool Triangle::IsHit(const Ray& ray, float& t, Triangle *& hit_triangle) const
 {
-	hit_triangle = *this;
+	hit_triangle = &*(Triangle *)this;
 	return IsHit(ray, t);
 }
 

@@ -138,17 +138,18 @@ void Engine::Trace()
 			trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
 			auto new_direction = trans_direction * direction;
 			glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
-			Ray* ray = new Ray(position, i_direction, default_shader_);
+			Ray * ray = new Ray(position, i_direction, default_shader_);
 			if (map_->IsHit(*ray, t)) {
 				//std::cout << i << ".) Hit!! t = " << t << std::endl;
 				ray->InitializeRay(t);
+				rays_.push_back(ray);
 			}
 			else {
 				//std::cout << i << ".) Doesn't hit" << std::endl;
+				delete ray;
 			};
 			//ray->InitializeRay(10.0f);
 
-			rays_.push_back(ray);
 		}
 	}
 }
@@ -308,9 +309,9 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
-	for (auto& object : render_objects_) {
+	/*for (auto& object : render_objects_) {
 		object->DrawObject(main_camera_);
-	}
+	}*/
 	/*for (auto& ray : rays_) {
 		ray->DrawObject(main_camera_);
 	}*/

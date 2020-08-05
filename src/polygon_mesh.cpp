@@ -71,6 +71,10 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullp
  
                 // Build triangles for ray tracer
                 const std::vector<glm::vec3> points = { vertices[vertex_index[0]], vertices[vertex_index[1]], vertices[vertex_index[2]]};
+                //std::cout << "first normal" << normals[normal_index[0]].x << ", " << normals[normal_index[0]].y << ", " << normals[normal_index[0]].z << std::endl;
+                //std::cout << "second normal" << normals[normal_index[1]].x << ", " << normals[normal_index[1]].y << ", " << normals[normal_index[1]].z << std::endl;
+                //std::cout << "third normal" << normals[normal_index[2]].x << ", " << normals[normal_index[2]].y << ", " << normals[normal_index[2]].z << std::endl;
+
                 objects_.push_back(new Triangle(points, normals[normal_index[0]]));
             }
             
@@ -116,7 +120,7 @@ void PolygonMesh::SetupMesh()
 
 }
 
-bool PolygonMesh::IsHit(Ray & ray, float & t) const
+bool PolygonMesh::IsHit(Ray &ray, float & t) const
 {
     float temp_t;
     std::set<float> t_list;
@@ -131,6 +135,45 @@ bool PolygonMesh::IsHit(Ray & ray, float & t) const
     t = *t_list.begin();
     return true;
 }
+
+bool PolygonMesh::IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const
+{
+    float temp_t;
+    std::set<std::pair<float, Triangle *>> t_list;
+
+    //return tree_->IsHit(ray, t); ; /// to implement later, it hits but doesn't give correct t
+    for (auto object : objects_) {
+        Triangle * test_triangle = nullptr;
+        if (object->IsHit(ray, temp_t, test_triangle)) {
+            t_list.insert(std::pair{ temp_t , test_triangle});
+        }
+    }
+    if (t_list.size() == 0) return false;
+    //std::cout << "set size: " << t_list.size() << std::endl;
+    t = std::get<0>(*t_list.begin());
+    hit_triangle = std::get<1>(*t_list.begin());
+    return true;
+}
+
+bool PolygonMesh::IsHit(Ray& ray, std::set<std::pair<float, Triangle*>> & hit_triangles) const
+{
+    float temp_t;
+    //std::vector<float, Triangle *> hit_list;
+
+    //return tree_->IsHit(ray, t); ; /// to implement later, it hits but doesn't give correct t
+    for (auto object : objects_) {
+        Triangle* test_triangle = nullptr;
+        if (object->IsHit(ray, temp_t, test_triangle)) {
+            std::cout << "got hit somme, eh?" << std::endl;
+
+            hit_triangles.insert(std::pair{ temp_t, test_triangle });
+        }
+    }
+    std::cout << "hit triangles : " << hit_triangles.size() << std::endl;
+    if (hit_triangles.size() == 0) return false;
+    return true;
+}
+
 
 void PolygonMesh::Draw() const {
     glBindVertexArray(vao_);

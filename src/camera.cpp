@@ -77,7 +77,7 @@ void Camera::Reset()
 
 void Camera::UpdateProjection()
 {
-	projection_ = glm::perspective(glm::radians(fov_), (float)window_->GetWindowHeight() / (float)window_->GetWindowHeight(), 0.1f, 1000.0f);
+	projection_ = glm::perspective(glm::radians(fov_), (float)window_->GetWindowHeight() / (float)window_->GetWindowHeight(), 0.1f, 10000.0f);
 }
 
 void Camera::UpdateRotation()

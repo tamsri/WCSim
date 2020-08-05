@@ -36,20 +36,20 @@ public:
 	void Test();
 
 	void InitializeVoxels(unsigned int width, unsigned int depth, unsigned int height);
-	void ScanHit();
+	void ScanHit(FragmentVoxel & voxel);
 	
 	void Trace(FragmentVoxel & start_voxel, FragmentVoxel & end_voxel);
 	bool IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const;
 	bool IsReflected(glm::vec3 start_point, glm::vec3 end_point, std::vector<FragmentRay *> & reflected_rays) const;
 	bool IsOutdoor(glm::vec3 start_point) const;
-	glm::vec3 ReflectedPointOnTriangle(Triangle* triangle, glm::vec3 point) const;
+	glm::vec3 ReflectedPointOnTriangle(Triangle* triangle, glm::vec3 point);
 
 	void DrawObjects(Camera * main_camera) const;
 
 	unsigned int width_, depth_, height_;
 	std::vector<Object*> objects_;
 	Shader * ray_shader_;
-	std::map<std::string, FragmentVoxel *> voxels_;
+	std::vector<FragmentVoxel *> voxels_; // may implement kb tree later
 	PolygonMesh * map_;
 };
 #endif // !RAY_TRACER_H

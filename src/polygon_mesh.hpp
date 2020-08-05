@@ -1,8 +1,10 @@
 #ifndef POLYGON_H
 #define POLYGON_H
 
-#include<vector>
-#include<iostream>
+#include <vector>
+#include <iostream>
+#include <set>
+#include <utility>
 
 #include <glm/glm.hpp>
 
@@ -37,6 +39,9 @@ public:
 	virtual void Draw() const;
 	void SetupMesh();
 	bool IsHit(Ray & ray, float & t) const;
+	bool IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const;
+	bool IsHit(Ray& ray, std::set<std::pair<float, Triangle *>> & hit_triangles) const;
+
 private:
 	// for ray tracer
 	std::vector<glm::vec3> full_vertices_, normals_;
