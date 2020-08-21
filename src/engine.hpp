@@ -72,7 +72,7 @@ class Engine{
         Transmitter* test_transmitter_;
 
         std::vector<Object*> render_objects_;
-        unsigned int test_vao, test_vbo, test_ebo;
+        //unsigned int test_vao, test_vbo, test_ebo;
 
         float last_time_;
         void KeyActions();

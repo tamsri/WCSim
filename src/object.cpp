@@ -8,7 +8,7 @@ Shader* Object::default_shader_;
 
 void Object::DrawObject(Camera* camera) const
 {
-	if (shader_ == nullptr) /// todo implement without if(it could be faster)
+	if (shader_ == nullptr) /// todo implement without if (if it could be faster)
 	{
 		default_shader_->SetMat4("projection", camera->projection_);
 		default_shader_->SetMat4("view", camera->view_);

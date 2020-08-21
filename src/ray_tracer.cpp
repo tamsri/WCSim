@@ -64,7 +64,7 @@ void RayTracer::Test()
 
 
     for (unsigned int i = 0; i < matched_triangles.size(); ++i) {
-        /*std::cout << "triangle>> p1:";
+        /*std::cout << "triangle>> p1:"; // print triangles of matched triangle
         std::cout << matched_triangles[i]->GetPoints()[0].x << "," << matched_triangles[i]->GetPoints()[0].y << "," << matched_triangles[i]->GetPoints()[0].z << " //p2: ";
         std::cout << matched_triangles[i]->GetPoints()[1].x << "," << matched_triangles[i]->GetPoints()[1].y << "," << matched_triangles[i]->GetPoints()[1].z << " //p3: ";
         std::cout << matched_triangles[i]->GetPoints()[2].x << "," << matched_triangles[i]->GetPoints()[2].y << "," << matched_triangles[i]->GetPoints()[2].z << std::endl;*/
