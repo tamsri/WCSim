@@ -46,6 +46,8 @@ Engine::Engine(Window* window) :
 
 Engine::~Engine()
 {
+	//delete Ray::global_ray_shader_;
+	//delete Object::default_shader_;
 	delete main_camera_;
 	delete map_;
 }
@@ -117,6 +119,7 @@ void Engine::LoadShaders()
 {
 	std::cout << "Engine:Loading shaders" << std::endl;
 	default_shader_ = new Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
+	Object::default_shader_ = new Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
 }
 
 void Engine::LoadTexture()
@@ -254,7 +257,7 @@ void Engine::MousePosition(double xpos, double ypos)
 void Engine::MouseScroll(double xoffset, double yoffset)
 {
 	/// Implement later
-	std::cout << "scroll " << yoffset << std::endl;
+	std::cout << "scroll : (" <<xoffset << ", " << yoffset << ")." << std::endl;
 	main_camera_->camera_move_speed_ += yoffset;
 }
 

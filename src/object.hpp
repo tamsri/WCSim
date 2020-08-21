@@ -12,8 +12,9 @@ class Object {
 public:
 	virtual void Draw() const = 0;
 	void DrawObject(Camera* camera) const;
-	Shader* shader_;
+	Shader * shader_;
 	Transform transform_;
 	glm::mat4 model_;
+	static Shader * default_shader_;
 };
 #endif

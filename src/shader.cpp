@@ -2,6 +2,8 @@
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
 {
+    std::cout << "trying for a shader" << std::endl;
+
     std::string vertexCode;
     std::string fragmentCode;
     std::ifstream vShaderFile;

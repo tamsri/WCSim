@@ -1,13 +1,14 @@
 #include "ray.hpp"
 
 #include <iostream>
+#include <string>
 
 #include "glad/glad.h"
 #include "glfw/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
 
-#include "shader.hpp"
 #include "transform.hpp"
+
 
 Ray::Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader)
 {
@@ -22,6 +23,21 @@ Ray::Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader)
 
 	model_ = glm::mat4(1.0f);
 }
+
+
+Ray::Ray(glm::vec3 origin, glm::vec3 direction) {
+	// Ray - Tracer
+	origin_ = origin;
+	direction_ = direction;
+	// Visualizer
+	transform_.position = glm::vec3(0.0f);
+	transform_.scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	transform_.rotation = glm::vec3(0.0f);
+	shader_ = nullptr; /// TODO: implement to global shader
+
+	model_ = glm::mat4(1.0f);
+}
+
 
 glm::vec3 Ray::GetOrigin() const
 {
