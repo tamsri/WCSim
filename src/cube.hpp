@@ -14,6 +14,8 @@ class Shader;
 class Cube : public Object {
 public:
 	Cube(Transform transform, Shader * shader);
+	Cube(Transform transform);
+
 	virtual void Draw() const;
 private:
 	unsigned int vao_, vbo_, ebo_;

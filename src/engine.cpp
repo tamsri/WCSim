@@ -78,7 +78,7 @@ void Engine::InitalizeWindowController()
 
 void Engine::LoadRayTracer()
 {
-	ray_tracer_ = new RayTracer(map_, default_shader_);
+	ray_tracer_ = new RayTracer(map_);
 }
 
 void Engine::LoadComponents()
