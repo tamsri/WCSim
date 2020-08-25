@@ -38,9 +38,10 @@ public:
 	bool IsOutdoor(glm::vec3 start_point) const;
 	
 	// Reflection
-	void ScanHit(glm::vec3 position);
-	bool IsReflected(glm::vec3 start_point, glm::vec3 end_point, std::vector<glm::vec3> & reflected_points) const;
-	glm::vec3 ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 point) const;
+	void ScanHit(Point * position);
+	bool IsReflected(Point * start_point, Point * end_point, std::vector<glm::vec3> & reflected_points);
+	
+	glm::vec3 ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 point) ;
 
 	// Diffraction
 	bool IsKnifeEdgeDiffraction(glm::vec3 start_point, glm::vec3 end_point, std::vector<glm::vec3> & edges_points);
@@ -54,8 +55,11 @@ public:
 
 
 
-	point_map points_; // may implement kb tree later
+	point_map points_; // map of the points dict of <glm::vec3, Point*>
+	Point * InitializePoint(glm::vec3 initialized_point); // initialize the point and scan
+
 	std::vector<Record*> records_; // all records being made (delete later)
+	Record * direct_record_; // direct pointer for LOS (save space)
 	PolygonMesh * map_;
 };
 #endif // !RAY_TRACER_H

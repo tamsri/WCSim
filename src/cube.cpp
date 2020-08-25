@@ -5,6 +5,7 @@
 
 #include "transform.hpp"
 
+
 Cube::Cube(Transform transform, Shader* shader)
 {
 

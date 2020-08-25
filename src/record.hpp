@@ -8,15 +8,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
 #include <unordered_map>
-
-
-
-
+#include <map>
 
 class Triangle;
-
-
-
 
 enum RecordType : int {
 	kDirect = 0,
@@ -33,13 +27,14 @@ struct Record {
 };
 
 struct Point {
-	Point();
 	Point(glm::vec3 point_position);
 	glm::vec3 position;
 
-	std::vector <Triangle*> hit_triangles;
-	std::unordered_map <Point *, std::vector<Record* >> neighbor_record;
-};
+	std::map<Triangle*, bool> hit_triangles;
 
+	std::unordered_map <Point*, std::vector<Record *>> neighbour_record;
+
+};
 typedef std::unordered_map<glm::vec3, Point*> point_map;
+
 #endif // !RECORD_H_

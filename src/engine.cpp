@@ -257,7 +257,7 @@ void Engine::MousePosition(double xpos, double ypos)
 void Engine::MouseScroll(double xoffset, double yoffset)
 {
 	/// Implement later
-	std::cout << "scroll : (" <<xoffset << ", " << yoffset << ")." << std::endl;
+	//std::cout << "scroll : (" <<xoffset << ", " << yoffset << ")." << std::endl;
 	main_camera_->camera_move_speed_ += yoffset;
 }
 

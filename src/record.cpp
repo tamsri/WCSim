@@ -1,11 +1,5 @@
 #include "record.hpp"
 
-/// not yet
-
-Point::Point()
-{
-	position = glm::vec3(0.0f, 0.0f, 0.0f);
-}
 
 Point::Point(glm::vec3 point_position):position(point_position)
 {
