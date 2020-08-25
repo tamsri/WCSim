@@ -31,7 +31,7 @@ public:
 	
 	
 	// Ray Tracing Part
-	void Trace(glm::vec3 start_position, glm::vec3 end_position);
+	void Trace(Point * start_position, Point * end_point);
 	
 	// Line of Sight
 	bool IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const;
@@ -56,7 +56,7 @@ public:
 
 
 	point_map points_; // map of the points dict of <glm::vec3, Point*>
-	Point * InitializePoint(glm::vec3 initialized_point); // initialize the point and scan
+	Point * InitializeOrCallPoint(glm::vec3 initialized_point); // initialize the point and scan
 
 	std::vector<Record*> records_; // all records being made (delete later)
 	Record * direct_record_; // direct pointer for LOS (save space)

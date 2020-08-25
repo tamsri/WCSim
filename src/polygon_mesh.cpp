@@ -164,12 +164,10 @@ bool PolygonMesh::IsHit(Ray& ray, std::set<std::pair<float, Triangle*>> & hit_tr
     for (auto object : objects_) {
         Triangle* test_triangle = nullptr;
         if (object->IsHit(ray, temp_t, test_triangle)) {
-            std::cout << "got hit somme, eh?" << std::endl;
-
             hit_triangles.insert(std::pair{ temp_t, test_triangle });
         }
     }
-    std::cout << "hit triangles : " << hit_triangles.size() << std::endl;
+    //std::cout << "hit triangles : " << hit_triangles.size() << std::endl;
     if (hit_triangles.size() == 0) return false;
     return true;
 }
