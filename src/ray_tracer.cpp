@@ -3,6 +3,11 @@
 #include <iostream>
 #include <set>
 #include <utility>
+#include <chrono>
+#include <algorithm>
+#include <cmath>
+
+#include <glm/gtx/vector_angle.hpp>
 
 #include "object.hpp"
 #include "cube.hpp"
@@ -11,7 +16,6 @@
 #include "polygon_mesh.hpp"
 #include "shader.hpp"
 
-#include <chrono>
 
 #include "transform.hpp"
 
@@ -32,18 +36,20 @@ void RayTracer::Test()
 
     // LOS test
     // First test [+] works
-    glm::vec3 start_position = glm::vec3(-15.00f, 5.00f, 40.0f);
+    glm::vec3 start_position = glm::vec3(-15.00f, 10.00f, 40.0f);
     glm::vec3 end_position = glm::vec3(20.0f, 3.00F, 6.0f);
     glm::vec3 end_position_2 = glm::vec3(10.0f, 10.0f, 20.0f);
     Point* start_point = InitializeOrCallPoint(start_position);
     Point* end_point = InitializeOrCallPoint(end_position);
-    Point* end_point_2 = InitializeOrCallPoint(end_position_2);
+    //Point* end_point_2 = InitializeOrCallPoint(end_position_2);
     // Test the trace function
     //Trace(start_point, end_point);
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
     Trace(start_point, end_point);
     std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-    std::cout << "Ray Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()/1e3 << "ms.\n";
+    std::cout << "Ray Tracer took " 
+                << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()/1e3 << " ms.\n";
+    InitializeDrawPointsComponents(start_point, end_point);
     /*
     if (IsDirectHit(start_point, end_point)) {
         std::cout << "Yes, it's LOS" << std::endl;
@@ -189,7 +195,8 @@ void RayTracer::ScanHit(Point * point)
             auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
             trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
             auto new_direction = trans_direction * direction;
-            glm::vec3 i_direction = glm::vec3{ new_direction.x, new_direction.y, new_direction.z };
+            glm::vec3 i_direction = glm::vec3(new_direction);
+
             Ray * ray = new Ray ( point->position, i_direction );
             Triangle * hit_triangle = nullptr;
             float hit_distance; // doesnt do anything yet // maybe implement later. 
@@ -232,7 +239,7 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
         // Implement multiple knife-edge diffraction
         std::vector<glm::vec3> edges_points;
 
-        if (IsKnifeEdgeDiffraction(start_point->position, end_point->position, edges_points)) {
+        if (IsKnifeEdgeDiffraction(start_point, end_point, edges_points)) {
             // Record the diffraction points
         }
     }
@@ -261,12 +268,20 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
     
 }
 
-bool RayTracer::IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const
+void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_point)
+{
+    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.0f) });
+    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.0f) });
+    objects_.push_back(start_cube);
+    objects_.push_back(end_cube);
+}
+
+bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) const
 {
     // get direction from start point to end point
-    glm::vec3 origin = start_point;
-    glm::vec3 direction = glm::normalize(end_point - origin);
-    float start_to_end_distance = glm::distance(start_point, end_point);
+    glm::vec3 origin = start_position;
+    glm::vec3 direction = glm::normalize(end_position - origin);
+    float start_to_end_distance = glm::distance(start_position, end_position);
     Ray ray{ origin, direction };
     float distance = -1;
     // trace the ray on this direction 
@@ -404,8 +419,94 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 poi
     return  points + 2*t*n; // reverse average point from average point 
 }
 
-bool RayTracer::IsKnifeEdgeDiffraction(glm::vec3 start_point, glm::vec3 end_point, std::vector<glm::vec3>& edges_points)
+bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, std::vector<glm::vec3>& edges_points)
 {
+    float scan_precision = 0.1f;
+    
+    const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 start_position = start_point->position;
+    glm::vec3 end_position = end_point->position;
+    glm::vec3 start_end_direction = glm::normalize(end_position - start_position);
+    glm::vec3 end_start_direction = -start_end_direction;
+    // search area
+    float min_x = std::min(end_position.x , start_position.x );
+    float max_x = std::max(end_position.x , start_position.x );
+    float min_z = std::min(end_position.z , start_position.z );
+    float max_z = std::max( end_position.z , start_position.z);
+    //start_end_direction = glm::rotate(start_end_direction, glm::radians(20), glm::vec3(0.0f, 1.0f, 0.0f));
+    // debug 
+    /*Ray* start_ray = new Ray(start_position, start_end_direction);
+    start_ray->InitializeRay(5.0f);
+    Ray* end_ray = new Ray(end_position, end_start_direction);
+    end_ray->InitializeRay(5.0f);
+    objects_.push_back(start_ray);
+    objects_.push_back(end_ray);*/
+    
+    //Scan up from start_point until hit something out of range or no hit
+    glm::vec3 latest_hit_position;
+    float latest_hit_distance = -1.0f;
+    glm::vec3 latest_hit_direction;
+    glm::vec3 scan_direction;
+    float scan_hit_distance;
+
+    const glm::vec3 start_cross_direction = glm::cross(-up_direction, start_end_direction);
+    for (float current_angle = 0.0f; current_angle < 180.0f; current_angle += scan_precision) {
+        glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), start_cross_direction);
+        scan_direction = glm::normalize(glm::vec3(direction_trans * start_end_direction));
+        // if scan_direction is near almost equal to up_direction, then we stop scanning
+            //std::cout << " angle : " << glm::degrees(glm::angle(scan_direction, up_direction)) << std::endl;
+        if (glm::degrees(glm::angle(scan_direction, up_direction)) < 1.0f ) return false;
+
+        //glm::vec3 scan_direction = glm::vec3(0.0f, 1.0f, 0.0f);
+        Ray * scan_ray = new Ray(start_position, scan_direction); //implement to heap later
+
+        if (map_->IsHit(*scan_ray, scan_hit_distance)) {
+            latest_hit_position = start_position + scan_direction * scan_hit_distance;
+            //lastest_hit_position should be in between start_positon and end_position in xz plane
+            if (latest_hit_position.x < min_x || latest_hit_position.x > max_x || 
+                latest_hit_position.z < min_z || latest_hit_position.z > max_z ) {
+                //break;
+                std::cout << min_x << " < " << latest_hit_position.x <<" < " << max_x << std::endl ;
+                break;
+            }
+            //scan_ray->InitializeRay(scan_hit_distance);
+            //objects_.push_back(scan_ray);
+            latest_hit_distance = scan_hit_distance;
+            latest_hit_direction = scan_direction;
+        } else {
+            // delete scan_ray;
+            if (latest_hit_distance == -1.0f) return false; // doesn't hit anything since the first place
+            break;
+        }
+    }
+    
+    //float distance_to_obstacle_on_xz = cos();
+    glm::vec3 start_end_on_xz_direction = glm::normalize(glm::vec3(start_end_direction.x, 0.0f, start_end_direction.z));
+    double start_end_to_on_xz_angle = glm::angle(latest_hit_direction, start_end_on_xz_direction);
+    float distance_on_xz = latest_hit_distance * cos(start_end_to_on_xz_angle);
+;
+    double start_edge_angle = glm::angle(start_end_on_xz_direction, scan_direction);
+    float distance_to_edge = distance_on_xz /cos(start_edge_angle);
+    //std::cout << "distance : " << distance_to_edge << std::endl;
+    // calculate the start_edge_point after exit the obstables
+    glm::vec3 edge_from_start_position = start_position + scan_direction* distance_to_edge;
+    Ray* debug_ray = new Ray(start_position, scan_direction);
+    Cube* start_edge_point = new Cube({edge_from_start_position, glm::vec3(0.1f), glm::vec3(0.0f)});
+    debug_ray->InitializeRay(distance_to_edge);
+    objects_.push_back(debug_ray);
+    objects_.push_back(start_edge_point);
+    //Scan up from end_point until hit something out of range or no hit
+    glm::vec3 edge_from_end_position;
+
+
+
+
+
+    if (IsDirectHit(edge_from_start_position, edge_from_end_position)) {
+        edges_points.push_back(edge_from_start_position);
+        edges_points.push_back(edge_from_end_position);
+        return true;
+    }
     return false;
 }
 

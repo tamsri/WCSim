@@ -32,7 +32,7 @@ public:
 	
 	// Ray Tracing Part
 	void Trace(Point * start_position, Point * end_point);
-	
+	void InitializeDrawPointsComponents(Point * start_point, Point * end_point);
 	// Line of Sight
 	bool IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const;
 	bool IsOutdoor(glm::vec3 start_point) const;
@@ -44,7 +44,7 @@ public:
 	glm::vec3 ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 point) ;
 
 	// Diffraction
-	bool IsKnifeEdgeDiffraction(glm::vec3 start_point, glm::vec3 end_point, std::vector<glm::vec3> & edges_points);
+	bool IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, std::vector<glm::vec3> & edges_points);
 
 
 
