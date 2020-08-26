@@ -241,6 +241,29 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
 
         if (IsKnifeEdgeDiffraction(start_point, end_point, edges_points)) {
             // Record the diffraction points
+            //std::cout << "Found diff\n";
+            // Debug the diffraction points
+            /*glm::vec3 start_edge_position = NearestEdgeFromPoint(start_position, edges_points);
+            glm::vec3 end_edge_position = NearestEdgeFromPoint(end_position, edges_points);
+            
+            Cube* start_edge_point = new Cube(Transform{ start_edge_position , glm::vec3(0.2f), glm::vec3(0.0f) });
+            Cube* end_edge_point = new Cube(Transform{ end_edge_position , glm::vec3(0.2f), glm::vec3(0.0f) });
+            Ray* start_edge_ray = new Ray(start_position, glm::normalize(start_edge_position - start_position) );
+            start_edge_ray->InitializeRay(glm::distance(start_position, start_edge_position));
+            Ray* end_edge_ray = new Ray(end_position, glm::normalize(end_edge_position - end_position));
+            end_edge_ray->InitializeRay(glm::distance(end_position, end_edge_position));
+            Ray* edge_to_edge_ray = new Ray (start_edge_position, glm::normalize(end_edge_position - start_edge_position));
+            edge_to_edge_ray->InitializeRay(glm::distance(start_edge_position, end_edge_position));
+            objects_.push_back(start_edge_point);
+            objects_.push_back(end_edge_point);
+            objects_.push_back(start_edge_ray);
+            objects_.push_back(end_edge_ray);
+            objects_.push_back(edge_to_edge_ray);*/
+
+            Record* saving_record = new Record(RecordType::kEdgeDiffraction, edges_points);
+            records_.push_back(saving_record);
+            start_point->neighbour_record[end_point].push_back(saving_record);
+            end_point->neighbour_record[start_point].push_back(saving_record);
         }
     }
 
@@ -274,6 +297,56 @@ void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_po
     Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.3f, 0.3f, 0.3f), glm::vec3(0.0f) });
     objects_.push_back(start_cube);
     objects_.push_back(end_cube);
+    const glm::vec3 start_position = start_point->position;
+    const glm::vec3 end_position = end_point->position;
+
+    auto records = start_point->neighbour_record[end_point];
+    for (auto record : records) {
+        switch (record->type) {
+        case RecordType::kDirect: {
+            Ray* direct_ray = new Ray(start_position, glm::normalize(end_position - start_position));
+            direct_ray->InitializeRay(glm::distance(start_position, end_position));
+            objects_.push_back(direct_ray);
+        }
+            break;
+        case RecordType::kReflect: {
+            for (auto reflected_position : record->data) {
+                Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
+                Ray* start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
+                start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
+                Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
+                point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
+
+                objects_.push_back(reflected_point);
+                objects_.push_back(start_to_point_ray);
+                objects_.push_back(point_to_end_ray);
+            }
+        }
+            break;
+        case RecordType::kEdgeDiffraction: {
+            auto edges_points = record->data;
+            glm::vec3 start_edge_position = NearestEdgeFromPoint(start_position, edges_points);
+            glm::vec3 end_edge_position = NearestEdgeFromPoint(end_position, edges_points);
+
+            Cube* start_edge_point = new Cube(Transform{ start_edge_position , glm::vec3(0.1f), glm::vec3(0.0f) });
+            Cube* end_edge_point = new Cube(Transform{ end_edge_position , glm::vec3(0.1f), glm::vec3(0.0f) });
+            Ray* start_edge_ray = new Ray(start_position, glm::normalize(start_edge_position - start_position));
+            start_edge_ray->InitializeRay(glm::distance(start_position, start_edge_position));
+            Ray* end_edge_ray = new Ray(end_position, glm::normalize(end_edge_position - end_position));
+            end_edge_ray->InitializeRay(glm::distance(end_position, end_edge_position));
+            Ray* edge_to_edge_ray = new Ray(start_edge_position, glm::normalize(end_edge_position - start_edge_position));
+            edge_to_edge_ray->InitializeRay(glm::distance(start_edge_position, end_edge_position));
+            objects_.push_back(start_edge_point);
+            objects_.push_back(end_edge_point);
+            objects_.push_back(start_edge_ray);
+            objects_.push_back(end_edge_ray);
+            objects_.push_back(edge_to_edge_ray);
+        
+        }
+            break;
+        }
+    }
+
 }
 
 bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) const
@@ -561,6 +634,17 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
         return true;
     }
     return false;
+}
+
+glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> edges_points)
+{
+    std::map<float, glm::vec3> distance_from_point;
+    for (auto edge_point : edges_points) { // implemenet to function
+        glm::vec3 point_positon_on_xz = glm::vec3(point_position.x, 0.0f, point_position.z);
+        glm::vec3 edge_point_on_xz = glm::vec3(edge_point.x, 0.0f, edge_point.z);
+        distance_from_point[glm::distance(edge_point_on_xz, point_positon_on_xz)] = edge_point;
+    }
+    return glm::vec3(distance_from_point.begin()->second);
 }
 
 void RayTracer::DrawObjects(Camera * main_camera) const

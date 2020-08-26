@@ -45,7 +45,7 @@ public:
 
 	// Diffraction
 	bool IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, std::vector<glm::vec3> & edges_points);
-
+	glm::vec3 NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> edges_points );
 
 
 	void DrawObjects(Camera * main_camera) const;

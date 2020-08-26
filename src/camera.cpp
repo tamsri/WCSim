@@ -64,11 +64,11 @@ void Camera::Rotate(const CameraRotation camera_rotation, float delta_time)
 void Camera::Reset()
 {
 	fov_ = 45.0f;
-	camera_move_speed_ = 10.0f;
+	camera_move_speed_ = 50.0f;
 	camera_rotate_speed_ = 100.0f;
 	yaw_ = -90.0f;
 	pitch_ = -10.0f;
-	position_ = glm::vec3(0.0f, 2.0f, 5.0f);
+	position_ = glm::vec3(0.0f, 10.0f, 100.0f);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0f);
 	UpdateRotation();
 	UpdateView();
