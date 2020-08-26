@@ -31,8 +31,9 @@ public:
 	
 	
 	// Ray Tracing Part
-	void Trace(Point * start_position, Point * end_point);
+	void Trace(Point * start_point, Point * end_point);
 	void InitializeDrawPointsComponents(Point * start_point, Point * end_point);
+	bool CalculatePathLoss(Point* start_point, Point* end_point, float & attenuation_in_dB, float frequency_in_GHz);
 	// Line of Sight
 	bool IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const;
 	bool IsOutdoor(glm::vec3 start_point) const;

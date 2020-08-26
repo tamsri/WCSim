@@ -36,7 +36,7 @@ void RayTracer::Test()
 
     // LOS test
     // First test [+] works
-    glm::vec3 start_position = glm::vec3(-15.00f, 10.00f, 40.0f);
+    glm::vec3 start_position = glm::vec3(-15.00f, 5.00f, 40.0f);
     glm::vec3 end_position = glm::vec3(20.0f, 3.00F, 6.0f);
     glm::vec3 end_position_2 = glm::vec3(10.0f, 10.0f, 20.0f);
     Point* start_point = InitializeOrCallPoint(start_position);
@@ -186,7 +186,45 @@ void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_po
             break;
         }
     }
+}
 
+bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& total_attenuation_in_dB, float frequency_in_GHz)
+{
+
+    const glm::vec3 start_position = start_point->position;
+    const glm::vec3 end_position = end_point->position;
+    auto records = start_point->neighbour_record[end_point];
+    if (records.size() == 0) return false;
+
+    const float c = 3e8;
+    const float frequency = frequency_in_GHz*1e9;
+    total_attenuation_in_dB = 0.0f;
+    const float pi = atan(1.0f) * 4;
+    const float conduct = 0.8f;
+    for (auto record : records) {
+        switch (record->type) {
+        case RecordType::kDirect: {
+            const float distance = glm::distance(start_position, end_position);
+            total_attenuation_in_dB += pow(4*pi*distance*frequency/c, 2) ; // TODO: calculation speed
+        }
+        break;
+        case RecordType::kReflect: {
+            for (auto point : record->data) {
+                float d1 = glm::distance(point, start_position);
+                float d2 = glm::distance(point, end_position);
+                total_attenuation_in_dB += pow(4*pi*(d1+d2)*frequency/(conduct), 2);
+            }
+        }
+        break;
+        case RecordType::kEdgeDiffraction: {
+
+
+        }
+        break;
+        }
+    }
+
+    return true;
 }
 
 bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) const
