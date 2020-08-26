@@ -50,119 +50,6 @@ void RayTracer::Test()
     std::cout << "Ray Tracer took " 
                 << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()/1e3 << " ms.\n";
     InitializeDrawPointsComponents(start_point, end_point);
-    /*
-    if (IsDirectHit(start_point, end_point)) {
-        std::cout << "Yes, it's LOS" << std::endl;
-        Ray* ray = new Ray(start_point, glm::normalize(end_point - start_point));
-        ray->InitializeRay(glm::distance(end_point, start_point));
-        objects_.push_back(ray);
-    }
-    else {
-        std::cout << "No, it's NLOS" << std::endl;
-        // find edge
-    
-    }*/
-
-    //
-    //std::vector<Triangle*> matched_triangles;
-    //std::map<Triangle*, bool> checker;
-    //for (auto const& [key, value] : first_voxel.possible_hit_triangles) {
-    //    if (second_voxel.possible_hit_triangles[key]) matched_triangles.push_back(key);
-    //};
-
-    ///*std::cout << "first hit triangles: " << first_voxel.possible_hit_triangles.size() << std::endl;
-    //std::cout << "first hit triangles: " << second_voxel.possible_hit_triangles.size() << std::endl;
-    //std::cout << "matched triangles : " << matched_triangles.size() << std::endl;*/
-    //
-    //glm::vec3 check_position = first_voxel.position_;
-    //std::cout << "testing reflection" << std::endl;
-    //std::cout << "check position: " << check_position.x << ", " << check_position.y << ", " << check_position.z << std::endl;
-    //Cube* start_cube = new Cube(Transform{ start_point, glm::vec3(2.0f, .5f, .5f), glm::vec3(0.0f) });
-    //Cube* end_cube = new Cube(Transform{ end_point, glm::vec3(2.0f, .5f, .5f), glm::vec3(0.0f) });
-    //objects_.push_back(start_cube);
-    //objects_.push_back(end_cube);
-
-
-
-    //for (unsigned int i = 0; i < matched_triangles.size(); ++i) {
-    //    /*std::cout << "triangle>> p1:"; // print triangles of matched triangle
-    //    std::cout << matched_triangles[i]->GetPoints()[0].x << "," << matched_triangles[i]->GetPoints()[0].y << "," << matched_triangles[i]->GetPoints()[0].z << " //p2: ";
-    //    std::cout << matched_triangles[i]->GetPoints()[1].x << "," << matched_triangles[i]->GetPoints()[1].y << "," << matched_triangles[i]->GetPoints()[1].z << " //p3: ";
-    //    std::cout << matched_triangles[i]->GetPoints()[2].x << "," << matched_triangles[i]->GetPoints()[2].y << "," << matched_triangles[i]->GetPoints()[2].z << std::endl;*/
-    //    Triangle * check_triangle = matched_triangles[i];
-    //    glm::vec3 reflect_position = ReflectedPointOnTriangle( check_triangle, check_position);
-
-    //    
-    //    Cube* reflect_cube = new Cube(Transform{ reflect_position, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) }, ray_shader_);
-    //    objects_.push_back(reflect_cube);
-    //    std::cout << "reflect position: " << reflect_position.x << ", " << reflect_position.y << ", " << reflect_position.z << std::endl;/**/
-    //    
-    //    /* reflected points */
-    //    glm::vec3 direction_to = glm::normalize(end_point - reflect_position);
-    //    float distance_reflect_to_end = glm::distance(reflect_position, end_point);
-    //    Ray * ray = new Ray( reflect_position, direction_to, ray_shader_ );
-    //    ray->InitializeRay(distance_reflect_to_end);
-    //    //objects_.push_back(ray);
-    //    float temp_t;
-    //    std::set<std::pair<float,Triangle*>> hit_triangles;
-    //    if (map_->IsHit(*ray, hit_triangles)) {
-    //        // hit at the back because we don't care if 
-    //        /*if (std::get<1>(*hit_triangles.end()) == check_triangle)
-    //        {
-    //            std::cout << "It's reflected!!!" << std::endl;
-    //        }
-    //        else std::cout << "It hit reflected on the object but got hit something else " << std::endl;*/
-    //        bool is_check_triangle_hit_by_reflect_point = false;
-    //        float distance_to_check_triangle_from_reflect = 0;
-    //        float is_hit_something_else = false;
-    //        for (auto& [distance, triangle] : hit_triangles) {
-    //            if (triangle == check_triangle) {
-    //                distance_to_check_triangle_from_reflect = distance;
-    //                is_check_triangle_hit_by_reflect_point = true;
-    //                break;
-    //            }
-    //        }
-    //        if (is_check_triangle_hit_by_reflect_point)
-    //        {
-    //            for (auto& [distance, triangle] : hit_triangles) {
-    //                if (distance > distance_to_check_triangle_from_reflect
-    //                    && distance < distance_reflect_to_end) {
-    //                    is_hit_something_else = true;
-    //                    std::cout << "Hit at distance: " << distance << std::endl;
-
-    //                }
-    //            }
-    //            if (is_hit_something_else) {
-    //                std::cout << "it hit something else, sorry. " << std::endl;
-    //            }
-    //            else {
-    //                // it reflected
-    //                std::cout << "it reflects" << std::endl;
-    //                glm::vec3 hit_position = reflect_position + direction_to * distance_to_check_triangle_from_reflect;
-
-    //                Cube * reflect_cube = new Cube(Transform{ hit_position, glm::vec3(.3f, .3f, .3f), glm::vec3(0.0f) }, ray_shader_);
-    //                objects_.push_back(reflect_cube);
-
-    //                Ray* from_reflect = new Ray(hit_position, direction_to, ray_shader_);
-    //                from_reflect->InitializeRay(glm::distance(hit_position, end_point));
-    //                objects_.push_back(from_reflect);
-
-    //                Ray* to_triangle = new Ray(start_point, glm::normalize(hit_position - start_point), ray_shader_);
-    //                to_triangle->InitializeRay(glm::distance(hit_position, start_point));
-    //                objects_.push_back(to_triangle);
-
-    //                // store only hit point!!
-    //            }
-    //        }
-    //        else {
-    //            std::cout << "N0!! it does't reflect anything" << std::endl;
-    //        }
-    //    }
-    //    else {
-    //        std::cout << "This ray doesn't hit anything" << std::endl;
-    //    }
-
-    //}
 
 }
 
@@ -210,56 +97,21 @@ void RayTracer::ScanHit(Point * point)
 
 void RayTracer::Trace(Point * start_point, Point * end_point)
 {
-
-    // check if already calculated
     if (!start_point->neighbour_record[end_point].empty()) return;
 
-
-    //
     glm::vec3 start_position = start_point->position;
     glm::vec3 end_position = end_point->position;
-
-    // Debug the point
-    // Cube* start_cube = new Cube(Transform{ start_position, glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) });
-    // Cube* end_cube = new Cube(Transform{ end_position, glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) });
-    // objects_.push_back(start_cube);
-    // objects_.push_back(end_cube);
 
     // find if LOS
     if (IsDirectHit(start_point->position, end_point->position)) {
         start_point->neighbour_record[end_point].push_back(direct_record_); //start_point has LOS with end_point
         end_point->neighbour_record[start_point].push_back(direct_record_); //end_point has LOS with start_point
-    
-        // Debug the direct path
-        //Ray * ray = new Ray(start_position, glm::normalize(end_position-start_position));
-        //ray->InitializeRay(glm::distance(start_position, end_position));
-        //objects_.push_back(ray);
     }
     else {
         // Implement multiple knife-edge diffraction
         std::vector<glm::vec3> edges_points;
 
         if (IsKnifeEdgeDiffraction(start_point, end_point, edges_points)) {
-            // Record the diffraction points
-            //std::cout << "Found diff\n";
-            // Debug the diffraction points
-            /*glm::vec3 start_edge_position = NearestEdgeFromPoint(start_position, edges_points);
-            glm::vec3 end_edge_position = NearestEdgeFromPoint(end_position, edges_points);
-            
-            Cube* start_edge_point = new Cube(Transform{ start_edge_position , glm::vec3(0.2f), glm::vec3(0.0f) });
-            Cube* end_edge_point = new Cube(Transform{ end_edge_position , glm::vec3(0.2f), glm::vec3(0.0f) });
-            Ray* start_edge_ray = new Ray(start_position, glm::normalize(start_edge_position - start_position) );
-            start_edge_ray->InitializeRay(glm::distance(start_position, start_edge_position));
-            Ray* end_edge_ray = new Ray(end_position, glm::normalize(end_edge_position - end_position));
-            end_edge_ray->InitializeRay(glm::distance(end_position, end_edge_position));
-            Ray* edge_to_edge_ray = new Ray (start_edge_position, glm::normalize(end_edge_position - start_edge_position));
-            edge_to_edge_ray->InitializeRay(glm::distance(start_edge_position, end_edge_position));
-            objects_.push_back(start_edge_point);
-            objects_.push_back(end_edge_point);
-            objects_.push_back(start_edge_ray);
-            objects_.push_back(end_edge_ray);
-            objects_.push_back(edge_to_edge_ray);*/
-
             Record* saving_record = new Record(RecordType::kEdgeDiffraction, edges_points);
             records_.push_back(saving_record);
             start_point->neighbour_record[end_point].push_back(saving_record);
@@ -275,18 +127,6 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
         records_.push_back(saving_record);
         start_point->neighbour_record[end_point].push_back(saving_record);
         end_point->neighbour_record[start_point].push_back(saving_record);
-        // Debug the reflection
-        /*for (auto reflected_position : reflected_points) {
-            Cube * reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
-            Ray * start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
-            start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
-            Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
-            point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
-
-            objects_.push_back(reflected_point);
-            objects_.push_back(start_to_point_ray);
-            objects_.push_back(point_to_end_ray);
-        }*/
     }
     
 }
@@ -379,18 +219,14 @@ bool RayTracer::IsReflected(Point * start_point, Point * end_point, std::vector<
    
     // check the reflection points on matches triangles
     for (Triangle * matched_triangle : matched_triangles) {
-        // std::cout << "matched triangle: " << matched_triangle << std::endl;;
         // reflect one of the point on the triangle plane
         glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
-        // Debug reflect points
-        //    Cube* reflect_box = new Cube(Transform{ reflected_position, glm::vec3(.1f, .1f, .1f), glm::vec3(0.0f) });
-        //    objects_.push_back(reflect_box);
         // trace from the reflected point 
         glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
         float ref_to_end_distance = glm::distance(reflected_position, end_position);
-        Ray* ref_to_end_ray = new Ray(reflected_position, ref_to_end_direction);
+        Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
         std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
-        if (map_->IsHit(*ref_to_end_ray, hit_triangles)) {
+        if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
             //std::cout << "hit some triangles" << std::endl;
             // check if the reflect point hit the matched triangle;
             bool is_hit_matched_triangle = false;
@@ -402,47 +238,30 @@ bool RayTracer::IsReflected(Point * start_point, Point * end_point, std::vector<
                     is_hit_matched_triangle = true; 
                     distance_to_triangle = distance;
                 }
-                //if(distance_to_triangle > -1) std::cout << "ref_to_triangle: " << distance_to_triangle << "//hit the distance: " << distance << "//ref_to_end: " << ref_to_end_distance << std::endl;
                 if (is_hit_matched_triangle && distance < ref_to_end_distance && distance > distance_to_triangle) {
                     direct_hit = false;
-                    //std::cout << "doesn't reach point " << std::endl;
                     break;
                 }
             }
-            std::cout << std::endl;
             // check if the reflected point 
             if (direct_hit && is_hit_matched_triangle == true) {
                 glm::vec3 point_on_triangle = reflected_position + ref_to_end_direction * distance_to_triangle;
                 glm::vec3 start_to_triangle_direction = glm::normalize(point_on_triangle - start_position);
                 float start_to_triangle_distance = glm::distance(start_position, point_on_triangle);
-                Ray * ray_to_triangle = new Ray(start_position, start_to_triangle_direction);
+                Ray ray_to_triangle{ start_position, start_to_triangle_direction };
                 // scan if the start point hit something before the reflected point
                 float nearest_hit_distance = -1.0f;
-                if (map_->IsHit(*ray_to_triangle, nearest_hit_distance) &&
+                if (map_->IsHit(ray_to_triangle, nearest_hit_distance) &&
                     nearest_hit_distance < start_to_triangle_distance) {
                     continue; 
                 }
                 else {
-                    //Ray* triangle_to_end_ray = new Ray(end_position, -ref_to_end_direction);
-                    //triangle_to_end_ray->InitializeRay(glm::distance(end_position, point_on_triangle));
-                    //ray_to_triangle->InitializeRay(start_to_triangle_distance);
-                    //Cube* reflect_on_triangle_point = new Cube(Transform{ point_on_triangle , glm::vec3(0.1f, 0.1f, 0.1f), glm::vec3(0.0f) });
-                    //objects_.push_back(reflect_on_triangle_point);
-                    //objects_.push_back(triangle_to_end_ray);
-                    //objects_.push_back(ray_to_triangle);
-                    //std::cout << "nearest hit: " << nearest_hit_distance << ", start_to_tri " << start_to_triangle_distance << std::endl;
                     reflected_points.push_back(point_on_triangle);
-                    //store the reflect point on the triangle
                 };
                 
-                // TODO: delete ray_to_triangle after checking
-                delete ray_to_triangle;
-                // store the reflection point
             }
         }
-        delete ref_to_end_ray;
     }
-   
     if (reflected_points.size() == 0) return false;
     return true;
 }
@@ -460,34 +279,15 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 poi
     glm::vec3 p_0 = triangle->GetPoints()[0];
     glm::vec3 p_1 = triangle->GetPoints()[1];
     glm::vec3 p_2 = triangle->GetPoints()[2];
-    /*Cube* check_tr_1 = new Cube(Transform{ glm::vec3{p_0.x,p_0.y,p_0.z}, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) });
-    Cube* check_tr_2 = new Cube(Transform{ glm::vec3{p_1.x,p_1.y,p_1.z}, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) });
-    Cube* check_tr_3 = new Cube(Transform{ glm::vec3{p_2.x,p_2.y,p_2.z}, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) });
-    objects_.push_back(check_tr_1);
-    objects_.push_back(check_tr_2);
-    objects_.push_back(check_tr_3); */ // display the corner of hit triangles.
 
-    //glm::vec3 p_01 = glm::normalize(p_1 - p_0);
-    //glm::vec3 p_02 = glm::normalize(p_2 - p_0);
-    //std::cout << "points" << std::endl;
-    //std::cout << "p01: " << p_01.x << ", " << p_01.y << ", " << p_01.z << std::endl;
-    //std::cout << "p02: " << p_02.x << ", " << p_02.y << ", " << p_02.z << std::endl;
-
-    //glm::vec3 n_c = glm::normalize(glm::cross(p_01, p_02));
-    //std::cout << "calcualted normal " << n_c.x << ", " << n_c.y << ", " << n_c.z << std::endl;
     glm::vec3 n = triangle->GetNormal();
-    //std::cout << "stored normal: " << n.x << ", " << n.y << ", " << n.z << std::endl; /// todo: implemenet to not calcualte the normal as the obj already did it
-    //n = n_c;
 
     float b = (n.x * p_1.x) + (n.y * p_1.y) + (n.z * p_1.z);
-    //std::cout << "plane: " << n.x << "x + " << n.y << "y + " << n.z << "z = " << b << std::endl;
     // 2. mirror the point from the plane
     float t = (b - (points.x*n.x + points.y*n.y + points.z*n.z )) / (n.x*n.x + n.y*n.y + n.z*n.z); //distance from point to plane
 
     /// DEBUG mirror point
     glm::vec3 m = glm::vec3 (points.x + t * n.x, points.y + t * n.y, points.z + t * n.z); // points on mirror
-    //Cube * reflect_cube = new Cube(Transform{ m, glm::vec3(.3f, .3f, .3f), glm::vec3(0.0f) }, ray_shader_);
-    //objects_.push_back(reflect_cube);
 
     return  points + 2*t*n; // reverse average point from average point 
 }
@@ -505,15 +305,7 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
     const float min_x = std::min(end_position.x , start_position.x );
     const float max_x = std::max(end_position.x , start_position.x );
     const float min_z = std::min(end_position.z , start_position.z );
-    const float max_z = std::max( end_position.z , start_position.z);
-    // debug 
-    /*Ray* start_ray = new Ray(start_position, start_end_direction);
-    start_ray->InitializeRay(5.0f);
-    Ray* end_ray = new Ray(end_position, end_start_direction);
-    end_ray->InitializeRay(5.0f);
-    objects_.push_back(start_ray);
-    objects_.push_back(end_ray);*/
-    
+    const float max_z = std::max( end_position.z , start_position.z);    
 
     /*---------- START START-POINT SCANNING ----------*/
     //Scan up from start_point until hit something out of range or no hit
@@ -528,7 +320,6 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
         glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), start_cross_direction);
         scan_direction = glm::normalize(glm::vec3(direction_trans * start_end_direction));
         // if scan_direction is near almost equal to up_direction, then we stop scanning
-            //std::cout << " angle : " << glm::degrees(glm::angle(scan_direction, up_direction)) << std::endl;
         if (glm::degrees(glm::angle(scan_direction, up_direction)) < 1.0f ) return false;
 
         //glm::vec3 scan_direction = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -543,8 +334,6 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
                 std::cout << min_x << " < " << latest_hit_position.x <<" < " << max_x << std::endl ;
                 break;
             }
-            //scan_ray->InitializeRay(scan_hit_distance);
-            //objects_.push_back(scan_ray);
             latest_hit_distance = scan_hit_distance;
             latest_hit_direction = scan_direction;
         } else {
@@ -565,12 +354,6 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
     // calculate the start_edge_point after exit the obstables
     glm::vec3 edge_from_start_position = start_position + scan_direction * distance_to_edge;
     
-    // Debug
-    /*Ray* debug_ray = new Ray(start_position, scan_direction);
-    Cube* start_edge_point = new Cube({edge_from_start_position, glm::vec3(scan_precision), glm::vec3(0.0f)});
-    debug_ray->InitializeRay(distance_to_edge);
-    objects_.push_back(debug_ray);
-    objects_.push_back(start_edge_point);*/
     /*---------- END START POINT SCANNING ----------*/
 
     
@@ -583,7 +366,6 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
         glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), end_cross_direction);
         scan_direction = glm::normalize(glm::vec3(direction_trans * end_start_direction));
         // if scan_direction is near almost equal to up_direction, then we stop scanning
-            //std::cout << " angle : " << glm::degrees(glm::angle(scan_direction, up_direction)) << std::endl;
         if (glm::degrees(glm::angle(scan_direction, up_direction)) < 1.0f) return false;
 
         //glm::vec3 scan_direction = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -594,16 +376,12 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
             //lastest_hit_position should be in between start_positon and end_position in xz plane
             if (latest_hit_position.x < min_x || latest_hit_position.x > max_x ||
                 latest_hit_position.z < min_z || latest_hit_position.z > max_z) {
-                //std::cout << min_x << " < " << latest_hit_position.x << " < " << max_x << std::endl;
                 break;
             }
-            //scan_ray->InitializeRay(scan_hit_distance);
-            //objects_.push_back(scan_ray);
             latest_hit_distance = scan_hit_distance;
             latest_hit_direction = scan_direction;
         }
         else {
-            // delete scan_ray;
             if (latest_hit_distance == -1.0f) return false; // doesn't hit anything since the first place
             break;
         }
@@ -616,16 +394,9 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
     
     double end_edge_angle = glm::angle(end_start_on_xz_direction, scan_direction);
     float distance_to_end_edge = end_distance_on_xz / cos(end_edge_angle);
-    //std::cout << "distance : " << distance_to_edge << std::endl;
     // calculate the start_edge_point after exit the obstables
     glm::vec3 edge_from_end_position = end_position + scan_direction * distance_to_end_edge;
 
-    // Debug
-    /*Ray* debug_end_ray = new Ray(end_position, scan_direction);
-    Cube* end_edge_point = new Cube({ edge_from_end_position, glm::vec3(scan_precision), glm::vec3(0.0f) });
-    debug_end_ray->InitializeRay(distance_to_end_edge);
-    objects_.push_back(debug_end_ray);
-    objects_.push_back(end_edge_point);*/
     /*---------- END END-POINT SCANNING ----------*/
 
     if (IsDirectHit(edge_from_start_position, edge_from_end_position)) {
