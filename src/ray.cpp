@@ -33,8 +33,9 @@ Ray::Ray(glm::vec3 origin, glm::vec3 direction) {
 	transform_.position = glm::vec3(0.0f);
 	transform_.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	transform_.rotation = glm::vec3(0.0f);
-	shader_ = nullptr; /// TODO: implement to global shader
+	shader_ = ray_shader_; /// TODO: implement to global shader
 
+	color_ = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 	model_ = glm::mat4(1.0f);
 }
 

@@ -15,6 +15,8 @@ public:
 	Shader * shader_;
 	Transform transform_;
 	glm::mat4 model_;
+	glm::vec4 color_;
 	static Shader * default_shader_;
+	static Shader * ray_shader_;
 };
 #endif

@@ -4,7 +4,7 @@
 #include "shader.hpp"
 
 Shader* Object::default_shader_;
-
+Shader* Object::ray_shader_;
 
 void Object::DrawObject(Camera* camera) const
 {
@@ -20,6 +20,7 @@ void Object::DrawObject(Camera* camera) const
 		shader_->SetMat4("projection", camera->projection_);
 		shader_->SetMat4("view", camera->view_);
 		shader_->SetMat4("model", model_);
+		shader_->SetVec4("input_color", color_);
 	}
 	Draw();
 }

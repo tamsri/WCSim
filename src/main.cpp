@@ -14,6 +14,7 @@ int main(){
     engine->Trace();
 
     window->Run();
-
+    delete window;
+    delete engine;
     return 0;
 }

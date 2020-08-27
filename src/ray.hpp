@@ -11,6 +11,8 @@ public:
 	Ray(glm::vec3 origin, glm::vec3 direction);
 	Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader);
 
+	void SetRayColor(glm::vec4 color);
+
 	glm::vec3 GetOrigin() const;
 	glm::vec3 GetDirection() const;
 	glm::vec3 PointAtLength(float length) const;
@@ -21,7 +23,6 @@ public:
 private:
 	glm::vec3 origin_;
 	glm::vec3 direction_;
-
 	//visualisation
 	unsigned int vao_, vbo_;
 

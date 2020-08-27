@@ -94,7 +94,7 @@ void Engine::LoadComponents()
 void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
-	map_ = new PolygonMesh("../assets/obj/map-test.obj", default_shader_);
+	map_ = new PolygonMesh("../assets/obj/new2.obj", default_shader_);
 	Cube * test_cube_1 = new Cube(Transform{ glm::vec3(10.0f, 10.0f, 2.0f), glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) }, default_shader_);
 	Cube * test_cube_2 = new Cube(Transform{ glm::vec3(-10.0f, 5.0f, 10.0f), glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) }, default_shader_);
 
@@ -120,6 +120,7 @@ void Engine::LoadShaders()
 	std::cout << "Engine:Loading shaders" << std::endl;
 	default_shader_ = new Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
 	Object::default_shader_ = new Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
+	Object::ray_shader_ = new Shader("../src/shaders/ray.vert", "../src/shaders/ray.frag");
 }
 
 void Engine::LoadTexture()

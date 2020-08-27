@@ -37,21 +37,32 @@ void RayTracer::Test()
 
     // LOS test
     // First test [+] works
-    glm::vec3 start_position = glm::vec3(-15.00f, 5.00f, 40.0f);
-    glm::vec3 end_position = glm::vec3(20.0f, 10.00F, 6.0f);
-    glm::vec3 end_position_2 = glm::vec3(10.0f, 10.0f, 20.0f);
+    glm::vec3 start_position = glm::vec3(50.00f, 2.00f, 90.0f);
+    glm::vec3 end_position = glm::vec3(40.0f, 5.00F, 6.0f);
+    std::vector<glm::vec3> positions = {
+         glm::vec3(40.0f, 5.00F, 6.0f),
+         glm::vec3(40.0f, 5.00F, 6.0f),
+         glm::vec3(40.0f, 5.00F, 6.0f),
+         glm::vec3(40.0f, 5.00F, 6.0f),
+         glm::vec3(40.0f, 5.00F, 6.0f),
+    };
+    
     Point* start_point = InitializeOrCallPoint(start_position);
-    Point* end_point = InitializeOrCallPoint(end_position);
+    Point* end_point_1 = InitializeOrCallPoint(end_position);
+    Point* end_point_2 = InitializeOrCallPoint(end_position);
+    Point* end_point_3 = InitializeOrCallPoint(end_position);
+    Point* end_point_4 = InitializeOrCallPoint(end_position);
+
     //Point* end_point_2 = InitializeOrCallPoint(end_position_2);
     // Test the trace function
     //Trace(start_point, end_point);
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
-    Trace(start_point, end_point);
+    Trace(start_point, end_point_1);
     std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
     std::cout << "Ray Tracer took " 
                 << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count()/1e3 << " ms.\n";
-    InitializeDrawPointsComponents(start_point, end_point);
-
+    InitializeDrawPointsComponents(start_point, end_point_1);
+    
 }
 
 void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigned int height) 
@@ -123,7 +134,7 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
     // find possible reflections
     std::vector <glm::vec3> reflected_points;
     if (IsReflected(start_point, end_point, reflected_points)) {
-        //std::cout << "Reflected!!" << std::endl;
+        std::cout << "Reflected!!" << std::endl;
         Record* saving_record = new Record(RecordType::kReflect, reflected_points);
         records_.push_back(saving_record);
         start_point->neighbour_record[end_point].push_back(saving_record);
@@ -134,8 +145,8 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
 
 void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_point)
 {
-    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.3f, 1.0f, 0.3f), glm::vec3(0.0f) });
-    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.3f, 1.0f, 0.3f), glm::vec3(0.0f) });
+    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.5f, 5.0f, 0.3f), glm::vec3(0.0f) });
+    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, 5.0f, 0.3f), glm::vec3(0.0f) });
     objects_.push_back(start_cube);
     objects_.push_back(end_cube);
     const glm::vec3 start_position = start_point->position;
@@ -263,7 +274,9 @@ bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& t
         }
         break;
         case RecordType::kEdgeDiffraction: {
-
+            if (record->data.size() == 1) {
+                // Single Edge Diffraction Calculation
+            }
 
         }
         break;
