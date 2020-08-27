@@ -24,6 +24,11 @@ Ray::Ray(glm::vec3 origin, glm::vec3 direction, Shader * shader)
 	model_ = glm::mat4(1.0f);
 }
 
+void Ray::SetRayColor(glm::vec4 color)
+{
+	color_ = color;
+}
+
 
 Ray::Ray(glm::vec3 origin, glm::vec3 direction) {
 	// Ray - Tracer
