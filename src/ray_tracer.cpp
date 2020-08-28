@@ -41,7 +41,7 @@ void RayTracer::Test()
     glm::vec3 end_position = glm::vec3(40.0f, 5.00F, 6.0f);
     
     std::vector<Point*> points;
-    for (unsigned int i = 0; i < 1000; ++i) {
+    for (unsigned int i = 0; i < 100; ++i) {
         
         std::chrono::steady_clock::time_point start_init_time = std::chrono::steady_clock::now();
         Point * current_receiver = InitializeOrCallPoint(glm::vec3(rand()%200-100.0f, rand()%10+1.0f, rand() % 200 - 100.0f));
@@ -63,13 +63,13 @@ void RayTracer::Test()
         CalculatePathLoss(transmitter_point, current_receiver, total_attenuation_in_dB, freq);
         std::chrono::steady_clock::time_point end_cal_time = std::chrono::steady_clock::now();
 
-        /*std::cout << "total path loss : " << total_attenuation_in_dB << std::endl;
+        std::cout << "total path loss : " << total_attenuation_in_dB << std::endl;
         std::cout << "Receiver Number " << i << std::endl;
         std::cout << "Init Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_init_time - start_init_time).count() / 1e3 << " ms.\n";
         std::cout << "Ray Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_trace_time - start_trace_time).count() / 1e3 << " ms.\n";
         std::cout << "Initialize Draw took " << std::chrono::duration_cast<std::chrono::microseconds>(end_draw_time - start_draw_time).count() / 1e3 << " ms.\n";
         std::cout << "Calculation took " << std::chrono::duration_cast<std::chrono::microseconds>(end_cal_time - start_cal_time).count() << " us.\n";
-        std::cout << "-----------------" << std::endl;*/
+        std::cout << "-----------------" << std::endl;
         points.push_back(current_receiver);
     }
     //Point* end_point_2 = InitializeOrCallPoint(end_position_2);
@@ -201,7 +201,7 @@ void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_po
             std::stack<glm::vec3> edges_from_end;
             edges_from_end.push(end_position);
             std::cout << "edges: " << edges_points.size() << std::endl;
-            glm::vec4 color = (edges_points.size() == 5)? glm::vec4(1.00f, 0.00f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+            glm::vec4 color = (edges_points.size() >= 5)? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
             // separate the edges to each points
             while (!edges_points.empty()) {
                 edges_from_start.push(NearestEdgeFromPoint(edges_from_start.top(), edges_points));
@@ -451,13 +451,14 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
         if (!FindEdge(right_position, left_position, edge_from_right_position)) return false;
 
         if (IsDirectHit(edge_from_left_position, edge_from_right_position)) {
-            if (glm::distance(edge_from_left_position, edge_from_right_position) < 0.30f) {
-
+            if (glm::distance(edge_from_left_position, edge_from_right_position) < 0.5f) {
                 edges_points.push_back((edge_from_left_position + edge_from_right_position) / 2.0f);
+                CleanEdgePoints(edges_points);
                 return true;
             }
             edges_points.push_back(edge_from_left_position);
             edges_points.push_back(edge_from_right_position);
+            CleanEdgePoints(edges_points);
             return true;
         }
         // search more eges
@@ -465,6 +466,7 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
         right_position = edge_from_right_position;
         edges_points.push_back(edge_from_left_position);
         edges_points.push_back(edge_from_right_position);
+        CleanEdgePoints(edges_points);
     }
     return false;
 }
@@ -472,7 +474,7 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, s
 bool RayTracer::FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::vec3& edge_position)
 {
     const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
-    const float scan_precision = 0.1f;
+    const float scan_precision = 0.05f;
     glm::vec3 start_end_direction = glm::normalize(end_position - start_position);
     
     const float min_x = std::min(end_position.x, start_position.x);
@@ -491,7 +493,7 @@ bool RayTracer::FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::
         glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), start_cross_direction);
         scan_direction = glm::normalize(glm::vec3(direction_trans * start_end_direction));
         // if scan_direction is near almost equal to up_direction, then we stop scanning
-        if (glm::degrees(glm::angle(scan_direction, up_direction)) < 1.0f) return false;
+        if (glm::degrees(glm::angle(scan_direction, up_direction)) < .5f) return false;
 
         //glm::vec3 scan_direction = glm::vec3(0.0f, 1.0f, 0.0f);
         Ray scan_ray{ start_position, scan_direction }; //implement to heap later
@@ -537,6 +539,22 @@ glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<
     }
     edges_points.erase(std::remove(edges_points.begin(), edges_points.end(), distance_from_point.begin()->second), edges_points.end());
     return glm::vec3(distance_from_point.begin()->second);
+}
+
+void RayTracer::CleanEdgePoints(std::vector<glm::vec3>& edges_points)
+{
+    if (edges_points.size() == 1) return;
+
+    for (int i = edges_points.size()-1; i >=0; --i) 
+        for (int j = i - 1; j >= 0; --j) {
+            glm::vec3 i_edge = edges_points[i];
+            glm::vec3 & j_edge = edges_points[j];
+            if (glm::distance(i_edge, j_edge) <= .5f) { 
+                j_edge = (i_edge + j_edge) / 2.0f;
+                edges_points.pop_back();
+                break;
+            };
+        }
 }
 
 void RayTracer::DrawObjects(Camera * main_camera) const
