@@ -64,5 +64,6 @@ public:
 	std::vector<Record*> records_; // all records being made (delete later)
 	Record * direct_record_; // direct pointer for LOS (save space)
 	PolygonMesh * map_;
+
 };
 #endif // !RAY_TRACER_H

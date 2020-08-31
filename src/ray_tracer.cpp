@@ -45,6 +45,9 @@ void RayTracer::Test()
         
         std::chrono::steady_clock::time_point start_init_time = std::chrono::steady_clock::now();
         Point * current_receiver = InitializeOrCallPoint(glm::vec3(rand()%200-100.0f, rand()%10+1.0f, rand() % 200 - 100.0f));
+
+        //Point* current_receiver = InitializeOrCallPoint(glm::vec3(60.0f, 35.0f, -40.0f));
+
         std::chrono::steady_clock::time_point end_init_time = std::chrono::steady_clock::now();
 
         std::chrono::steady_clock::time_point start_trace_time = std::chrono::steady_clock::now();
@@ -64,6 +67,7 @@ void RayTracer::Test()
         std::chrono::steady_clock::time_point end_cal_time = std::chrono::steady_clock::now();
 
         std::cout << "total path loss : " << total_attenuation_in_dB << std::endl;
+        std::cout << "distance: " << glm::distance(current_receiver->position, transmitter_point->position) << std::endl;
         std::cout << "Receiver Number " << i << std::endl;
         std::cout << "Init Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_init_time - start_init_time).count() / 1e3 << " ms.\n";
         std::cout << "Ray Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_trace_time - start_trace_time).count() / 1e3 << " ms.\n";
@@ -159,8 +163,8 @@ void RayTracer::Trace(Point * start_point, Point * end_point)
 
 void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_point)
 {
-    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.5f, 5.0f, 0.3f), glm::vec3(0.0f) });
-    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, 5.0f, 0.3f), glm::vec3(0.0f) });
+    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
+    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
     objects_.push_back(start_cube);
     objects_.push_back(end_cube);
     const glm::vec3 start_position = start_point->position;
@@ -281,21 +285,33 @@ bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& t
     const float c = 3e8;
     const float frequency = frequency_in_GHz*1e9;
     const float wave_length = c / frequency;
-    total_attenuation_in_dB = 0.0f;
+    float total_attenuation_in_lin = 0.0f;
     const float pi = atan(1.0f) * 4;
-    const float conduct = 0.8f;
+    const float coff= 0.8f;
+    float direct_att_in_lin = 0.0f; 
+    float ref_att_in_lin = 0.0f;
     for (auto record : records) {
         switch (record->type) {
         case RecordType::kDirect: {
             const float distance = glm::distance(start_position, end_position);
-            total_attenuation_in_dB += pow(4*pi*distance*frequency/c, 2) ; // TODO: calculation speed
+            // todo : convert to dB
+            direct_att_in_lin = 1/pow(4*pi*distance*frequency/c, 2) ; // TODO: calculation speed
+            std::cout << "direct path loss in lin: " << direct_att_in_lin << std::endl;
+            std::cout << "direct path loss in dB: " << 10.0f*log10(direct_att_in_lin) << std::endl;
+
         }
         break;
         case RecordType::kReflect: {
             for (auto point : record->data) {
                 float d1 = glm::distance(point, start_position);
                 float d2 = glm::distance(point, end_position);
-                total_attenuation_in_dB += pow(4*pi*(d1+d2)*frequency/(conduct*c), 2);
+                // todo : convert to dB
+                ref_att_in_lin += 1/(pow(4*pi*(d1+d2)*frequency/(c), 2)/coff)*0.8f;
+                std::cout << "reflection position: " << point.x << ", " << point.y << ", " << point.z << std::endl;
+                std::cout << "d1: " << d1 << ", d2: " << d2 << std::endl;
+                std::cout << "reflect path loss in lin: " << ref_att_in_lin << std::endl;
+                std::cout << "reflect path loss in dB: " << 10.0f * log10(ref_att_in_lin) << std::endl;
+
             }
         }
         break;
@@ -315,11 +331,27 @@ bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& t
                 float h = sin(angle_1)*r1;
 
                 float v = sqrt(2.0f*(s1+s2)/(wave_length * r1 * r2))*h;
-                float diffraction_los = 6.0 + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
-                total_attenuation_in_dB += diffraction_los;
+                float diffraction_los = 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
+                std::cout << "diff in dB: " << diffraction_los << std::endl;
+                //total_attenuation_in_dB += diffraction_los;
             }
-            else {
-            
+            else if (record->data.size() == 2) {
+                glm::vec3 single_edge_point = record->data[0];
+                glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
+                glm::vec3 start_to_edge_direction = glm::normalize(single_edge_point - start_position);
+                glm::vec3 end_to_edge_direction = glm::normalize(single_edge_point - end_position);
+                for (unsigned int i = 0; i < 2; ++i) {
+                    float angle_1 = glm::angle(start_to_edge_direction, start_to_end_direction);
+                    float angle_2 = glm::angle(-end_to_edge_direction, start_to_end_direction);
+                    float r1 = glm::distance(start_position, single_edge_point);
+                    float r2 = glm::distance(end_position, single_edge_point);
+                    float s1 = r1 * cos(angle_1);
+                    float s2 = r2 * cos(angle_2);
+                    float h = sin(angle_1) * r1;
+
+                    float v = sqrt(2.0f * (s1 + s2) / (wave_length * r1 * r2)) * h;
+                
+                }
             
             }
 
@@ -327,7 +359,7 @@ bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& t
         break;
         }
     }
-
+    total_attenuation_in_dB = 10.0f*log10(direct_att_in_lin+0.8* ref_att_in_lin) ;
     return true;
 }
 
