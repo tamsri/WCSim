@@ -274,12 +274,12 @@ void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_po
     }
 }
 
-bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& total_attenuation_in_dB, float frequency_in_GHz)
+bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_point, float& total_attenuation_in_dB, float frequency_in_GHz)
 {
 
-    const glm::vec3 start_position = start_point->position;
-    const glm::vec3 end_position = end_point->position;
-    auto records = start_point->neighbour_record[end_point];
+    const glm::vec3 transmitter_position = transmitter_point->position;
+    const glm::vec3 receiver_position = receiver_point->position;
+    auto records = transmitter_point->neighbour_record[receiver_point];
     if (records.size() == 0) return false;
 
     const float c = 3e8;
@@ -288,71 +288,98 @@ bool RayTracer::CalculatePathLoss(Point* start_point, Point* end_point, float& t
     float total_attenuation_in_lin = 0.0f;
     const float pi = atan(1.0f) * 4;
     const float coff= 0.8f;
+
     float direct_att_in_lin = 0.0f; 
     float ref_att_in_lin = 0.0f;
     for (auto record : records) {
         switch (record->type) {
         case RecordType::kDirect: {
-            const float distance = glm::distance(start_position, end_position);
+            const float distance = glm::distance(transmitter_position, receiver_position);
             // todo : convert to dB
-            direct_att_in_lin = 1/pow(4*pi*distance*frequency/c, 2) ; // TODO: calculation speed
-            std::cout << "direct path loss in lin: " << direct_att_in_lin << std::endl;
-            std::cout << "direct path loss in dB: " << 10.0f*log10(direct_att_in_lin) << std::endl;
+            direct_att_in_lin = 1/pow(4*pi*distance*frequency/c, 2) ;
+            /*std::cout << "direct path loss in lin: " << direct_att_in_lin << std::endl;
+            std::cout << "direct path loss in dB: " << 10.0f*log10(direct_att_in_lin) << std::endl;*/
+            /// TODO: Calculate Transmitter Gain
 
         }
         break;
         case RecordType::kReflect: {
             for (auto point : record->data) {
-                float d1 = glm::distance(point, start_position);
-                float d2 = glm::distance(point, end_position);
+                float d1 = glm::distance(point, transmitter_position);
+                float d2 = glm::distance(point, receiver_position);
                 // todo : convert to dB
                 ref_att_in_lin += 1/(pow(4*pi*(d1+d2)*frequency/(c), 2)/coff)*0.8f;
-                std::cout << "reflection position: " << point.x << ", " << point.y << ", " << point.z << std::endl;
+                /*std::cout << "reflection position: " << point.x << ", " << point.y << ", " << point.z << std::endl;
                 std::cout << "d1: " << d1 << ", d2: " << d2 << std::endl;
                 std::cout << "reflect path loss in lin: " << ref_att_in_lin << std::endl;
-                std::cout << "reflect path loss in dB: " << 10.0f * log10(ref_att_in_lin) << std::endl;
-
+                std::cout << "reflect path loss in dB: " << 10.0f * log10(ref_att_in_lin) << std::endl;*/
+                /// TODO: Calculate Transmitter Gain
             }
         }
         break;
         case RecordType::kEdgeDiffraction: {
             if (record->data.size() == 1) {
                 // Single Edge Diffraction Calculation
-                glm::vec3 single_edge_point = record->data[0];
-                glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
-                glm::vec3 start_to_edge_direction = glm::normalize(single_edge_point - start_position);
-                glm::vec3 end_to_edge_direction = glm::normalize(single_edge_point - end_position);
-                float angle_1 = glm::angle(start_to_edge_direction, start_to_end_direction);
-                float angle_2 = glm::angle(-end_to_edge_direction, start_to_end_direction);
-                float r1 = glm::distance(start_position, single_edge_point);
-                float r2 = glm::distance(end_position, single_edge_point);
-                float s1 = r1 * cos(angle_1);
-                float s2 = r2 * cos(angle_2);
-                float h = sin(angle_1)*r1;
-
-                float v = sqrt(2.0f*(s1+s2)/(wave_length * r1 * r2))*h;
-                float diffraction_los = 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
-                std::cout << "diff in dB: " << diffraction_los << std::endl;
+                float diffraction_in_dB = CalculateSingleKnifeEdge(transmitter_position, record->data[0], receiver_position, frequency);
+                std::cout << "diff in dB: " << diffraction_in_dB << std::endl;
                 //total_attenuation_in_dB += diffraction_los;
             }
             else if (record->data.size() == 2) {
-                glm::vec3 single_edge_point = record->data[0];
-                glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
-                glm::vec3 start_to_edge_direction = glm::normalize(single_edge_point - start_position);
-                glm::vec3 end_to_edge_direction = glm::normalize(single_edge_point - end_position);
-                for (unsigned int i = 0; i < 2; ++i) {
-                    float angle_1 = glm::angle(start_to_edge_direction, start_to_end_direction);
-                    float angle_2 = glm::angle(-end_to_edge_direction, start_to_end_direction);
-                    float r1 = glm::distance(start_position, single_edge_point);
-                    float r2 = glm::distance(end_position, single_edge_point);
-                    float s1 = r1 * cos(angle_1);
-                    float s2 = r2 * cos(angle_2);
-                    float h = sin(angle_1) * r1;
+                // Double Edge Diffraction Calculation
+                float max_v = std::max(
+                                CalculateVOfEdge(transmitter_position, record->data[0], receiver_position, frequency),
+                                CalculateVOfEdge(transmitter_position, record->data[1], receiver_position, frequency));
+                float diffraction_in_dB = CalculateDiffractionByV(max_v);
+                std::cout << "diff 2 in dB: " << diffraction_in_dB << std::endl;
 
-                    float v = sqrt(2.0f * (s1 + s2) / (wave_length * r1 * r2)) * h;
-                
-                }
+            }
+            else if (record->data.size() == 3) {
+                std::vector<glm::vec3> edges = record->data;
+                glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
+                glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
+                glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
             
+                float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, receiver_position, frequency);
+                float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
+                float c3 = CalculateSingleKnifeEdge(transmitter_position, near_receiver_edge_position, receiver_position, frequency);
+                
+                std::pair<float, float> correction_cosines;
+                CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
+                float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
+                float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
+                float diffraction_in_dB = c2 + c1 + c3 - c_1_cap - c_2_cap;
+
+            }
+            else {
+                std::set<float> highest_v;
+                std::map<float, glm::vec3> edges_dict;
+                for (auto edge : record->data) {
+                    float temp_v = CalculateVOfEdge(transmitter_position, edge, receiver_position, frequency);
+                    edges_dict[temp_v] = edge;
+                    highest_v.insert(temp_v);
+                }
+                std::vector<glm::vec3> edges; int i = 0;
+                for (auto ritr = highest_v.rbegin(); ritr != highest_v.rend(); ++ritr) {
+                    edges.push_back(edges_dict[*ritr]);
+                    //std::cout << "v: " << *ritr << std::endl;
+                    if (i++ == 2) break;
+                }
+                //std::cout << "edges: " << edges[0].x << ", " << edges[0].y << ", " << edges[0].z << std::endl;
+                //std::cout << "edges: " << edges[1].x << ", " << edges[1].y << ", " << edges[1].z << std::endl;
+                //std::cout << "edges: " << edges[2].x << ", " << edges[2].y << ", " << edges[2].z << std::endl;
+                glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
+                glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
+                glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
+
+                float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, receiver_position, frequency);
+                float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
+                float c3 = CalculateSingleKnifeEdge(transmitter_position, near_receiver_edge_position, receiver_position, frequency);
+
+                std::pair<float, float> correction_cosines;
+                CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
+                float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
+                float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
+                float diffraction_in_dB = c2 + c1 + c3 - c_1_cap - c_2_cap;
             }
 
         }
@@ -589,6 +616,49 @@ void RayTracer::CleanEdgePoints(std::vector<glm::vec3>& edges_points)
         }
 }
 
+float RayTracer::CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency)
+{
+    float v = CalculateVOfEdge(start_position, edge_position, end_position, frequency);
+    return CalculateDiffractionByV(v);
+}
+
+float RayTracer::CalculateDiffractionByV(float v) {
+    return 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
+}
+float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency){
+    float wave_length = 3e8 / (frequency);
+
+    glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
+
+    glm::vec3 start_to_edge_direction = glm::normalize(edge_position - start_position);
+    glm::vec3 end_to_edge_direction = glm::normalize(edge_position - end_position);
+    float angle_1 = glm::angle(start_to_edge_direction, start_to_end_direction);
+    float angle_2 = glm::angle(-end_to_edge_direction, start_to_end_direction);
+    float r1 = glm::distance(start_position, end_position);
+    float r2 = glm::distance(end_position, edge_position);
+    float s1 = r1 * cos(angle_1);
+    float s2 = r2 * cos(angle_2);
+    float h = sin(angle_1) * r1;
+
+    return sqrt(2.0f * (s1 + s2) / (wave_length * r1 * r2)) * h;
+}
+void RayTracer::CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position, std::pair<float, float>& calculated_cosines)
+{
+    glm::vec3 p1 = start_position;
+    glm::vec3 p2 = NearestEdgeFromPoint(p1, edges);
+    glm::vec3 p3 = NearestEdgeFromPoint(p2, edges);
+    glm::vec3 p4 = NearestEdgeFromPoint(p3, edges);
+    glm::vec3 p5 = end_position;
+
+    float d1 = glm::distance(glm::vec2(p1.x, p1.z), glm::vec2(p2.x, p2.z));
+    float d2 = glm::distance(glm::vec2(p2.x, p2.z), glm::vec2(p3.x, p3.z));
+    float d3 = glm::distance(glm::vec2(p3.x, p3.z), glm::vec2(p4.x, p4.z));
+    float d4 = glm::distance(glm::vec2(p4.x, p4.z), glm::vec2(p5.x, p5.z));
+
+    calculated_cosines.first = sqrt((d1*(d3+d4))/((d1+d2)*(d2+d3+d4))) ;
+    calculated_cosines.second = sqrt((d4*(d1+d2))/((d3+d4)*(d1+d2+d3)));
+    return;
+}
 void RayTracer::DrawObjects(Camera * main_camera) const
 {
     for (auto & object : objects_) {

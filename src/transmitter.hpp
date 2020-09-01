@@ -11,7 +11,7 @@ class Ray;
 
 class Transmitter {
 public:
-	Transmitter(Transform transform, Shader * shader);
+	Transmitter(Transform transform);
 
 	void DrawRadiationPattern(Camera * camera);
 private:

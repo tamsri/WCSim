@@ -33,7 +33,7 @@ public:
 	// Ray Tracing Part
 	void Trace(Point * start_point, Point * end_point);
 	void InitializeDrawPointsComponents(Point * start_point, Point * end_point);
-	bool CalculatePathLoss(Point* start_point, Point* end_point, float & attenuation_in_dB, float frequency_in_GHz);
+	bool CalculatePathLoss(Point* transmitter_point, Point* receiver_point, float & attenuation_in_dB, float frequency_in_GHz);
 	// Line of Sight
 	bool IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const;
 	bool IsOutdoor(glm::vec3 start_point) const;
@@ -49,7 +49,10 @@ public:
 	bool FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 & edge_position);
 	glm::vec3 NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> & edges_points );
 	void CleanEdgePoints(std::vector<glm::vec3> & edges_points);
-
+	float CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency);
+	float CalculateDiffractionByV(float v);
+	float CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency);
+	void CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position, std::pair<float, float> & calculated_cosines);
 
 	void DrawObjects(Camera * main_camera) const;
 
