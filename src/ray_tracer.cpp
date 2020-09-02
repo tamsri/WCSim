@@ -124,7 +124,6 @@ void RayTracer::ScanHit(Point * point)
         }
 }
 
-
 void RayTracer::Trace(Point * start_point, Point * end_point)
 {
     if (!start_point->neighbour_record[end_point].empty()) return;

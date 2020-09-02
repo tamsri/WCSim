@@ -5,19 +5,30 @@
 #include "transform.hpp"
 
 class Point;
+class RayTracer;
+class Transmitter;
 
 class Receiver {
 
 public:
 
-	Receiver(Transform position);
+	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
 
-
-	glm::vec3 position_;
+private:
+	
+	Transform transform_;
 	glm::vec3 velocity_;
 
 	void Update();
-	Point * point;
+	void Move(glm::vec3 step);
+	// Visualization
 
+	// Calculation
+	float total_path_loss_dB;
+
+	// Ray Tracer
+	Point* current_point_;
+	RayTracer * ray_tracer_;
+	Transmitter* transmitter_;
 };
 #endif //!RECEIVER_H

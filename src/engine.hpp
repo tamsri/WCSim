@@ -39,7 +39,6 @@ class Engine{
         ~Engine();
         void AssignWindow(Window * window);
         void Reset();
-        void Destroy();
         // Visualization
         void InitalizeWindowController();
         void LoadComponents();
@@ -72,14 +71,18 @@ class Engine{
         Cube * test_cube_;
         Ray * test_ray_;
         std::vector<Ray*> rays_;
+
         Transmitter* transmitter_;
         std::vector<Receiver*> receivers_;
+
         std::vector<Object*> render_objects_;
         //unsigned int test_vao, test_vbo, test_ebo;
 
         float last_time_;
         void KeyActions();
+
         void KeyViewMode(float delta_time);
+        void KeyMoveMode(float delta_time);
         void MousePosition(double xpos, double ypos);
         void MouseScroll(double xoffset, double yoffset);
         void MouseBottonToggler(MouseBottons action);

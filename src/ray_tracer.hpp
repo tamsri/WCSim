@@ -17,6 +17,9 @@ class Triangle;
 class Shader;
 class Object;
 class Camera;
+class Transmitter;
+class Receiver;
+
 struct Record;
 struct Point;
  
@@ -57,6 +60,8 @@ public:
 	void DrawObjects(Camera * main_camera) const;
 
 	unsigned int width_, depth_, height_;
+	
+	// Visualization
 	std::vector<Object*> objects_;
 
 

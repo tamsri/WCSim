@@ -48,6 +48,7 @@ Engine::~Engine()
 {
 	//delete Ray::global_ray_shader_;
 	//delete Object::default_shader_;
+	delete window_;
 	delete main_camera_;
 	delete map_;
 }
@@ -190,8 +191,6 @@ void Engine::KeyActions()
 	last_time_ = current_time;
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		std::cout << "wow\n";
-
 		glfwSetWindowShouldClose(window, true);
 		return;
 	}
@@ -200,6 +199,8 @@ void Engine::KeyActions()
 	case kView:
 		KeyViewMode(delta_time);
 		break;
+	case kMoveObjects:
+		KeyMoveMode(delta_time);
 	}
 
 }
@@ -232,6 +233,19 @@ void Engine::KeyViewMode(float delta_time)
 		main_camera_->Rotate(CameraRotation::kPitch, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 		main_camera_->Rotate(CameraRotation::kPitch, -delta_time);
+
+	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+		engine_mode_ = EngineMode::kMoveObjects;
+}
+
+void Engine::KeyMoveMode(float delta_time)
+{
+	GLFWwindow* window = window_->GetGLFWWindow();
+	//std::cout << "Enter the receiver id: " << std::endl;
+	unsigned int id = 0;
+	//std::cin >> 
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+		engine_mode_ = EngineMode::kMoveObjects;
 }
 
 void Engine::MousePosition(double xpos, double ypos)
@@ -321,9 +335,4 @@ void Engine::Visualize()
 	}*/
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
 	ray_tracer_->DrawObjects(main_camera_);
-}
-
-void Engine::Destroy()
-{
-	delete window_;
 }
