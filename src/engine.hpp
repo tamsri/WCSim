@@ -18,6 +18,7 @@ class Object;
 class Transmitter;
 class RayTracer;
 class Receiver;
+class RadiationPattern;
 
 enum EngineMode : int {
     kView = 0,
@@ -56,7 +57,6 @@ class Engine{
         void TracePathFrom(glm::vec3 position);
         void Update();
 
-        
     private:
         // Engine Parameters
         unsigned int engine_id_;
@@ -72,8 +72,11 @@ class Engine{
         Ray * test_ray_;
         std::vector<Ray*> rays_;
 
+
         Transmitter* transmitter_;
-        std::vector<Receiver*> receivers_;
+        //std::vector<Receiver*> receivers_;
+        Receiver* test_receiver_;
+        RadiationPattern * pattern_;
 
         std::vector<Object*> render_objects_;
         //unsigned int test_vao, test_vbo, test_ebo;

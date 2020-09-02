@@ -9,12 +9,15 @@ class Camera;
 class Ray;
 class Point;
 class RadiationPattern;
+class RayTracer;
+class Object;
 
 class Transmitter {
 public:
-	Transmitter(Transform transform, float frequency);
+	Transmitter(Transform transform, float frequency, RayTracer * ray_tracer);
 
 	void DrawRadiationPattern(Camera * camera);
+	void AssignRadiationPattern(RadiationPattern* pattern);
 	float GetFrequency();
 	Point * GetPoint();
 private:
@@ -22,7 +25,10 @@ private:
 	float frequency_;
 	Transform transform_;
 	RadiationPattern * current_pattern;
+	RayTracer* ray_tracer_;
 	Point* current_point_;
-	std::vector<Ray * > rays_;
+	
+	// Visualization
+	std::vector<Ray* > rays_;
 };
 #endif

@@ -14,15 +14,12 @@ public:
 
 	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
 
-private:
-	
 	Transform transform_;
 	glm::vec3 velocity_;
 
+	// Visualization
 	void Update();
 	void Move(glm::vec3 step);
-	// Visualization
-
 	// Calculation
 	float total_path_loss_dB;
 

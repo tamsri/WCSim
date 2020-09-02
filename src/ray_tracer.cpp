@@ -41,7 +41,7 @@ void RayTracer::Test()
     glm::vec3 end_position = glm::vec3(40.0f, 5.00F, 6.0f);
     
     std::vector<Point*> points;
-    for (unsigned int i = 0; i < 100; ++i) {
+    for (unsigned int i = 0; i < 10; ++i) {
         
         std::chrono::steady_clock::time_point start_init_time = std::chrono::steady_clock::now();
         Point * current_receiver = InitializeOrCallPoint(glm::vec3(rand()%200-100.0f, rand()%10+1.0f, rand() % 200 - 100.0f));
@@ -289,7 +289,12 @@ bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_poin
     const float coff= 0.8f;
 
     float direct_att_in_lin = 0.0f; 
+    float direct_transmitter_gain = 0.0f;
     float ref_att_in_lin = 0.0f;
+    float ref_transmitter_gain = 0.0f;
+    float diffraction_in_dB = 0.0f;
+    float diff_transmitter_gain = 0.0f;
+
     for (auto record : records) {
         switch (record->type) {
         case RecordType::kDirect: {
@@ -319,7 +324,7 @@ bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_poin
         case RecordType::kEdgeDiffraction: {
             if (record->data.size() == 1) {
                 // Single Edge Diffraction Calculation
-                float diffraction_in_dB = CalculateSingleKnifeEdge(transmitter_position, record->data[0], receiver_position, frequency);
+                diffraction_in_dB = CalculateSingleKnifeEdge(transmitter_position, record->data[0], receiver_position, frequency);
                 std::cout << "diff in dB: " << diffraction_in_dB << std::endl;
                 //total_attenuation_in_dB += diffraction_los;
             }
@@ -328,7 +333,7 @@ bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_poin
                 float max_v = std::max(
                                 CalculateVOfEdge(transmitter_position, record->data[0], receiver_position, frequency),
                                 CalculateVOfEdge(transmitter_position, record->data[1], receiver_position, frequency));
-                float diffraction_in_dB = CalculateDiffractionByV(max_v);
+                diffraction_in_dB = CalculateDiffractionByV(max_v);
                 std::cout << "diff 2 in dB: " << diffraction_in_dB << std::endl;
 
             }
@@ -346,7 +351,7 @@ bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_poin
                 CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
                 float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
                 float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-                float diffraction_in_dB = c2 + c1 + c3 - c_1_cap - c_2_cap;
+                diffraction_in_dB = c2 + c1 + c3 - c_1_cap - c_2_cap;
 
             }
             else {
@@ -378,14 +383,17 @@ bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_poin
                 CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
                 float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
                 float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-                float diffraction_in_dB = c2 + c1 + c3 - c_1_cap - c_2_cap;
+                diffraction_in_dB = c2 + c1 + c3 - c_1_cap - c_2_cap;
             }
 
         }
         break;
         }
     }
-    total_attenuation_in_dB = 10.0f*log10(direct_att_in_lin+0.8* ref_att_in_lin) ;
+    std::cout << "direct_att_in_lin: " << direct_att_in_lin << std::endl;
+    std::cout << "ref_att_in_lin: " << ref_att_in_lin << std::endl;
+    std::cout << "diffraction_in_dB: " << diffraction_in_dB << std::endl;
+    total_attenuation_in_dB = 10.0f*log10(direct_att_in_lin+0.8f* ref_att_in_lin )  ;
     return true;
 }
 

@@ -19,4 +19,7 @@ void Receiver::Update()
 }
 void Receiver::Move(glm::vec3 step) {
 	transform_.position += step;
+	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
+	ray_tracer_->CalculatePathLoss(transmitter_->GetPoint(), current_point_, total_path_loss_dB, transmitter_->GetFrequency());
+
 }

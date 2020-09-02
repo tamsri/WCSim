@@ -15,11 +15,18 @@
 #include "polygon_mesh.hpp"
 #include "cube.hpp"
 #include "ray.hpp"
-#include "transmitter.hpp"
+
+
+
 
 #include "ray_tracer.hpp"
+#include "transmitter.hpp"
+#include "receiver.hpp"
+
+#include "radiation_pattern.hpp"
 
 #include "transform.hpp"
+
 
 unsigned int Engine::global_engine_id_ = 0;
 
@@ -79,7 +86,17 @@ void Engine::InitalizeWindowController()
 
 void Engine::LoadRayTracer()
 {
+	std::cout << "Loading Ray Tracer" << std::endl;
 	ray_tracer_ = new RayTracer(map_);
+	Transform traismitter_trans{glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.0f)};
+	transmitter_ = new Transmitter(traismitter_trans, 2.3e9, ray_tracer_);
+	
+	// todo: implement multiple radiation patterns
+	pattern_ = new RadiationPattern("C:/Users/supaw/Code/wisim/assets/pattern/pattern-1.txt");
+	// add pattern to transmitter
+	//transmitter_->AssignRadiationPattern(pattern_);
+	//Transform receiver_trans{ glm::vec3(0.0f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
+	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
 }
 
 void Engine::LoadComponents()
@@ -241,11 +258,18 @@ void Engine::KeyViewMode(float delta_time)
 void Engine::KeyMoveMode(float delta_time)
 {
 	GLFWwindow* window = window_->GetGLFWWindow();
-	//std::cout << "Enter the receiver id: " << std::endl;
-	unsigned int id = 0;
 	//std::cin >> 
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kMoveObjects;
+
+	//if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	//	test_receiver_->Move(glm::vec3(1.0, 0.0, 0.0f));
+	//if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	//	test_receiver_->Move(glm::vec3(0.0, 0.0, 1.0f));
+	//if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	//	test_receiver_->Move(glm::vec3(-1.0, 0.0, 0.0f));
+	//if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	//	test_receiver_->Move(glm::vec3(0.0, 0.0, -1.0f));
 }
 
 void Engine::MousePosition(double xpos, double ypos)
@@ -335,4 +359,5 @@ void Engine::Visualize()
 	}*/
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
 	ray_tracer_->DrawObjects(main_camera_);
+	transmitter_->DrawRadiationPattern(main_camera_);
 }
