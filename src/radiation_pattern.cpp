@@ -8,22 +8,16 @@ RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 	if (input_file_stream.is_open()) {
 		std::cout << "Reading Radiation Pattern file" << std::endl;
 		std::string line;
+		min_gain_ = 0.0f;
+		max_gain_ = 0.0f;
 		while(getline(input_file_stream, line)) {
 			if (line[0] == '#' || line[0] == '*')continue;
 			float theta, phi, total_gain;
 			float reeth, imeth, rephi, imphi, gth, gphi;
 			input_file_stream >> theta >> phi >> reeth >> imeth >> rephi >> imphi >> gth >> gphi >> total_gain;
 			pattern_[std::make_pair(theta, phi)] = total_gain;
-			/*std::cout  << theta << " " 
-						<< phi << " " 
-						/*<< reeth << " "
-				<< imeth << " "
-				<< rephi << " "
-				<< phi << " "
-				<< imphi << " "
-				<< gth << " "
-				<< gphi << " "*/
-			//	<< total_gain << std::endl;*/
+			if (total_gain < min_gain_) min_gain_ = total_gain;
+			if (total_gain > max_gain_) max_gain_ = total_gain;
 		}
 		std::cout << "Radiation Pattern Reading Completed." << std::endl;
 		input_file_stream.close();

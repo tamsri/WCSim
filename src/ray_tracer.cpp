@@ -27,7 +27,7 @@ RayTracer::RayTracer(PolygonMesh * map):map_(map)
     records_.push_back(direct_record_);
 
     // Initialize voxel spaces; ?
-    Test();
+    //Test();
     //InitializeVoxels(100, 100, 5);
 }
 

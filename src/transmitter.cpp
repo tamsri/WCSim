@@ -12,20 +12,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
-//transform_ = transform;
-//glm::mat4 trans;
-//const glm::vec4 direction = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-//for (int i = 0; i < 360; i+=10) {
-//	for (int j = 0; j < 360; j+=1) {
-//		trans = glm::rotate(glm::mat4(1.0f), glm::radians((float)j) , glm::vec3(0.0f, 1.0f, 0.0f));
-//		trans = glm::rotate(trans, glm::radians((float)j), glm::vec3(0.0f, 0.0f, 1.0f));
-//		auto new_direction = trans * direction;
-//		Ray* ray = new Ray(transform.position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
-//		ray->InitializeRay((i)/720.0f);
-//		//std::cout << " is " << j << std::endl;
-//		rays_.push_back(ray);
-//	}
-//}
 
 Transmitter::Transmitter(Transform transform,
 						float frequency, 
@@ -46,20 +32,30 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 {
 	current_pattern = pattern;
 	rays_.clear();
+	int skipper = 0;
 	for (auto angles : current_pattern->pattern_) {
+		
+
 		float theta = angles.first.first;
 		float phi = angles.first.second;
 		float gain = angles.second;
-
-		glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(theta), glm::vec3(1.0f, 0.0f, 0.0f));
-		trans = glm::rotate(trans, glm::radians(phi), glm::vec3(0.0f, 1.0f, .0f));
+		//if(gain>0.0f) std::cout << "phi: " << phi << ", theta: " << theta << " value: " << gain << std::endl;
+		glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(phi), glm::vec3(1.0f, 0.0f, 0.0f));
+		trans = glm::rotate(trans, glm::radians(theta), glm::vec3(0.0f, 1.0f, .0f));
 		auto new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
 		Ray* ray = new Ray(transform_.position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
 		
 		/*if (gain < 0.0f)
 			ray->InitializeRay(0.0f);
 		else*/
-		ray->InitializeRay(pow(10,gain/10.0f));
+		//std::cout << gain + abs(pattern->min_gain_) << std::endl;
+		//float normalized_gain = (gain)/(pattern->max_gain_ - pattern->min_gain_);
+		float gain_lin = pow(10, gain / 10.f);
+		float max_gain_lin = pow(10, pattern->max_gain_/10.0f);
+		float min_gain_lin = pow(10, pattern->min_gain_ /10.0f);
+		float normalized_gain = gain_lin / (max_gain_lin - min_gain_lin);
+		
+		if(normalized_gain >= 1e-3) ray->InitializeRay(normalized_gain*1.0f);
 		//std::cout << " is " << j << std::endl;
 		rays_.push_back(ray);
 	};

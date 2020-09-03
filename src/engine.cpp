@@ -94,7 +94,7 @@ void Engine::LoadRayTracer()
 	// todo: implement multiple radiation patterns
 	pattern_ = new RadiationPattern("C:/Users/supaw/Code/wisim/assets/pattern/pattern-1.txt");
 	// add pattern to transmitter
-	//transmitter_->AssignRadiationPattern(pattern_);
+	transmitter_->AssignRadiationPattern(pattern_);
 	//Transform receiver_trans{ glm::vec3(0.0f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
 	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
 }
