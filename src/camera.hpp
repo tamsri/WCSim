@@ -9,7 +9,7 @@
 class Window;
 class GLFWwindow;
 
-enum CameraDirection : int {
+enum Direction : int {
 	kForward = 0,
 	kBackward,
 	kLeft,
@@ -17,7 +17,7 @@ enum CameraDirection : int {
 	kUp,
 	kDown
 };
-enum CameraRotation : int {
+enum Rotation : int {
 	kYaw = 0,
 	kRoll,
 	kPitch
@@ -30,8 +30,8 @@ public:
 	// constructors
 	Camera(Window* window);
 
-	void Move(const CameraDirection camera_direction, float delta_time);
-	void Rotate(const CameraRotation camera_rotation, float delta_time);
+	void Move(const Direction camera_direction, float delta_time);
+	void Rotate(const Rotation camera_rotation, float delta_time);
 	void Reset();
 	void UpdateProjection();
 

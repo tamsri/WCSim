@@ -4,9 +4,12 @@
 
 #include "ray.hpp"
 #include "camera.hpp"
-#include "radiation_pattern.hpp"
 #include "record.hpp"
 #include "object.hpp"
+
+#include "radiation_pattern.hpp"
+#include "ray_tracer.hpp"
+
 
 #include <math.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -19,7 +22,10 @@ Transmitter::Transmitter(Transform transform,
 													frequency_(frequency),
 													ray_tracer_(ray_tracer)
 {
+	current_pattern = nullptr;
+	current_point_ = ray_tracer->InitializeOrCallPoint(transform_.position);
 }
+
 
 void Transmitter::DrawRadiationPattern(Camera * camera)
 {
@@ -35,7 +41,7 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 	int skipper = 0;
 	for (auto angles : current_pattern->pattern_) {
 		
-
+		//if ((skipper++) % 50)continue;
 		float theta = angles.first.first;
 		float phi = angles.first.second;
 		float gain = angles.second;
@@ -55,7 +61,7 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 		float min_gain_lin = pow(10, pattern->min_gain_ /10.0f);
 		float normalized_gain = gain_lin / (max_gain_lin - min_gain_lin);
 		
-		if(normalized_gain >= 1e-3) ray->InitializeRay(normalized_gain*1.0f);
+		if(normalized_gain >= 1e-3) ray->InitializeRay(normalized_gain*10.0f);
 		//std::cout << " is " << j << std::endl;
 		rays_.push_back(ray);
 	};

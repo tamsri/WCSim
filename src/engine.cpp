@@ -94,9 +94,10 @@ void Engine::LoadRayTracer()
 	// todo: implement multiple radiation patterns
 	pattern_ = new RadiationPattern("C:/Users/supaw/Code/wisim/assets/pattern/pattern-1.txt");
 	// add pattern to transmitter
+	std::cout << "added pattern\n";
 	transmitter_->AssignRadiationPattern(pattern_);
-	//Transform receiver_trans{ glm::vec3(0.0f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
-	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
+	Transform receiver_trans{ glm::vec3(0.0f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
+	test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
 }
 
 void Engine::LoadComponents()
@@ -226,30 +227,30 @@ void Engine::KeyViewMode(float delta_time)
 {
 	GLFWwindow* window = window_->GetGLFWWindow();
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		main_camera_->Move(CameraDirection::kForward, delta_time);
+		main_camera_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		main_camera_->Move(CameraDirection::kLeft, delta_time);
+		main_camera_->Move(Direction::kLeft, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		main_camera_->Move(CameraDirection::kBackward, delta_time);
+		main_camera_->Move(Direction::kBackward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		main_camera_->Move(CameraDirection::kRight, delta_time);
+		main_camera_->Move(Direction::kRight, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		main_camera_->Move(CameraDirection::kUp, delta_time);
+		main_camera_->Move(Direction::kUp, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		main_camera_->Move(CameraDirection::kDown, delta_time);
+		main_camera_->Move(Direction::kDown, delta_time);
 
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
 		main_camera_->Reset();
 
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		main_camera_->Rotate(CameraRotation::kYaw, delta_time);
+		main_camera_->Rotate(Rotation::kYaw, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		main_camera_->Rotate(CameraRotation::kYaw, -delta_time);
+		main_camera_->Rotate(Rotation::kYaw, -delta_time);
 
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		main_camera_->Rotate(CameraRotation::kPitch, delta_time);
+		main_camera_->Rotate(Rotation::kPitch, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		main_camera_->Rotate(CameraRotation::kPitch, -delta_time);
+		main_camera_->Rotate(Rotation::kPitch, -delta_time);
 
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kMoveObjects;
@@ -260,16 +261,20 @@ void Engine::KeyMoveMode(float delta_time)
 	GLFWwindow* window = window_->GetGLFWWindow();
 	//std::cin >> 
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
-		engine_mode_ = EngineMode::kMoveObjects;
+		engine_mode_ = EngineMode::kView;
 
-	//if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	//	test_receiver_->Move(glm::vec3(1.0, 0.0, 0.0f));
-	//if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	//	test_receiver_->Move(glm::vec3(0.0, 0.0, 1.0f));
-	//if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	//	test_receiver_->Move(glm::vec3(-1.0, 0.0, 0.0f));
-	//if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	//	test_receiver_->Move(glm::vec3(0.0, 0.0, -1.0f));
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		test_receiver_->Move(Direction::kForward, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		test_receiver_->Move(Direction::kLeft, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		test_receiver_->Move(Direction::kBackward, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		test_receiver_->Move(Direction::kRight, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		test_receiver_->Move(Direction::kUp, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		test_receiver_->Move(Direction::kDown, delta_time);
 }
 
 void Engine::MousePosition(double xpos, double ypos)
@@ -285,8 +290,8 @@ void Engine::MousePosition(double xpos, double ypos)
 		float xoffset = (xpos - last_mouse_x_pos_) / 50000.0f;
 		float yoffset = (last_mouse_y_pos_ - ypos) / 50000.0f;
 
-		main_camera_->Rotate(CameraRotation::kYaw, xoffset);
-		main_camera_->Rotate(CameraRotation::kPitch, yoffset);
+		main_camera_->Rotate(Rotation::kYaw, xoffset);
+		main_camera_->Rotate(Rotation::kPitch, yoffset);
 	}
 	else {
 		on_first_right_click_ = true;
@@ -360,4 +365,5 @@ void Engine::Visualize()
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
 	ray_tracer_->DrawObjects(main_camera_);
 	transmitter_->DrawRadiationPattern(main_camera_);
+	test_receiver_->DrawObjects(main_camera_);
 }

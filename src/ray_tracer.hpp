@@ -36,6 +36,7 @@ public:
 	// Ray Tracing Part
 	void Trace(Point * start_point, Point * end_point);
 	void InitializeDrawPointsComponents(Point * start_point, Point * end_point);
+	void GetDrawPointsComponent(Point* start_point, Point* end_point, std::vector<Object*>& draw_components);
 	bool CalculatePathLoss(Point* transmitter_point, Point* receiver_point, float & attenuation_in_dB, float frequency_in_GHz);
 	// Line of Sight
 	bool IsDirectHit(glm::vec3 start_point, glm::vec3 end_point) const;

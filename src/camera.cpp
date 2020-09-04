@@ -13,7 +13,7 @@ Camera::Camera(Window* window) :window_(window) {
 	Reset();
 }
 
-void Camera::Move(const CameraDirection camera_direction, float delta_time)
+void Camera::Move(const Direction camera_direction, float delta_time)
 {
 	float distance = delta_time * camera_move_speed_;
 	switch (camera_direction) {
@@ -43,7 +43,7 @@ void Camera::Move(const CameraDirection camera_direction, float delta_time)
 	UpdateView();
 }
 
-void Camera::Rotate(const CameraRotation camera_rotation, float delta_time)
+void Camera::Rotate(const Rotation camera_rotation, float delta_time)
 {
 	float angle = camera_rotate_speed_ * delta_time;
 	switch (camera_rotation) {
