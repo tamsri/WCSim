@@ -27,7 +27,7 @@ RayTracer::RayTracer(PolygonMesh * map):map_(map)
     records_.push_back(direct_record_);
 
     // Initialize voxel spaces; ?
-    // Test();
+    Test();
     //InitializeVoxels(100, 100, 5);
 }
 
@@ -106,6 +106,7 @@ void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigne
 void RayTracer::ScanHit(Point * point)
 {
     if (!point->hit_triangles.empty()) return;
+    // Approach I: when the triangles are more than the generated scanning rays
     //glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
     //float scan_precision = 2.0f;
     //for (float i = 0; i < 360; i += scan_precision)
@@ -125,6 +126,7 @@ void RayTracer::ScanHit(Point * point)
     //    }
 
 
+    // Approach II: Scan only the existing triangles
     // Implementation for scanning hitable triangles.
     std::vector<const Triangle *> triangles = map_->GetObjects();
     glm::vec3 point_position = point->position;
@@ -135,7 +137,8 @@ void RayTracer::ScanHit(Point * point)
         Ray ray{ point_position, point_to_triangle_direction };
 
         float hit_distance;
-        if (map_->IsHit(ray, hit_distance)) {
+        Triangle* hit_triangle;
+        if (map_->IsHit(ray, hit_distance, hit_triangle) && hit_triangle == triangle) {
             point->hit_triangles[triangle] = true;
         }
     }
