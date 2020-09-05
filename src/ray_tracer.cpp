@@ -106,23 +106,39 @@ void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigne
 void RayTracer::ScanHit(Point * point)
 {
     if (!point->hit_triangles.empty()) return;
-    glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
-    float scan_precision = 2.0f;
-    for (float i = 0; i < 360; i += scan_precision)
-        for (float j = 0; j < 360; j += scan_precision) {
-            auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
-            trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
-            auto new_direction = trans_direction * direction;
-            glm::vec3 i_direction = glm::vec3(new_direction);
+    //glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
+    //float scan_precision = 2.0f;
+    //for (float i = 0; i < 360; i += scan_precision)
+    //    for (float j = 0; j < 360; j += scan_precision) {
+    //        auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
+    //        trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
+    //        auto new_direction = trans_direction * direction;
+    //        glm::vec3 i_direction = glm::vec3(new_direction);
 
-            Ray * ray = new Ray ( point->position, i_direction );
-            Triangle * hit_triangle = nullptr;
-            float hit_distance; // doesnt do anything yet // maybe implement later. 
-            if (map_->IsHit( * ray, hit_distance, hit_triangle)) {
-                point->hit_triangles[hit_triangle] = true;
-            }
-            delete ray;
+    //        Ray * ray = new Ray ( point->position, i_direction );
+    //        Triangle * hit_triangle = nullptr;
+    //        float hit_distance; // doesnt do anything yet // maybe implement later. 
+    //        if (map_->IsHit( * ray, hit_distance, hit_triangle)) {
+    //            point->hit_triangles[hit_triangle] = true;
+    //        }
+    //        delete ray;
+    //    }
+
+
+    // Implementation for scanning hitable triangles.
+    std::vector<const Triangle *> triangles = map_->GetObjects();
+    glm::vec3 point_position = point->position;
+    for (const Triangle * triangle : triangles) {
+        std::vector<glm::vec3> points = triangle->GetPoints();
+        glm::vec3 center_triangle_position = (points[0] + points[1] + points[2]) / 3.0f;
+        glm::vec3 point_to_triangle_direction = glm::normalize(center_triangle_position - point_position);
+        Ray ray{ point_position, point_to_triangle_direction };
+
+        float hit_distance;
+        if (map_->IsHit(ray, hit_distance)) {
+            point->hit_triangles[triangle] = true;
         }
+    }
 }
 
 void RayTracer::Trace(Point * start_point, Point * end_point)
@@ -593,13 +609,13 @@ bool RayTracer::IsReflected(Point * start_point, Point * end_point, std::vector<
     glm::vec3 start_position = start_point->position;
     glm::vec3 end_position = end_point->position;
     // match the co-exist triangles between two points
-    std::vector<Triangle*> matched_triangles;
+    std::vector<const Triangle*> matched_triangles;
     /// search matches triangles
     for (auto const& [triangle, exist_value] : start_point->hit_triangles)
         if (end_point->hit_triangles[triangle] == true) matched_triangles.push_back(triangle);
    
     // check the reflection points on matches triangles
-    for (Triangle * matched_triangle : matched_triangles) {
+    for (const Triangle * matched_triangle : matched_triangles) {
         // reflect one of the point on the triangle plane
         glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
         // trace from the reflected point 
@@ -652,7 +668,7 @@ bool RayTracer::IsOutdoor(glm::vec3 start_point) const
     return false;
 }
 
-glm::vec3 RayTracer::ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 points) /// TODO change to const later
+glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 points) /// TODO change to const later
 {
     /// algorithms
   

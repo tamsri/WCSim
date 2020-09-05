@@ -46,7 +46,7 @@ public:
 	void ScanHit(Point * position);
 	bool IsReflected(Point * start_point, Point * end_point, std::vector<glm::vec3> & reflected_points);
 	
-	glm::vec3 ReflectedPointOnTriangle(Triangle * triangle, glm::vec3 point) ;
+	glm::vec3 ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 point) ;
 
 	// Diffraction
 	bool IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, std::vector<glm::vec3> & edges_points);

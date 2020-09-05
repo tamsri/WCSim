@@ -172,6 +172,11 @@ bool PolygonMesh::IsHit(Ray& ray, std::set<std::pair<float, Triangle*>> & hit_tr
     return true;
 }
 
+std::vector<const Triangle*> PolygonMesh::GetObjects()
+{
+    return std::vector<const Triangle*>(objects_);
+}
+
 
 void PolygonMesh::Draw() const {
     glBindVertexArray(vao_);

@@ -42,12 +42,15 @@ public:
 	bool IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const;
 	bool IsHit(Ray& ray, std::set<std::pair<float, Triangle *>> & hit_triangles) const;
 
+	std::vector<const Triangle*> GetObjects();
+
 private:
 	// for ray tracer
 	std::vector<glm::vec3> full_vertices_, normals_;
 	std::vector<glm::vec2> uvs_;
 	
 	std::vector<const Triangle*> objects_;
+
 
 	KDTree * tree_;
 	unsigned int vao_, vbo_;

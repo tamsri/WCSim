@@ -29,7 +29,7 @@ struct Point {
 	Point(glm::vec3 point_position);
 	glm::vec3 position;
 
-	std::map<Triangle*, bool> hit_triangles;
+	std::map<const Triangle*, bool> hit_triangles;
 
 	std::unordered_map <Point*, std::vector<Record *>> neighbour_record;
 

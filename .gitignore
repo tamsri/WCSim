@@ -2,3 +2,4 @@ dependencies/
 vs2019/
 out/
 .vs/
+build/
