@@ -38,9 +38,9 @@ public:
 					std::vector <glm::vec3> & normals);
 	virtual void Draw() const;
 	void SetupMesh();
-	bool IsHit(Ray & ray, float & t) const;
-	bool IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const;
-	bool IsHit(Ray& ray, std::set<std::pair<float, Triangle *>> & hit_triangles) const;
+	bool IsHit(Ray & ray, float & t) const; // return the nearest hit distance
+	bool IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const; // return the nearest hit triangle
+	bool IsHit(Ray& ray, std::set<std::pair<float, Triangle *>> & hit_triangles) const; // return the set of hit triangles
 
 	std::vector<const Triangle*> GetObjects();
 

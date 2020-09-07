@@ -96,7 +96,7 @@ void Engine::LoadRayTracer()
 	// add pattern to transmitter
 	std::cout << "added pattern\n";
 	transmitter_->AssignRadiationPattern(pattern_);
-	Transform receiver_trans{ glm::vec3(0.0f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
+	Transform receiver_trans{ glm::vec3(9.13651f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
 	test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
 }
 

@@ -27,7 +27,7 @@ RayTracer::RayTracer(PolygonMesh * map):map_(map)
     records_.push_back(direct_record_);
 
     // Initialize voxel spaces; ?
-    Test();
+    //Test();
     //InitializeVoxels(100, 100, 5);
 }
 
@@ -72,7 +72,7 @@ void RayTracer::Test()
         std::cout << "Init Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_init_time - start_init_time).count() / 1e3 << " ms.\n";
         std::cout << "Ray Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_trace_time - start_trace_time).count() / 1e3 << " ms.\n";
         std::cout << "Initialize Draw took " << std::chrono::duration_cast<std::chrono::microseconds>(end_draw_time - start_draw_time).count() / 1e3 << " ms.\n";
-        std::cout << "Calculation took " << std::chrono::duration_cast<std::chrono::microseconds>(end_cal_time - start_cal_time).count() << " us.\n";
+        std::cout << "Calculation took " << std::chrono::duration_cast<std::chrono::microseconds>(end_cal_time - start_cal_time).count() / 1e3  << " us.\n";
         std::cout << "-----------------" << std::endl;
         points.push_back(current_receiver);
     }
@@ -107,41 +107,47 @@ void RayTracer::ScanHit(Point * point)
 {
     if (!point->hit_triangles.empty()) return;
     // Approach I: when the triangles are more than the generated scanning rays
-    //glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
-    //float scan_precision = 2.0f;
-    //for (float i = 0; i < 360; i += scan_precision)
-    //    for (float j = 0; j < 360; j += scan_precision) {
-    //        auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
-    //        trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
-    //        auto new_direction = trans_direction * direction;
-    //        glm::vec3 i_direction = glm::vec3(new_direction);
+    glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
+    float scan_precision = 2.0f;
+    for (float i = 0; i < 360; i += scan_precision)
+        for (float j = 0; j < 360; j += scan_precision) {
+            auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
+            trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
+            auto new_direction = trans_direction * direction;
+            glm::vec3 i_direction = glm::vec3(new_direction);
 
-    //        Ray * ray = new Ray ( point->position, i_direction );
-    //        Triangle * hit_triangle = nullptr;
-    //        float hit_distance; // doesnt do anything yet // maybe implement later. 
-    //        if (map_->IsHit( * ray, hit_distance, hit_triangle)) {
-    //            point->hit_triangles[hit_triangle] = true;
-    //        }
-    //        delete ray;
-    //    }
+            Ray * ray = new Ray ( point->position, i_direction );
+            Triangle * hit_triangle = nullptr;
+            float hit_distance; // doesnt do anything yet // maybe implement later. 
+            if (map_->IsHit( * ray, hit_distance, hit_triangle)) {
+                point->hit_triangles[hit_triangle] = true;
+            }
+            delete ray;
+        }
 
 
     // Approach II: Scan only the existing triangles
     // Implementation for scanning hitable triangles.
-    std::vector<const Triangle *> triangles = map_->GetObjects();
-    glm::vec3 point_position = point->position;
-    for (const Triangle * triangle : triangles) {
-        std::vector<glm::vec3> points = triangle->GetPoints();
-        glm::vec3 center_triangle_position = (points[0] + points[1] + points[2]) / 3.0f;
-        glm::vec3 point_to_triangle_direction = glm::normalize(center_triangle_position - point_position);
-        Ray ray{ point_position, point_to_triangle_direction };
+    //std::vector<const Triangle *> triangles = map_->GetObjects();
+    //glm::vec3 point_position = point->position;
+    //for (const Triangle * triangle : triangles) {
+    //    std::vector<glm::vec3> points = triangle->GetPoints();
+    //    glm::vec3 center_triangle_position = (points[0] + points[1] + points[2]) / 3.0f;
+    //    glm::vec3 corner_1_position = points[0] + glm::normalize(center_triangle_position) * FLT_EPSILON;
+    //    glm::vec3 corner_2_position = points[0] + glm::normalize(center_triangle_position) * FLT_EPSILON;
+    //    glm::vec3 corner_3_position = points[0] + glm::normalize(center_triangle_position) * FLT_EPSILON;
 
-        float hit_distance;
-        Triangle* hit_triangle;
-        if (map_->IsHit(ray, hit_distance, hit_triangle) && hit_triangle == triangle) {
-            point->hit_triangles[triangle] = true;
-        }
-    }
+    //    Cube* cube = new Cube(Transform{ center_triangle_position, glm::vec3(0.5f), glm::vec3(0.0f) });
+    //    objects_.push_back(cube);
+    //    glm::vec3 point_to_triangle_direction = glm::normalize(center_triangle_position - point_position);
+    //    Ray ray{ point_position, point_to_triangle_direction };
+
+    //    float hit_distance;
+    //    Triangle* hit_triangle;
+    //    if (map_->IsHit(ray, hit_distance, hit_triangle) && hit_triangle == triangle) {
+    //        point->hit_triangles[triangle] = true;
+    //    }
+    //}
 }
 
 void RayTracer::Trace(Point * start_point, Point * end_point)
@@ -439,6 +445,7 @@ bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_poin
         }
         break;
         case RecordType::kReflect: {
+            std::cout << "reflection points: " << record->data.size() << std::endl;
             for (auto point : record->data) {
                 float d1 = glm::distance(point, transmitter_position);
                 float d2 = glm::distance(point, receiver_position);
@@ -608,6 +615,7 @@ bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) co
 
 bool RayTracer::IsReflected(Point * start_point, Point * end_point, std::vector<glm::vec3> & reflected_points)  /// TODO: add const 
 {
+    objects_.clear();
     // search the hitable triangles between two points
     glm::vec3 start_position = start_point->position;
     glm::vec3 end_position = end_point->position;
@@ -621,48 +629,46 @@ bool RayTracer::IsReflected(Point * start_point, Point * end_point, std::vector<
     for (const Triangle * matched_triangle : matched_triangles) {
         // reflect one of the point on the triangle plane
         glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
+        Cube* cube = new Cube(Transform{ reflected_position, glm::vec3(1.0f), glm::vec3(0.0f)});
+        objects_.push_back(cube);
         // trace from the reflected point 
         glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
-        float ref_to_end_distance = glm::distance(reflected_position, end_position);
+
         Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
+        
         std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
         if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
             //std::cout << "hit some triangles" << std::endl;
             // check if the reflect point hit the matched triangle;
-            bool is_hit_matched_triangle = false;
-            float distance_to_triangle = -1;
-            bool direct_hit = true;
+            
             //std::cout << "distance: ";
-            for (auto const& [distance, triangle] : hit_triangles) {
+            for (auto const [distance, triangle] : hit_triangles) {
                 if (triangle == matched_triangle) {
-                    is_hit_matched_triangle = true; 
-                    distance_to_triangle = distance;
-                }
-                if (is_hit_matched_triangle && distance < ref_to_end_distance && distance > distance_to_triangle) {
-                    direct_hit = false;
+                    glm::vec3 reflection_point_position = reflected_position + ref_to_end_direction*(distance+0.01f);
+                    Cube* cube = new Cube(Transform{ reflection_point_position, glm::vec3(1.0f), glm::vec3(0.0f)});
+                    objects_.push_back(cube);
+                    if (IsDirectHit(reflection_point_position, start_position)) {
+                        Ray* r1 = new Ray(start_position, glm::normalize(reflection_point_position - start_position));
+                        r1->InitializeRay(glm::distance(start_position, reflection_point_position));
+                        r1->SetRayColor(glm::vec4(1.0, 0.0f, 1.0f, 1.0f));
+                        objects_.push_back(r1);
+                    }
+                    if (IsDirectHit(reflection_point_position, end_position)) {
+                        Ray* r2 = new Ray(end_position, glm::normalize(reflection_point_position - end_position));
+                        r2->InitializeRay(glm::distance(end_position, reflection_point_position));
+                        r2->SetRayColor(glm::vec4(1.0, 0.0f, 1.0f, 1.0f));
+                        objects_.push_back(r2);
+                    }
+                    if (IsDirectHit(reflection_point_position, end_position) && IsDirectHit(reflection_point_position, start_position))
+                    reflected_points.push_back(reflection_point_position);
+                    
                     break;
-                }
+                }                
             }
-            // check if the reflected point 
-            if (direct_hit && is_hit_matched_triangle == true) {
-                glm::vec3 point_on_triangle = reflected_position + ref_to_end_direction * distance_to_triangle;
-                glm::vec3 start_to_triangle_direction = glm::normalize(point_on_triangle - start_position);
-                float start_to_triangle_distance = glm::distance(start_position, point_on_triangle);
-                Ray ray_to_triangle{ start_position, start_to_triangle_direction };
-                // scan if the start point hit something before the reflected point
-                float nearest_hit_distance = -1.0f;
-                if (map_->IsHit(ray_to_triangle, nearest_hit_distance) &&
-                    nearest_hit_distance < start_to_triangle_distance) {
-                    continue; 
-                }
-                else {
-                    reflected_points.push_back(point_on_triangle);
-                };
-                
-            }
+            
         }
     }
-    if (reflected_points.size() == 0) return false;
+    if (reflected_points.empty()) return false;
     return true;
 }
 
