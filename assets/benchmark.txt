@@ -1,0 +1,21 @@
+
+## Case of less triangles on map
+
+# matched triangles with new reflection finder
+
+Init Tracer took 244.448 ms.
+Ray Tracer took 13.162 ms.
+Initialize Draw took 0.321 ms.
+Calculation took 21.64 ms.
+total: 279.571 ms
+
+
+# all triangles with new reflection finder & no scan hit
+Init Tracer took 0.019 ms.
+Ray Tracer took 50.725 ms.
+Initialize Draw took 0.346 ms.
+Calculation took 19.37 ms.
+total: 70.46 ms
+
+# new optimization
+

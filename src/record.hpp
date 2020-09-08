@@ -17,6 +17,17 @@ enum RecordType : int {
 	kEdgeDiffraction
 };
 
+struct Result {
+	float direct_path_loss_in_linear;
+	float reflection_loss_in_linear;
+	float diffraction_loss_in_linear;
+
+	float direct_path_tx_gain;
+	std::vector<std::pair<glm::vec3, float>> reflection_loss_gain;
+	float diffraction_loss_gain;
+	
+	float total_loss;
+};
 
 struct Record {
 	Record(RecordType record_type);
@@ -31,9 +42,10 @@ struct Point {
 
 	std::map<const Triangle*, bool> hit_triangles;
 
-	std::unordered_map <Point*, std::vector<Record *>> neighbour_record;
+	std::unordered_map <Point*, std::vector<const Record *>> neighbour_record;
 
 };
+
 typedef std::unordered_map<glm::vec3, Point*> point_map;
 
 #endif // !RECORD_H_

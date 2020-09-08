@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "transform.hpp"
+#include <glm/matrix.hpp>
+#include "camera.hpp"
 
 class Camera;
 class Ray;
@@ -11,6 +13,8 @@ class Point;
 class RadiationPattern;
 class RayTracer;
 class Object;
+class Receiver;
+struct Result;
 
 class Transmitter {
 public:
@@ -20,14 +24,29 @@ public:
 	void AssignRadiationPattern(RadiationPattern* pattern);
 	float GetFrequency();
 	Point * GetPoint();
+	float GetTransmitterGain(glm::vec3 near_tx_position);
+
+	// Movement
+	void Move(const Direction direction, float delta_time);
+	void Rotate(float theta, float phi);
+	
+	void Update();
+	void Reset();
 private:
+	
+	// Variables
 	float transmitter_power_output_;
 	float frequency_;
+	float move_speed_;
+	glm::vec3 front_direction_, up_direction_;
+
 	Transform transform_;
 	RadiationPattern * current_pattern;
 	RayTracer* ray_tracer_;
 	Point* current_point_;
 	
+	std::vector<Receiver* > receivers_;
+	std::vector<Result> receiver_results;
 	// Visualization
 	std::vector<Ray* > rays_;
 };

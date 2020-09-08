@@ -11,7 +11,7 @@
 class RayTracer;
 class Transmitter;
 class Object;
-
+struct Result;
 
 class Receiver {
 
@@ -22,7 +22,7 @@ public:
 	// Variables
 	Transform transform_;
 	glm::vec3 velocity_;
-	float total_path_loss_dB_;
+	Point* GetPoint();
 
 	float move_speed_;
 	glm::vec3 front_direction_;
@@ -32,8 +32,13 @@ public:
 	void Reset();
 	void Move(glm::vec3 step);
 	void Move(Direction direction, float delta_time);
+	void Clear();
 	// Calculation
+	void CalculateReceivePower();
 
+	void DrawObjects(Camera* main_camera);
+private:
+	Result result_;
 	// Ray Tracer
 	Point* current_point_;
 	RayTracer * ray_tracer_;
@@ -41,6 +46,5 @@ public:
 	
 	// Visualisation
 	std::vector<Object*> objects_;
-	void DrawObjects(Camera* main_camera);
 };
 #endif //!RECEIVER_H

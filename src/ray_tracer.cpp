@@ -17,871 +17,803 @@
 #include "polygon_mesh.hpp"
 #include "shader.hpp"
 
+#include "transmitter.hpp"
+#include "receiver.hpp"
+
 #include "transform.hpp"
 
 
-RayTracer::RayTracer(PolygonMesh * map):map_(map)
+RayTracer::RayTracer(PolygonMesh* map) :map_(map)
 {
-    // Initialize direct record
-    direct_record_ = new Record(RecordType::kDirect);
-    records_.push_back(direct_record_);
+	// Initialize direct record
+	direct_record_ = new Record(RecordType::kDirect);
+	records_.push_back(direct_record_);
 
-    // Initialize voxel spaces; ?
-    //Test();
-    //InitializeVoxels(100, 100, 5);
+	// Initialize voxel spaces; ?
+	//Test();
+	//InitializeVoxels(100, 100, 5);
 }
 
 void RayTracer::Test()
 {
 
-    // LOS test
-    // First test [+] works
-    srand(0);
-    Point* transmitter_point = InitializeOrCallPoint(glm::vec3(0.0f,10.0f, 0.0f));
-    glm::vec3 end_position = glm::vec3(40.0f, 5.00F, 6.0f);
-    
-    std::vector<Point*> points;
-    for (unsigned int i = 0; i < 20; ++i) {
-        
-        std::chrono::steady_clock::time_point start_init_time = std::chrono::steady_clock::now();
-        Point * current_receiver = InitializeOrCallPoint(glm::vec3(rand()%200-100.0f, rand()%10+20.0f, rand() % 200 - 100.0f));
+	// LOS test
+	// First test [+] works
+	srand(0);
+	Point* transmitter_point = InitializeOrCallPoint(glm::vec3(0.0f, 10.0f, 0.0f));
+	glm::vec3 end_position = glm::vec3(40.0f, 5.00F, 6.0f);
 
-        //Point* current_receiver = InitializeOrCallPoint(glm::vec3(60.0f, 35.0f, -40.0f));
+	std::vector<Point*> points;
+	for (unsigned int i = 0; i < 20; ++i) {
 
-        std::chrono::steady_clock::time_point end_init_time = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point start_init_time = std::chrono::steady_clock::now();
+		Point* current_receiver = InitializeOrCallPoint(glm::vec3(rand() % 200 - 100.0f, rand() % 10 + 20.0f, rand() % 200 - 100.0f));
 
-        std::chrono::steady_clock::time_point start_trace_time = std::chrono::steady_clock::now();
-        Trace(transmitter_point, current_receiver);
-        std::chrono::steady_clock::time_point end_trace_time = std::chrono::steady_clock::now();
+		//Point* current_receiver = InitializeOrCallPoint(glm::vec3(60.0f, 35.0f, -40.0f));
 
-        
+		std::chrono::steady_clock::time_point end_init_time = std::chrono::steady_clock::now();
 
-        std::chrono::steady_clock::time_point start_draw_time = std::chrono::steady_clock::now();
-        InitializeDrawPointsComponents(transmitter_point, current_receiver);
-        std::chrono::steady_clock::time_point end_draw_time = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point start_trace_time = std::chrono::steady_clock::now();
+		Trace(transmitter_point, current_receiver);
+		std::chrono::steady_clock::time_point end_trace_time = std::chrono::steady_clock::now();
 
-        float total_attenuation_in_dB;
-        float freq = 2.5f; // in GHz
-        std::chrono::steady_clock::time_point start_cal_time = std::chrono::steady_clock::now();
-        CalculatePathLoss(transmitter_point, current_receiver, total_attenuation_in_dB, freq);
-        std::chrono::steady_clock::time_point end_cal_time = std::chrono::steady_clock::now();
 
-        std::cout << "total path loss : " << total_attenuation_in_dB << std::endl;
-        std::cout << "distance: " << glm::distance(current_receiver->position, transmitter_point->position) << std::endl;
-        std::cout << "Receiver Number " << i << std::endl;
-        std::cout << "Init Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_init_time - start_init_time).count() / 1e3 << " ms.\n";
-        std::cout << "Ray Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_trace_time - start_trace_time).count() / 1e3 << " ms.\n";
-        std::cout << "Initialize Draw took " << std::chrono::duration_cast<std::chrono::microseconds>(end_draw_time - start_draw_time).count() / 1e3 << " ms.\n";
-        std::cout << "Calculation took " << std::chrono::duration_cast<std::chrono::microseconds>(end_cal_time - start_cal_time).count() / 1e3  << " us.\n";
-        std::cout << "-----------------" << std::endl;
-        points.push_back(current_receiver);
-    }
-    //Point* end_point_2 = InitializeOrCallPoint(end_position_2);
-    // Test the trace function
-    //Trace(start_point, end_point);
 
-    
+		std::chrono::steady_clock::time_point start_draw_time = std::chrono::steady_clock::now();
+		InitializeDrawPointsComponents(transmitter_point, current_receiver);
+		std::chrono::steady_clock::time_point end_draw_time = std::chrono::steady_clock::now();
+
+		float total_attenuation_in_dB;
+		float freq = 2.5f; // in GHz
+		std::chrono::steady_clock::time_point start_cal_time = std::chrono::steady_clock::now();
+		//CalculatePathLoss(transmitter_point, current_receiver, total_attenuation_in_dB, freq);
+		std::chrono::steady_clock::time_point end_cal_time = std::chrono::steady_clock::now();
+
+		std::cout << "total path loss : " << total_attenuation_in_dB << std::endl;
+		std::cout << "distance: " << glm::distance(current_receiver->position, transmitter_point->position) << std::endl;
+		std::cout << "Receiver Number " << i << std::endl;
+		std::cout << "Init Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_init_time - start_init_time).count() / 1e3 << " ms.\n";
+		std::cout << "Ray Tracer took " << std::chrono::duration_cast<std::chrono::microseconds>(end_trace_time - start_trace_time).count() / 1e3 << " ms.\n";
+		std::cout << "Initialize Draw took " << std::chrono::duration_cast<std::chrono::microseconds>(end_draw_time - start_draw_time).count() / 1e3 << " ms.\n";
+		std::cout << "Calculation took " << std::chrono::duration_cast<std::chrono::microseconds>(end_cal_time - start_cal_time).count() / 1e3 << " ms.\n";
+		std::cout << "-----------------" << std::endl;
+		points.push_back(current_receiver);
+	}
+	//Point* end_point_2 = InitializeOrCallPoint(end_position_2);
+	// Test the trace function
+	//Trace(start_point, end_point);
+
+
 }
 
-void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigned int height) 
+void RayTracer::InitializeVoxels(unsigned int width, unsigned int depth, unsigned int height)
 {
-    // TODO: implement voxels initialization if possible
-    /*width_ = width; depth_ = depth; height_ = height;
-    std::cout << "Initializing voxels." << std::endl;
-    float voxels_per_m_sq = 10.0f;
-    float increase = 1.0f / (float)voxels_per_m_sq;
-    for(float x = -(width/2.0f); x < width/2.0f; x += increase)
-        for(float y = -(depth/2.0f); y < depth/2.0f; y += increase)
-            for (float z = -(height/2.0f); z < height/2.0f; z+= increase) {
-                glm::vec3 position = glm::vec3{ x,y,z };
-                //std::cout << position.x << "," << position.y << "," << position.z << std::endl;
-                FragmentVoxel * voxel = new FragmentVoxel(position, map_);
-                voxels_.push_back(voxel);
-            }
-    std::cout << "Initializing voxels completed." << std::endl;*/
+	// TODO: implement voxels initialization if possible
+	/*width_ = width; depth_ = depth; height_ = height;
+	std::cout << "Initializing voxels." << std::endl;
+	float voxels_per_m_sq = 10.0f;
+	float increase = 1.0f / (float)voxels_per_m_sq;
+	for(float x = -(width/2.0f); x < width/2.0f; x += increase)
+		for(float y = -(depth/2.0f); y < depth/2.0f; y += increase)
+			for (float z = -(height/2.0f); z < height/2.0f; z+= increase) {
+				glm::vec3 position = glm::vec3{ x,y,z };
+				//std::cout << position.x << "," << position.y << "," << position.z << std::endl;
+				FragmentVoxel * voxel = new FragmentVoxel(position, map_);
+				voxels_.push_back(voxel);
+			}
+	std::cout << "Initializing voxels completed." << std::endl;*/
 
-    return;
+	return;
 }
 
-void RayTracer::ScanHit(Point * point)
+void RayTracer::ScanHit(Point* point)
 {
-    if (!point->hit_triangles.empty()) return;
-    // Approach I: when the triangles are more than the generated scanning rays
-    glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
-    float scan_precision = 2.0f;
-    for (float i = 0; i < 360; i += scan_precision)
-        for (float j = 0; j < 360; j += scan_precision) {
-            auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
-            trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
-            auto new_direction = trans_direction * direction;
-            glm::vec3 i_direction = glm::vec3(new_direction);
+	if (!point->hit_triangles.empty()) return;
+	// Approach I: when the triangles are more than the generated scanning rays
+	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
+	float scan_precision = 1.0f;
+	for (float i = 0; i < 360; i += scan_precision)
+		for (float j = 0; j < 360; j += scan_precision) {
+			auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
+			trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
+			auto new_direction = trans_direction * direction;
+			glm::vec3 i_direction = glm::vec3(new_direction);
 
-            Ray * ray = new Ray ( point->position, i_direction );
-            Triangle * hit_triangle = nullptr;
-            float hit_distance; // doesnt do anything yet // maybe implement later. 
-            if (map_->IsHit( * ray, hit_distance, hit_triangle)) {
-                point->hit_triangles[hit_triangle] = true;
-            }
-            delete ray;
-        }
-
-
-    // Approach II: Scan only the existing triangles
-    // Implementation for scanning hitable triangles.
-    //std::vector<const Triangle *> triangles = map_->GetObjects();
-    //glm::vec3 point_position = point->position;
-    //for (const Triangle * triangle : triangles) {
-    //    std::vector<glm::vec3> points = triangle->GetPoints();
-    //    glm::vec3 center_triangle_position = (points[0] + points[1] + points[2]) / 3.0f;
-    //    glm::vec3 corner_1_position = points[0] + glm::normalize(center_triangle_position) * FLT_EPSILON;
-    //    glm::vec3 corner_2_position = points[0] + glm::normalize(center_triangle_position) * FLT_EPSILON;
-    //    glm::vec3 corner_3_position = points[0] + glm::normalize(center_triangle_position) * FLT_EPSILON;
-
-    //    Cube* cube = new Cube(Transform{ center_triangle_position, glm::vec3(0.5f), glm::vec3(0.0f) });
-    //    objects_.push_back(cube);
-    //    glm::vec3 point_to_triangle_direction = glm::normalize(center_triangle_position - point_position);
-    //    Ray ray{ point_position, point_to_triangle_direction };
-
-    //    float hit_distance;
-    //    Triangle* hit_triangle;
-    //    if (map_->IsHit(ray, hit_distance, hit_triangle) && hit_triangle == triangle) {
-    //        point->hit_triangles[triangle] = true;
-    //    }
-    //}
+			Ray* ray = new Ray(point->position, i_direction);
+			Triangle* hit_triangle = nullptr;
+			float hit_distance; // doesnt do anything yet // maybe implement later. 
+			if (map_->IsHit(*ray, hit_distance, hit_triangle)) {
+				point->hit_triangles[hit_triangle] = true;
+			}
+			delete ray;
+		}
 }
 
-void RayTracer::Trace(Point * start_point, Point * end_point)
+void RayTracer::Trace(Point* start_point, Point* end_point)
 {
-    if (!start_point->neighbour_record[end_point].empty()) return;
+	if (!start_point->neighbour_record[end_point].empty()) return;
 
-    glm::vec3 start_position = start_point->position;
-    glm::vec3 end_position = end_point->position;
+	const glm::vec3 start_position = start_point->position;
+	const glm::vec3 end_position = end_point->position;
 
-    // find if LOS
-    if (IsDirectHit(start_point->position, end_point->position)) {
-        start_point->neighbour_record[end_point].push_back(direct_record_); //start_point has LOS with end_point
-        end_point->neighbour_record[start_point].push_back(direct_record_); //end_point has LOS with start_point
-    }
-    else {
-        // Implement multiple knife-edge diffraction
-        std::vector<glm::vec3> edges_points;
+	// find if LOS
+	if (IsDirectHit(start_point->position, end_point->position)) {
+		start_point->neighbour_record[end_point].push_back(direct_record_); //start_point has LOS with end_point
+		end_point->neighbour_record[start_point].push_back(direct_record_); //end_point has LOS with start_point
+	}
+	else {
+		// Implement multiple knife-edge diffraction
+		std::vector<glm::vec3> edges_points;
 
-        if (IsKnifeEdgeDiffraction(start_point, end_point, edges_points)) {
-            Record* saving_record = new Record(RecordType::kEdgeDiffraction, edges_points);
-            records_.push_back(saving_record);
-            start_point->neighbour_record[end_point].push_back(saving_record);
-            end_point->neighbour_record[start_point].push_back(saving_record);
-        }
-    }
+		if (IsKnifeEdgeDiffraction(start_point, end_point, edges_points)) {
+			Record* saving_record = new Record(RecordType::kEdgeDiffraction, edges_points);
+			records_.push_back(saving_record);
+			start_point->neighbour_record[end_point].push_back(saving_record);
+			end_point->neighbour_record[start_point].push_back(saving_record);
+		}
+	}
 
-    // find possible reflections
-    std::vector <glm::vec3> reflected_points;
-    if (IsReflected(start_point, end_point, reflected_points)) {
-        //std::cout << "Reflected!!" << std::endl;
-        Record* saving_record = new Record(RecordType::kReflect, reflected_points);
-        records_.push_back(saving_record);
-        start_point->neighbour_record[end_point].push_back(saving_record);
-        end_point->neighbour_record[start_point].push_back(saving_record);
-    }
-    
+	// find possible reflections
+	std::vector <glm::vec3> reflected_points;
+	if (IsReflected(start_point, end_point, reflected_points)) {
+		//std::cout << "Reflected!!" << std::endl;
+		Record* saving_record = new Record(RecordType::kReflect, reflected_points);
+		records_.push_back(saving_record);
+		start_point->neighbour_record[end_point].push_back(saving_record);
+		end_point->neighbour_record[start_point].push_back(saving_record);
+	}
+
 }
 
 void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_point)
 {
-    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
-    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
-    objects_.push_back(start_cube);
-    objects_.push_back(end_cube);
-    const glm::vec3 start_position = start_point->position;
-    const glm::vec3 end_position = end_point->position;
+	Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
+	Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
+	objects_.push_back(start_cube);
+	objects_.push_back(end_cube);
+	const glm::vec3 start_position = start_point->position;
+	const glm::vec3 end_position = end_point->position;
 
-    auto records = start_point->neighbour_record[end_point];
-    for (auto record : records) {
-        switch (record->type) {
-        case RecordType::kDirect: {
-            Ray* direct_ray = new Ray(start_position, glm::normalize(end_position - start_position));
-            direct_ray->InitializeRay(glm::distance(start_position, end_position));
-            direct_ray->SetRayColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-            objects_.push_back(direct_ray);
-        }
-            break;
-        case RecordType::kReflect: {
-            for (auto reflected_position : record->data) {
-                Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
-                Ray* start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
-                start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
-                Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
-                point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
+	auto records = start_point->neighbour_record[end_point];
+	for (auto record : records) {
+		switch (record->type) {
+		case RecordType::kDirect: {
+			Ray* direct_ray = new Ray(start_position, glm::normalize(end_position - start_position));
+			direct_ray->InitializeRay(glm::distance(start_position, end_position));
+			direct_ray->SetRayColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+			objects_.push_back(direct_ray);
+		}
+								break;
+		case RecordType::kReflect: {
+			for (auto reflected_position : record->data) {
+				Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
+				Ray* start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
+				start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
+				Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
+				point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
 
-                start_to_point_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-                point_to_end_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				start_to_point_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				point_to_end_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-                objects_.push_back(reflected_point);
-                objects_.push_back(start_to_point_ray);
-                objects_.push_back(point_to_end_ray);
-            }
-        }
-            break;
-        case RecordType::kEdgeDiffraction: {
-            
-            auto edges_points = record->data;
-            std::stack<glm::vec3> edges_from_start;
-            edges_from_start.push(start_position);
-            std::stack<glm::vec3> edges_from_end;
-            edges_from_end.push(end_position);
-            glm::vec4 color = (edges_points.size() >= 5)? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-            // separate the edges to each points
-            while (!edges_points.empty()) {
-                edges_from_start.push(NearestEdgeFromPoint(edges_from_start.top(), edges_points));
-                if (edges_points.empty()) break;
-                edges_from_end.push(NearestEdgeFromPoint(edges_from_end.top(), edges_points));
-            }
-            /* *-------*-------*   */
-            if (edges_from_start.size() != edges_from_end.size()) {
+				objects_.push_back(reflected_point);
+				objects_.push_back(start_to_point_ray);
+				objects_.push_back(point_to_end_ray);
+			}
+		}
+								 break;
+		case RecordType::kEdgeDiffraction: {
 
-                glm::vec3 center_edge_position = edges_from_start.top();
-                edges_from_start.pop();
-                Ray* start_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_start.top()-center_edge_position));
-                start_to_center_ray->InitializeRay(glm::distance(edges_from_start.top(), center_edge_position));
+			auto edges_points = record->data;
+			std::stack<glm::vec3> edges_from_start;
+			edges_from_start.push(start_position);
+			std::stack<glm::vec3> edges_from_end;
+			edges_from_end.push(end_position);
+			glm::vec4 color = (edges_points.size() >= 5) ? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			// separate the edges to each points
+			while (!edges_points.empty()) {
+				edges_from_start.push(NearestEdgeFromPoint(edges_from_start.top(), edges_points));
+				if (edges_points.empty()) break;
+				edges_from_end.push(NearestEdgeFromPoint(edges_from_end.top(), edges_points));
+			}
+			/* *-------*-------*   */
+			if (edges_from_start.size() != edges_from_end.size()) {
 
-                Ray* end_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_end.top()-center_edge_position));
-                end_to_center_ray->InitializeRay(glm::distance(edges_from_end.top(), center_edge_position));
+				glm::vec3 center_edge_position = edges_from_start.top();
+				edges_from_start.pop();
+				Ray* start_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_start.top() - center_edge_position));
+				start_to_center_ray->InitializeRay(glm::distance(edges_from_start.top(), center_edge_position));
 
-                Cube* center_point = new Cube(Transform{ center_edge_position, glm::vec3(0.1f), glm::vec3(0.0f) });
+				Ray* end_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_end.top() - center_edge_position));
+				end_to_center_ray->InitializeRay(glm::distance(edges_from_end.top(), center_edge_position));
 
-                start_to_center_ray->SetRayColor(color);
-                end_to_center_ray->SetRayColor(color);
+				Cube* center_point = new Cube(Transform{ center_edge_position, glm::vec3(0.1f), glm::vec3(0.0f) });
 
-                objects_.push_back(start_to_center_ray);
-                objects_.push_back(end_to_center_ray);
-                objects_.push_back(center_point);
-                if (edges_from_start.size() < 2) continue; // already done, go back
+				start_to_center_ray->SetRayColor(color);
+				end_to_center_ray->SetRayColor(color);
 
-            }
-            /* *------------* */
-            else {
-                Ray* between_ray = new Ray(edges_from_start.top(), glm::normalize(edges_from_end.top() - edges_from_start.top()));
-                between_ray->InitializeRay(glm::distance(edges_from_start.top(), edges_from_end.top()));
-                between_ray->SetRayColor(color);
-                objects_.push_back(between_ray);
-            }
+				objects_.push_back(start_to_center_ray);
+				objects_.push_back(end_to_center_ray);
+				objects_.push_back(center_point);
+				if (edges_from_start.size() < 2) continue; // already done, go back
 
-            
-            while (edges_from_start.size()>1) {
+			}
+			/* *------------* */
+			else {
+				Ray* between_ray = new Ray(edges_from_start.top(), glm::normalize(edges_from_end.top() - edges_from_start.top()));
+				between_ray->InitializeRay(glm::distance(edges_from_start.top(), edges_from_end.top()));
+				between_ray->SetRayColor(color);
+				objects_.push_back(between_ray);
+			}
 
-                glm::vec3 begin_at_start = edges_from_start.top();
-                glm::vec3 begin_at_end = edges_from_end.top();
-                edges_from_start.pop();
-                edges_from_end.pop();
-                Ray* from_start_ray = new Ray(begin_at_start, glm::normalize(edges_from_start.top() - begin_at_start));
-                Cube* from_start_point = new Cube(Transform{ begin_at_start, glm::vec3(0.1f), glm::vec3(0.0f) });
-                from_start_ray->InitializeRay(glm::distance(begin_at_start, edges_from_start.top()));
-                Ray* from_end_ray = new Ray(begin_at_end, glm::normalize(edges_from_end.top() - begin_at_end));
-                Cube* from_end_point = new Cube(Transform{ begin_at_end, glm::vec3(0.1f), glm::vec3(0.0f) });
-                from_end_ray->InitializeRay(glm::distance(begin_at_end, edges_from_end.top()));
-                
-                from_start_ray->SetRayColor(color);
-                from_end_ray->SetRayColor(color);
 
-                objects_.push_back(from_start_point);
-                objects_.push_back(from_end_point);
-                objects_.push_back(from_start_ray);
-                objects_.push_back(from_end_ray);
+			while (edges_from_start.size() > 1) {
 
-                //edges_from_start.pop();
-                //edges_from_end.pop();
-            }
+				glm::vec3 begin_at_start = edges_from_start.top();
+				glm::vec3 begin_at_end = edges_from_end.top();
+				edges_from_start.pop();
+				edges_from_end.pop();
+				Ray* from_start_ray = new Ray(begin_at_start, glm::normalize(edges_from_start.top() - begin_at_start));
+				Cube* from_start_point = new Cube(Transform{ begin_at_start, glm::vec3(0.1f), glm::vec3(0.0f) });
+				from_start_ray->InitializeRay(glm::distance(begin_at_start, edges_from_start.top()));
+				Ray* from_end_ray = new Ray(begin_at_end, glm::normalize(edges_from_end.top() - begin_at_end));
+				Cube* from_end_point = new Cube(Transform{ begin_at_end, glm::vec3(0.1f), glm::vec3(0.0f) });
+				from_end_ray->InitializeRay(glm::distance(begin_at_end, edges_from_end.top()));
 
-        }
-            break;
-        }
-    }
+				from_start_ray->SetRayColor(color);
+				from_end_ray->SetRayColor(color);
+
+				objects_.push_back(from_start_point);
+				objects_.push_back(from_end_point);
+				objects_.push_back(from_start_ray);
+				objects_.push_back(from_end_ray);
+
+				//edges_from_start.pop();
+				//edges_from_end.pop();
+			}
+
+		}
+										 break;
+		}
+	}
 }
 
 void RayTracer::GetDrawPointsComponent(Point* start_point, Point* end_point, std::vector<Object*>& draw_components)
 {
-    Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
-    Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
-    draw_components.push_back(start_cube);
-    draw_components.push_back(end_cube);
-    const glm::vec3 start_position = start_point->position;
-    const glm::vec3 end_position = end_point->position;
+	Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
+	Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
+	draw_components.push_back(start_cube);
+	draw_components.push_back(end_cube);
+	const glm::vec3 start_position = start_point->position;
+	const glm::vec3 end_position = end_point->position;
 
-    auto records = start_point->neighbour_record[end_point];
-    for (auto record : records) {
-        switch (record->type) {
-        case RecordType::kDirect: {
-            Ray* direct_ray = new Ray(start_position, glm::normalize(end_position - start_position));
-            direct_ray->InitializeRay(glm::distance(start_position, end_position));
-            direct_ray->SetRayColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-            draw_components.push_back(direct_ray);
-        }
-                                break;
-        case RecordType::kReflect: {
-            for (auto reflected_position : record->data) {
-                Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
-                Ray* start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
-                start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
-                Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
-                point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
+	auto records = start_point->neighbour_record[end_point];
+	for (auto record : records) {
+		switch (record->type) {
+		case RecordType::kDirect: {
+			Ray* direct_ray = new Ray(start_position, glm::normalize(end_position - start_position));
+			direct_ray->InitializeRay(glm::distance(start_position, end_position));
+			direct_ray->SetRayColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+			draw_components.push_back(direct_ray);
+		}
+								break;
+		case RecordType::kReflect: {
+			for (auto reflected_position : record->data) {
+				Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
+				Ray* start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
+				start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
+				Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
+				point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
 
-                start_to_point_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-                point_to_end_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				start_to_point_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				point_to_end_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-                draw_components.push_back(reflected_point);
-                draw_components.push_back(start_to_point_ray);
-                draw_components.push_back(point_to_end_ray);
-            }
-        }
-                                 break;
-        case RecordType::kEdgeDiffraction: {
+				draw_components.push_back(reflected_point);
+				draw_components.push_back(start_to_point_ray);
+				draw_components.push_back(point_to_end_ray);
+			}
+		}
+								 break;
+		case RecordType::kEdgeDiffraction: {
 
-            auto edges_points = record->data;
-            std::stack<glm::vec3> edges_from_start;
-            edges_from_start.push(start_position);
-            std::stack<glm::vec3> edges_from_end;
-            edges_from_end.push(end_position);
-            std::cout << "edges: " << edges_points.size() << std::endl;
-            glm::vec4 color = (edges_points.size() >= 5) ? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-            // separate the edges to each points
-            while (!edges_points.empty()) {
-                edges_from_start.push(NearestEdgeFromPoint(edges_from_start.top(), edges_points));
-                if (edges_points.empty()) break;
-                edges_from_end.push(NearestEdgeFromPoint(edges_from_end.top(), edges_points));
-            }
-            /* *-------*-------*   */
-            if (edges_from_start.size() != edges_from_end.size()) {
+			auto edges_points = record->data;
+			std::stack<glm::vec3> edges_from_start;
+			edges_from_start.push(start_position);
+			std::stack<glm::vec3> edges_from_end;
+			edges_from_end.push(end_position);
+			std::cout << "edges: " << edges_points.size() << std::endl;
+			glm::vec4 color = (edges_points.size() >= 5) ? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			// separate the edges to each points
+			while (!edges_points.empty()) {
+				edges_from_start.push(NearestEdgeFromPoint(edges_from_start.top(), edges_points));
+				if (edges_points.empty()) break;
+				edges_from_end.push(NearestEdgeFromPoint(edges_from_end.top(), edges_points));
+			}
+			/* *-------*-------*   */
+			if (edges_from_start.size() != edges_from_end.size()) {
 
-                glm::vec3 center_edge_position = edges_from_start.top();
-                edges_from_start.pop();
-                Ray* start_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_start.top() - center_edge_position));
-                start_to_center_ray->InitializeRay(glm::distance(edges_from_start.top(), center_edge_position));
+				glm::vec3 center_edge_position = edges_from_start.top();
+				edges_from_start.pop();
+				Ray* start_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_start.top() - center_edge_position));
+				start_to_center_ray->InitializeRay(glm::distance(edges_from_start.top(), center_edge_position));
 
-                Ray* end_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_end.top() - center_edge_position));
-                end_to_center_ray->InitializeRay(glm::distance(edges_from_end.top(), center_edge_position));
+				Ray* end_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_end.top() - center_edge_position));
+				end_to_center_ray->InitializeRay(glm::distance(edges_from_end.top(), center_edge_position));
 
-                Cube* center_point = new Cube(Transform{ center_edge_position, glm::vec3(0.1f), glm::vec3(0.0f) });
+				Cube* center_point = new Cube(Transform{ center_edge_position, glm::vec3(0.1f), glm::vec3(0.0f) });
 
-                start_to_center_ray->SetRayColor(color);
-                end_to_center_ray->SetRayColor(color);
+				start_to_center_ray->SetRayColor(color);
+				end_to_center_ray->SetRayColor(color);
 
-                draw_components.push_back(start_to_center_ray);
-                draw_components.push_back(end_to_center_ray);
-                draw_components.push_back(center_point);
-                if (edges_from_start.size() < 2) continue; // already done, go back
+				draw_components.push_back(start_to_center_ray);
+				draw_components.push_back(end_to_center_ray);
+				draw_components.push_back(center_point);
+				if (edges_from_start.size() < 2) continue; // already done, go back
 
-            }
-            /* *------------* */
-            else {
-                Ray* between_ray = new Ray(edges_from_start.top(), glm::normalize(edges_from_end.top() - edges_from_start.top()));
-                between_ray->InitializeRay(glm::distance(edges_from_start.top(), edges_from_end.top()));
-                between_ray->SetRayColor(color);
-                draw_components.push_back(between_ray);
-            }
+			}
+			/* *------------* */
+			else {
+				Ray* between_ray = new Ray(edges_from_start.top(), glm::normalize(edges_from_end.top() - edges_from_start.top()));
+				between_ray->InitializeRay(glm::distance(edges_from_start.top(), edges_from_end.top()));
+				between_ray->SetRayColor(color);
+				draw_components.push_back(between_ray);
+			}
 
 
-            while (edges_from_start.size() > 1) {
+			while (edges_from_start.size() > 1) {
 
-                glm::vec3 begin_at_start = edges_from_start.top();
-                glm::vec3 begin_at_end = edges_from_end.top();
-                edges_from_start.pop();
-                edges_from_end.pop();
-                Ray* from_start_ray = new Ray(begin_at_start, glm::normalize(edges_from_start.top() - begin_at_start));
-                Cube* from_start_point = new Cube(Transform{ begin_at_start, glm::vec3(0.1f), glm::vec3(0.0f) });
-                from_start_ray->InitializeRay(glm::distance(begin_at_start, edges_from_start.top()));
-                Ray* from_end_ray = new Ray(begin_at_end, glm::normalize(edges_from_end.top() - begin_at_end));
-                Cube* from_end_point = new Cube(Transform{ begin_at_end, glm::vec3(0.1f), glm::vec3(0.0f) });
-                from_end_ray->InitializeRay(glm::distance(begin_at_end, edges_from_end.top()));
+				glm::vec3 begin_at_start = edges_from_start.top();
+				glm::vec3 begin_at_end = edges_from_end.top();
+				edges_from_start.pop();
+				edges_from_end.pop();
+				Ray* from_start_ray = new Ray(begin_at_start, glm::normalize(edges_from_start.top() - begin_at_start));
+				Cube* from_start_point = new Cube(Transform{ begin_at_start, glm::vec3(0.1f), glm::vec3(0.0f) });
+				from_start_ray->InitializeRay(glm::distance(begin_at_start, edges_from_start.top()));
+				Ray* from_end_ray = new Ray(begin_at_end, glm::normalize(edges_from_end.top() - begin_at_end));
+				Cube* from_end_point = new Cube(Transform{ begin_at_end, glm::vec3(0.1f), glm::vec3(0.0f) });
+				from_end_ray->InitializeRay(glm::distance(begin_at_end, edges_from_end.top()));
 
-                from_start_ray->SetRayColor(color);
-                from_end_ray->SetRayColor(color);
+				from_start_ray->SetRayColor(color);
+				from_end_ray->SetRayColor(color);
 
-                draw_components.push_back(from_start_point);
-                draw_components.push_back(from_end_point);
-                draw_components.push_back(from_start_ray);
-                draw_components.push_back(from_end_ray);
+				draw_components.push_back(from_start_point);
+				draw_components.push_back(from_end_point);
+				draw_components.push_back(from_start_ray);
+				draw_components.push_back(from_end_ray);
 
-                //edges_from_start.pop();
-                //edges_from_end.pop();
-            }
+				//edges_from_start.pop();
+				//edges_from_end.pop();
+			}
 
-        }
-        break;
-        }
-    }
+		}
+										 break;
+		}
+	}
 }
 
-bool RayTracer::CalculatePathLoss(Point* transmitter_point, Point* receiver_point, float& total_attenuation_in_dB, float frequency)
+bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, Result& result)
 {
+	Point* transmitter_point = transmitter->GetPoint();
+	const float frequency = transmitter->GetFrequency();
+	Point * receiver_point = receiver->GetPoint();
 
-    const glm::vec3 transmitter_position = transmitter_point->position;
-    const glm::vec3 receiver_position = receiver_point->position;
-    auto records = transmitter_point->neighbour_record[receiver_point];
-    if (records.size() == 0) return false;
+	std::vector<const Record*> records = transmitter_point->neighbour_record[receiver_point];
+	if (records.size() == 0) return false;
 
-    const float c = 3e8;
-    const float wave_length = c / frequency;
-    float total_attenuation_in_lin = 0.0f;
-    const float pi = atan(1.0f) * 4;
-    const float coff= 0.8f;
+	const glm::vec3 transmitter_position = transmitter_point->position;
+	const glm::vec3 receiver_position = receiver_point->position;
 
-    float direct_att_in_lin = 0.0f; 
-    float direct_transmitter_gain = 0.0f;
-    float ref_att_in_lin = 0.0f;
-    float ref_transmitter_gain = 0.0f;
-    float diffraction_in_lin = 0.0f;
-    float diff_transmitter_gain = 0.0f;
+	const float c = 3e8;
+	const float wave_length = c / frequency;
 
-    for (auto record : records) {
-        switch (record->type) {
-        case RecordType::kDirect: {
-            const float distance = glm::distance(transmitter_position, receiver_position);
-            // todo : convert to dB
-            direct_att_in_lin = 1/pow(4*pi*distance*frequency/c, 2) ;
-            /*std::cout << "direct path loss in lin: " << direct_att_in_lin << std::endl;
-            std::cout << "direct path loss in dB: " << 10.0f*log10(direct_att_in_lin) << std::endl;*/
-            /// TODO: Calculate Transmitter Gain
+	const float pi = atan(1.0f) * 4;
+	const float coff = 0.8f;
 
-        }
-        break;
-        case RecordType::kReflect: {
-            std::cout << "reflection points: " << record->data.size() << std::endl;
-            for (auto point : record->data) {
-                float d1 = glm::distance(point, transmitter_position);
-                float d2 = glm::distance(point, receiver_position);
-                // todo : convert to dB
-                ref_att_in_lin += 1/(pow(4*pi*(d1+d2)*frequency/(c), 2)/coff)*0.8f;
-                /*std::cout << "reflection position: " << point.x << ", " << point.y << ", " << point.z << std::endl;
-                std::cout << "d1: " << d1 << ", d2: " << d2 << std::endl;
-                std::cout << "reflect path loss in lin: " << ref_att_in_lin << std::endl;
-                std::cout << "reflect path loss in dB: " << 10.0f * log10(ref_att_in_lin) << std::endl;*/
-                /// TODO: Calculate Transmitter Gain
+	result.direct_path_loss_in_linear = 0.0f;
+	result.reflection_loss_in_linear = 0.0f;
+	result.diffraction_loss_in_linear = 0.0f;
 
+	for (auto record : records) {
+		switch (record->type) {
+		case RecordType::kDirect: {
 
-            }
-        }
-        break;
-        case RecordType::kEdgeDiffraction: {
-            // TODO: Calculate Transmitter Gain
-            if (record->data.size() == 1) {
-                // Single Edge Diffraction Calculation
-                float diffraction_in_dB = CalculateSingleKnifeEdge(transmitter_position, record->data[0], receiver_position, frequency);
-                std::cout << "diffraction_in_dB: " << diffraction_in_dB << std::endl;
-                const float distance = glm::distance(transmitter_position, receiver_position);
-                float free_path_loss = 1/pow(4 * pi * distance * frequency / c, 2);
-                std::cout << "free path loss (lin): " << free_path_loss << std::endl;
-                float free_path_loss_dB = -10.0f * log10( free_path_loss / 10.0f);
-                std::cout << "free path loss (dB): " << free_path_loss_dB << std::endl;
+			const float tx_gain_in_dB = transmitter->GetTransmitterGain(receiver_position);
+			const float tx_gain_in_linear = pow(10, tx_gain_in_dB/10.0f);
 
-                diffraction_in_dB += free_path_loss_dB;
-                diffraction_in_dB *= -1.0f;
+			const float distance = glm::distance(transmitter_position, receiver_position);
 
-                std::cout << "diffract in dB: " << diffraction_in_dB << "\n";
-                diffraction_in_lin += pow(10, diffraction_in_dB / 10.0f);
+			result.direct_path_loss_in_linear = tx_gain_in_linear / pow(4 * pi * distance / wave_length, 2);
+			break;
+		}
+		case RecordType::kReflect: {
 
-                
-                std::cout << "tx_pos: " << transmitter_position.x << ", " << transmitter_position.y << ", " << transmitter_position.z << std::endl;
-                std::cout << "rx_pos: " << receiver_position.x << ", " << receiver_position.y << ", " << receiver_position.z << std::endl;
-                std::cout << "edge: " << record->data[0].x << ", " << record->data[0].y << ", " << record->data[0].z << std::endl;
-            }
-            else if (record->data.size() == 2) {
-                // Double Edge Diffraction Calculation
-                float max_v = std::max(
-                                CalculateVOfEdge(transmitter_position, record->data[0], receiver_position, frequency),
-                                CalculateVOfEdge(transmitter_position, record->data[1], receiver_position, frequency));
-                float diffraction_in_dB = CalculateDiffractionByV(max_v);
-                
-                const float distance = glm::distance(transmitter_position, receiver_position);
-                float free_path_loss = pow(4 * pi * distance * frequency / c, 2);
-                float free_path_loss_dB = 10.0 * pow(10, free_path_loss / 10.0f);
-                diffraction_in_dB += free_path_loss_dB;
-                diffraction_in_dB *= -1;
+			for (auto reflect_position : record->data) {
+
+				const float tx_gain_in_dB = transmitter->GetTransmitterGain(reflect_position);
+				const float tx_gain_in_linear = pow(10, tx_gain_in_dB / 10.0f);
+
+				float d1 = glm::distance(reflect_position, transmitter_position);
+				float d2 = glm::distance(reflect_position, receiver_position);
+
+				result.reflection_loss_in_linear += 0.8*tx_gain_in_linear / (pow(4 * pi * (d1 + d2) / (wave_length * coff), 2));
+			}
+
+			break;
+		}
+		case RecordType::kEdgeDiffraction: {
+			const float distance = glm::distance(transmitter_position, receiver_position);
+			float free_path_loss_in_dB = 10.0f * log10(pow(4.0f * pi * distance * frequency / c, 2));
+			if (record->data.size() == 1) {
+				const glm::vec3 edge_position = record->data[0];
+				// Single Edge Diffraction Calculation
+				const float tx_gain_in_dB = transmitter->GetTransmitterGain(edge_position);
 
 
-                std::cout << "tx_pos: " << transmitter_position.x << ", " << transmitter_position.y << ", " << transmitter_position.z << std::endl;
-                std::cout << "rx_pos: " << receiver_position.x << ", " << receiver_position.y << ", " << receiver_position.z << std::endl;
-                std::cout << "edge 1: " << record->data[0].x << ", " << record->data[0].y << ", " << record->data[0].z << std::endl;
-                std::cout << "edge 2: " << record->data[1].x << ", " << record->data[1].y << ", " << record->data[1].z << std::endl;
-                std::cout << "diffract in dB: " << diffraction_in_dB << "\n";
+				float diffraction_loss_in_dB = CalculateSingleKnifeEdge(transmitter_position, edge_position, receiver_position, frequency)
+					+ free_path_loss_in_dB - tx_gain_in_dB;
 
-                diffraction_in_lin += pow(10, diffraction_in_dB / 10.0f);
-            }
-            else if (record->data.size() == 3) {
-                std::vector<glm::vec3> edges = record->data;
-                glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
-                glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
-                glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
-            
-                std::cout << "tx_pos: " << transmitter_position.x << ", " << transmitter_position.y << ", " << transmitter_position.z << std::endl;
-                std::cout << "rx_pos: " << receiver_position.x << ", " << receiver_position.y << ", " << receiver_position.z << std::endl;
-                std::cout << "near tx edge: " << near_tramsitter_edge_position.x << ", " << near_tramsitter_edge_position.y << ", " << near_tramsitter_edge_position.z << std::endl;
-                std::cout << "center edge: " << center_edge_position.x << ", " << center_edge_position.y << ", " << center_edge_position.z << std::endl;
-                std::cout << "near rx edge: " << near_receiver_edge_position.x << ", " << near_receiver_edge_position.y << ", " << near_receiver_edge_position.z << std::endl;
+				result.diffraction_loss_in_linear = pow(10, -diffraction_loss_in_dB / 10.0f);
+			}
+			else if (record->data.size() == 2) {
+				// Double Edge Diffraction Calculation
+				const glm::vec3 edge_1_position = record->data[0];
+				const glm::vec3 edge_2_position = record->data[1];
+				std::vector<glm::vec3> edges = record->data;
+				const glm::vec3 nearest_tx_edge = NearestEdgeFromPoint(transmitter_position, edges);
+				const float tx_gain_in_dB = transmitter->GetTransmitterGain(nearest_tx_edge);
 
-                float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, receiver_position, frequency);
-                float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-                float c3 = CalculateSingleKnifeEdge(transmitter_position, near_receiver_edge_position, receiver_position, frequency);
-                
-                std::pair<float, float> correction_cosines;
-                CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
-                float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
-                float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-                float diffraction_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
-                const float distance = glm::distance(transmitter_position, receiver_position);
-                float free_path_loss = pow(4 * pi * distance * frequency / c, 2);
-                float free_path_loss_dB = 10.0 * pow(10, free_path_loss / 10.0f);
-                diffraction_in_dB += free_path_loss_dB;
-                diffraction_in_dB *= -1;
+				float max_v = std::max(
+					CalculateVOfEdge(transmitter_position, edge_1_position, receiver_position, frequency),
+					CalculateVOfEdge(transmitter_position, edge_2_position, receiver_position, frequency));
 
-                std::cout << "diffract in dB: " << diffraction_in_dB << "\n";
-                std::cout << "c_1_cap: " << c_1_cap << std::endl;
-                std::cout << "c_2_cap: " << c_2_cap << std::endl;
-                diffraction_in_lin += pow(10, diffraction_in_dB / 10.0f);
-            }
-            else {
-                std::set<float> highest_v;
-                std::map<float, glm::vec3> edges_dict;
-                for (auto edge : record->data) {
-                    float temp_v = CalculateVOfEdge(transmitter_position, edge, receiver_position, frequency);
-                    edges_dict[temp_v] = edge;
-                    highest_v.insert(temp_v);
-                }
-                std::vector<glm::vec3> edges; int i = 0;
-                for (auto ritr = highest_v.rbegin(); ritr != highest_v.rend(); ++ritr) {
-                    edges.push_back(edges_dict[*ritr]);
-                    //std::cout << "v: " << *ritr << std::endl;
-                    if (i++ == 2) break;
-                }
+				float diffraction_loss_in_dB = CalculateDiffractionByV(max_v) + free_path_loss_in_dB - tx_gain_in_dB;
 
-                glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
-                glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
-                glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
-                std::cout << "tx_pos: " << transmitter_position.x << ", " << transmitter_position.y << ", " << transmitter_position.z << std::endl;
-                std::cout << "rx_pos: " << receiver_position.x << ", " << receiver_position.y << ", " << receiver_position.z << std::endl;
-                std::cout << "edges 1: " << near_tramsitter_edge_position.x << ", " << near_tramsitter_edge_position.y << ", " << near_tramsitter_edge_position.z << std::endl;
-                std::cout << "edges 2: " << center_edge_position.x << ", " << center_edge_position.y << ", " << center_edge_position.z << std::endl;
-                std::cout << "edges 3: " << near_receiver_edge_position.x << ", " << near_receiver_edge_position.y << ", " << near_receiver_edge_position.z << std::endl;
-                float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, receiver_position, frequency);
-                float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-                float c3 = CalculateSingleKnifeEdge(transmitter_position, near_receiver_edge_position, receiver_position, frequency);
+				result.diffraction_loss_in_linear = pow(10, -diffraction_loss_in_dB / 10.0f);
+			}
+			else if (record->data.size() == 3) {
+				std::vector<glm::vec3> edges = record->data;
+				glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
+				glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
+				glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
 
-                std::pair<float, float> correction_cosines;
-                CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
-                float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
-                float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-                float diffraction_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
+				const float tx_gain_in_dB = transmitter->GetTransmitterGain(near_tramsitter_edge_position);
 
-                const float distance = glm::distance(transmitter_position, receiver_position);
-                float free_path_loss = pow(4 * pi * distance * frequency / c, 2);
-                float free_path_loss_dB = 10.0 * pow(10, free_path_loss / 10.0f);
-                diffraction_in_dB += free_path_loss_dB;
-                diffraction_in_dB *= -1;
+				float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, receiver_position, frequency);
+				float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
+				float c3 = CalculateSingleKnifeEdge(transmitter_position, near_receiver_edge_position, receiver_position, frequency);
 
-                std::cout << "c_1_cap: " << c_1_cap << std::endl;
-                std::cout << "c_2_cap: " << c_2_cap << std::endl;
+				std::pair<float, float> correction_cosines;
+				CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
+				float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
+				float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
+				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
 
-                diffraction_in_lin += pow(10, diffraction_in_dB / 10.0f);
-                std::cout << "diffract in dB: " << diffraction_in_dB << "\n";
-            }
+				diffraction_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB - tx_gain_in_dB;
 
-        }
-        break;
-        }
-    }
-    std::cout << "-------------------------------------------" << std::endl;
-    std::cout << "Direct Path Loss [Linear]: " << direct_att_in_lin  << ", [dB] : " <<10.0f*log10(direct_att_in_lin) << std::endl;
-    std::cout << "Reflection Path Loss [Linear]: " << ref_att_in_lin << ", [dB] : " << 10.0f * log10(ref_att_in_lin) << std::endl;
-    std::cout << "Diffraction Path Loss [Linear]: " << diffraction_in_lin << ", [dB] : " << 10.0f * log10(diffraction_in_lin) << std::endl;
-    total_attenuation_in_dB = 10.0f*log10(direct_att_in_lin + diffraction_in_lin +0.8f* ref_att_in_lin )  ;
-    return true;
+				result.diffraction_loss_in_linear = pow(10, -diffraction_loss_in_dB / 10.0f);
+			}
+			else {
+				std::set<float> highest_v;
+				std::map<float, glm::vec3> edges_dict;
+				for (auto edge : record->data) {
+					float temp_v = CalculateVOfEdge(transmitter_position, edge, receiver_position, frequency);
+					edges_dict[temp_v] = edge;
+					highest_v.insert(temp_v);
+				}
+				std::vector<glm::vec3> edges; int i = 0;
+				// choose the highest v from the highest_v
+				for (auto ritr = highest_v.rbegin(); ritr != highest_v.rend(); ++ritr) {
+					edges.push_back(edges_dict[*ritr]);
+					if (i++ == 2) break;
+				}
+
+				glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
+				glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
+				glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
+
+				const float tx_gain_in_dB = transmitter->GetTransmitterGain(near_tramsitter_edge_position);
+
+				float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, receiver_position, frequency);
+				float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
+				float c3 = CalculateSingleKnifeEdge(transmitter_position, near_receiver_edge_position, receiver_position, frequency);
+
+				std::pair<float, float> correction_cosines;
+				CalculateCorrectionCosines(transmitter_position, record->data, receiver_position, correction_cosines);
+				float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
+				float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
+				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
+
+				diffraction_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB - tx_gain_in_dB;
+
+				result.diffraction_loss_in_linear = pow(10, -diffraction_loss_in_dB / 10.0f);
+
+			}
+			break;
+
+		}
+		}
+	}
+
+	// Summarize Calculation
+	result.total_loss = 10.0f * log10(result.direct_path_loss_in_linear + result.diffraction_loss_in_linear + result.reflection_loss_in_linear);
+	return true;
 }
 
 bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) const
 {
-    // get direction from start point to end point
-    glm::vec3 origin = start_position;
-    glm::vec3 direction = glm::normalize(end_position - origin);
-    float start_to_end_distance = glm::distance(start_position, end_position);
-    Ray ray{ origin, direction };
-    float distance = -1;
-    // trace the ray on this direction 
-    // check if the direction hit something and the t is not betwen start_point to end_point length
-    if (map_->IsHit(ray, distance) && distance != -1 && distance < start_to_end_distance) {
-        //std::cout << "hit something at distance: " << distance << std::endl;
-        return false;
-    }
-    return true;
+	// get direction from start point to end point
+	glm::vec3 origin = start_position;
+	glm::vec3 direction = glm::normalize(end_position - origin);
+	float start_to_end_distance = glm::distance(start_position, end_position);
+	Ray ray{ origin, direction };
+	float distance = -1;
+	// trace the ray on this direction 
+	// check if the direction hit something and the t is not betwen start_point to end_point length
+	if (map_->IsHit(ray, distance) && distance != -1 && distance < start_to_end_distance) {
+		//std::cout << "hit something at distance: " << distance << std::endl;
+		return false;
+	}
+	return true;
 }
 
-bool RayTracer::IsReflected(Point * start_point, Point * end_point, std::vector<glm::vec3> & reflected_points)  /// TODO: add const 
+bool RayTracer::IsReflected(Point* start_point, Point* end_point, std::vector<glm::vec3>& reflected_points)  /// TODO: add const 
 {
-    objects_.clear();
-    // search the hitable triangles between two points
-    glm::vec3 start_position = start_point->position;
-    glm::vec3 end_position = end_point->position;
-    // match the co-exist triangles between two points
-    std::vector<const Triangle*> matched_triangles;
-    /// search matches triangles
-    for (auto const& [triangle, exist_value] : start_point->hit_triangles)
-        if (end_point->hit_triangles[triangle] == true) matched_triangles.push_back(triangle);
-   
-    // check the reflection points on matches triangles
-    for (const Triangle * matched_triangle : matched_triangles) {
-        // reflect one of the point on the triangle plane
-        glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
-        Cube* cube = new Cube(Transform{ reflected_position, glm::vec3(1.0f), glm::vec3(0.0f)});
-        objects_.push_back(cube);
-        // trace from the reflected point 
-        glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
+	// search the hitable triangles between two points
+	glm::vec3 start_position = start_point->position;
+	glm::vec3 end_position = end_point->position;
+	// match the co-exist triangles between two points
+	std::vector<const Triangle*> check_triangles;
 
-        Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
-        
-        std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
-        if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
-            //std::cout << "hit some triangles" << std::endl;
-            // check if the reflect point hit the matched triangle;
-            
-            //std::cout << "distance: ";
-            for (auto const [distance, triangle] : hit_triangles) {
-                if (triangle == matched_triangle) {
-                    glm::vec3 reflection_point_position = reflected_position + ref_to_end_direction*(distance+0.01f);
-                    Cube* cube = new Cube(Transform{ reflection_point_position, glm::vec3(1.0f), glm::vec3(0.0f)});
-                    objects_.push_back(cube);
-                    if (IsDirectHit(reflection_point_position, start_position)) {
-                        Ray* r1 = new Ray(start_position, glm::normalize(reflection_point_position - start_position));
-                        r1->InitializeRay(glm::distance(start_position, reflection_point_position));
-                        r1->SetRayColor(glm::vec4(1.0, 0.0f, 1.0f, 1.0f));
-                        objects_.push_back(r1);
-                    }
-                    if (IsDirectHit(reflection_point_position, end_position)) {
-                        Ray* r2 = new Ray(end_position, glm::normalize(reflection_point_position - end_position));
-                        r2->InitializeRay(glm::distance(end_position, reflection_point_position));
-                        r2->SetRayColor(glm::vec4(1.0, 0.0f, 1.0f, 1.0f));
-                        objects_.push_back(r2);
-                    }
-                    if (IsDirectHit(reflection_point_position, end_position) && IsDirectHit(reflection_point_position, start_position))
-                    reflected_points.push_back(reflection_point_position);
-                    
-                    break;
-                }                
-            }
-            
-        }
-    }
-    if (reflected_points.empty()) return false;
-    return true;
+	// Searching for check triangles
+	if (map_->GetObjects().size() > 129600) {
+
+		// scan hit_triangles
+		ScanHit(start_point); // it won't scan if the point is already checked
+		ScanHit(end_point);
+		for (auto const& [triangle, exist_value] : start_point->hit_triangles)
+			if (end_point->hit_triangles[triangle] == true) check_triangles.push_back(triangle);
+	}
+	else {
+		check_triangles = map_->GetObjects();
+	}
+
+	// check the reflection points on matches triangles
+	for (const Triangle* matched_triangle : check_triangles) {
+		// reflect one of the point on the triangle plane
+		glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
+		// trace from the reflected point 
+		glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
+
+		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
+		std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
+
+
+		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
+
+			for (auto const [distance, triangle] : hit_triangles) {
+				if (triangle == matched_triangle) {
+					glm::vec3 reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
+					if (IsDirectHit(reflection_point_position, end_position) &&
+						IsDirectHit(reflection_point_position, start_position))
+						reflected_points.push_back(reflection_point_position);
+
+					break;
+				}
+			}
+
+		}
+	}
+	if (reflected_points.empty()) return false;
+	return true;
 }
 
 bool RayTracer::IsOutdoor(glm::vec3 start_point) const
 {
-    return false;
+	return false;
 }
 
-glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 points) /// TODO change to const later
+glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec3 points) /// TODO change to const later
 {
-    /// algorithms
-  
-    // 1. construct the plane from 3 points (non-collinear points)
-    glm::vec3 p_0 = triangle->GetPoints()[0];
-    glm::vec3 p_1 = triangle->GetPoints()[1];
-    glm::vec3 p_2 = triangle->GetPoints()[2];
+	/// algorithms
 
-    glm::vec3 n = triangle->GetNormal();
+	// 1. construct the plane from 3 points (non-collinear points)
+	glm::vec3 p_0 = triangle->GetPoints()[0];
+	glm::vec3 p_1 = triangle->GetPoints()[1];
+	glm::vec3 p_2 = triangle->GetPoints()[2];
 
-    float b = (n.x * p_1.x) + (n.y * p_1.y) + (n.z * p_1.z);
-    // 2. mirror the point from the plane
-    float t = (b - (points.x*n.x + points.y*n.y + points.z*n.z )) / (n.x*n.x + n.y*n.y + n.z*n.z); //distance from point to plane
+	glm::vec3 n = triangle->GetNormal();
 
-    /// DEBUG mirror point
-    glm::vec3 m = glm::vec3 (points.x + t * n.x, points.y + t * n.y, points.z + t * n.z); // points on mirror
+	float b = (n.x * p_1.x) + (n.y * p_1.y) + (n.z * p_1.z);
+	// 2. mirror the point from the plane
+	float t = (b - (points.x * n.x + points.y * n.y + points.z * n.z)) / (n.x * n.x + n.y * n.y + n.z * n.z); //distance from point to plane
 
-    return  points + 2*t*n; // reverse average point from average point 
+	/// DEBUG mirror point
+	glm::vec3 m = glm::vec3(points.x + t * n.x, points.y + t * n.y, points.z + t * n.z); // points on mirror
+
+	return  points + 2 * t * n; // reverse average point from average point 
 }
 
-bool RayTracer::IsKnifeEdgeDiffraction(Point * start_point, Point * end_point, std::vector<glm::vec3>& edges_points)
+bool RayTracer::IsKnifeEdgeDiffraction(Point* start_point, Point* end_point, std::vector<glm::vec3>& edges_points)
 {
-    const glm::vec3 start_position = start_point->position;
-    const glm::vec3 end_position = end_point->position;
-    // try multiple edges scanning
-    unsigned int max_scan = 5;
-    unsigned int current_scan = 0;
-    glm::vec3 left_position = start_position;
-    glm::vec3 right_position = end_position;
-    while (!IsDirectHit(left_position, right_position) && current_scan < max_scan) {
-        current_scan++;
-        glm::vec3 edge_from_left_position;
-        if (!FindEdge(left_position, right_position, edge_from_left_position)) return false;
-        glm::vec3 edge_from_right_position;
-        if (!FindEdge(right_position, left_position, edge_from_right_position)) return false;
+	const glm::vec3 start_position = start_point->position;
+	const glm::vec3 end_position = end_point->position;
+	// try multiple edges scanning
+	unsigned int max_scan = 5;
+	unsigned int current_scan = 0;
+	glm::vec3 left_position = start_position;
+	glm::vec3 right_position = end_position;
+	while (!IsDirectHit(left_position, right_position) && current_scan < max_scan) {
+		current_scan++;
+		glm::vec3 edge_from_left_position;
+		if (!FindEdge(left_position, right_position, edge_from_left_position)) return false;
+		glm::vec3 edge_from_right_position;
+		if (!FindEdge(right_position, left_position, edge_from_right_position)) return false;
 
-        if (IsDirectHit(edge_from_left_position, edge_from_right_position)) {
-            if (glm::distance(edge_from_left_position, edge_from_right_position) < 0.5f) {
-                edges_points.push_back((edge_from_left_position + edge_from_right_position) / 2.0f);
-                CleanEdgePoints(edges_points);
-                return true;
-            }
-            edges_points.push_back(edge_from_left_position);
-            edges_points.push_back(edge_from_right_position);
-            CleanEdgePoints(edges_points);
-            return true;
-        }
-        // search more eges
-        left_position = edge_from_left_position;
-        right_position = edge_from_right_position;
-        edges_points.push_back(edge_from_left_position);
-        edges_points.push_back(edge_from_right_position);
-        CleanEdgePoints(edges_points); // Check optimize the edges in the case if they are too near
-    }
-    return false;
+		if (IsDirectHit(edge_from_left_position, edge_from_right_position)) {
+			if (glm::distance(edge_from_left_position, edge_from_right_position) < 0.5f) {
+				edges_points.push_back((edge_from_left_position + edge_from_right_position) / 2.0f);
+				CleanEdgePoints(edges_points);
+				return true;
+			}
+			edges_points.push_back(edge_from_left_position);
+			edges_points.push_back(edge_from_right_position);
+			CleanEdgePoints(edges_points);
+			return true;
+		}
+		// search more eges
+		left_position = edge_from_left_position;
+		right_position = edge_from_right_position;
+		edges_points.push_back(edge_from_left_position);
+		edges_points.push_back(edge_from_right_position);
+		CleanEdgePoints(edges_points); // Check optimize the edges in the case if they are too near
+	}
+	return false;
 }
 
 bool RayTracer::FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::vec3& edge_position)
 {
-    const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
-    const float scan_precision = 0.05f;
-    glm::vec3 start_end_direction = glm::normalize(end_position - start_position);
-    
-    const float min_x = std::min(end_position.x, start_position.x);
-    const float max_x = std::max(end_position.x, start_position.x);
-    const float min_z = std::min(end_position.z, start_position.z);
-    const float max_z = std::max(end_position.z, start_position.z);
+	const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
+	const float scan_precision = 0.05f;
+	glm::vec3 start_end_direction = glm::normalize(end_position - start_position);
 
-    glm::vec3 latest_hit_position;
-    float latest_hit_distance = -1.0f;
-    glm::vec3 latest_hit_direction;
-    glm::vec3 scan_direction;
-    float scan_hit_distance;
+	const float min_x = std::min(end_position.x, start_position.x);
+	const float max_x = std::max(end_position.x, start_position.x);
+	const float min_z = std::min(end_position.z, start_position.z);
+	const float max_z = std::max(end_position.z, start_position.z);
 
-    const glm::vec3 start_cross_direction = glm::cross(-up_direction, start_end_direction);
-    for (float current_angle = 0.0f; current_angle < 180.0f; current_angle += scan_precision) {
-        glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), start_cross_direction);
-        scan_direction = glm::normalize(glm::vec3(direction_trans * start_end_direction));
-        // if scan_direction is near almost equal to up_direction, then we stop scanning
-        if (glm::degrees(glm::angle(scan_direction, up_direction)) < .5f) return false;
+	glm::vec3 latest_hit_position;
+	float latest_hit_distance = -1.0f;
+	glm::vec3 latest_hit_direction;
+	glm::vec3 scan_direction;
+	float scan_hit_distance;
 
-        Ray scan_ray{ start_position, scan_direction }; //implement to heap later
+	const glm::vec3 start_cross_direction = glm::cross(-up_direction, start_end_direction);
+	for (float current_angle = 0.0f; current_angle < 180.0f; current_angle += scan_precision) {
+		glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), start_cross_direction);
+		scan_direction = glm::normalize(glm::vec3(direction_trans * start_end_direction));
+		// if scan_direction is near almost equal to up_direction, then we stop scanning
+		if (glm::degrees(glm::angle(scan_direction, up_direction)) < .5f) return false;
 
-        if (map_->IsHit(scan_ray, scan_hit_distance)) {
-            latest_hit_position = start_position + scan_direction * scan_hit_distance;
-            //lastest_hit_position should be in between start_positon and end_position in xz plane
-            if (latest_hit_position.x < min_x || latest_hit_position.x > max_x ||
-                latest_hit_position.z < min_z || latest_hit_position.z > max_z) {
-                break;
-            }
-            latest_hit_distance = scan_hit_distance;
-            latest_hit_direction = scan_direction;
-        }
-        else {
-            if (latest_hit_distance == -1.0f) return false;
-            break;
-        }
-    }
+		Ray scan_ray{ start_position, scan_direction }; //implement to heap later
 
-    //float distance_to_obstacle_on_xz = cos();
-    glm::vec3 start_end_on_xz_direction = glm::normalize(glm::vec3(start_end_direction.x, 0.0f, start_end_direction.z));
-    double start_end_to_on_xz_angle = glm::angle(latest_hit_direction, start_end_on_xz_direction);
-    float distance_on_xz = latest_hit_distance * cos(start_end_to_on_xz_angle);
-    double start_edge_angle = glm::angle(start_end_on_xz_direction, scan_direction);
-    float distance_to_edge = distance_on_xz / cos(start_edge_angle);
+		if (map_->IsHit(scan_ray, scan_hit_distance)) {
+			latest_hit_position = start_position + scan_direction * scan_hit_distance;
+			//lastest_hit_position should be in between start_positon and end_position in xz plane
+			if (latest_hit_position.x < min_x || latest_hit_position.x > max_x ||
+				latest_hit_position.z < min_z || latest_hit_position.z > max_z) {
+				break;
+			}
+			latest_hit_distance = scan_hit_distance;
+			latest_hit_direction = scan_direction;
+		}
+		else {
+			if (latest_hit_distance == -1.0f) return false;
+			break;
+		}
+	}
 
-    // calculate the start_edge_point after exit the obstables
-    edge_position = start_position + scan_direction * distance_to_edge;
-    return true;
+	//float distance_to_obstacle_on_xz = cos();
+	glm::vec3 start_end_on_xz_direction = glm::normalize(glm::vec3(start_end_direction.x, 0.0f, start_end_direction.z));
+	double start_end_to_on_xz_angle = glm::angle(latest_hit_direction, start_end_on_xz_direction);
+	float distance_on_xz = latest_hit_distance * cos(start_end_to_on_xz_angle);
+	double start_edge_angle = glm::angle(start_end_on_xz_direction, scan_direction);
+	float distance_to_edge = distance_on_xz / cos(start_edge_angle);
+
+	// calculate the start_edge_point after exit the obstables
+	edge_position = start_position + scan_direction * distance_to_edge;
+	return true;
 }
 
-glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> & edges_points)
+glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3>& edges_points)
 {
-    std::map<float, glm::vec3> distance_from_point;
-    for (auto edge_point : edges_points) { // implemenet to function
-        glm::vec3 point_positon_on_xz = glm::vec3(point_position.x, 0.0f, point_position.z);
-        glm::vec3 edge_point_on_xz = glm::vec3(edge_point.x, 0.0f, edge_point.z);
-        distance_from_point[glm::distance(edge_point_on_xz, point_positon_on_xz)] = edge_point;
-    }
-    edges_points.erase(std::remove(edges_points.begin(), edges_points.end(), distance_from_point.begin()->second), edges_points.end());
-    return glm::vec3(distance_from_point.begin()->second);
+	std::map<float, glm::vec3> distance_from_point;
+	for (auto edge_point : edges_points) { // implemenet to function
+		glm::vec3 point_positon_on_xz = glm::vec3(point_position.x, 0.0f, point_position.z);
+		glm::vec3 edge_point_on_xz = glm::vec3(edge_point.x, 0.0f, edge_point.z);
+		distance_from_point[glm::distance(edge_point_on_xz, point_positon_on_xz)] = edge_point;
+	}
+	edges_points.erase(std::remove(edges_points.begin(), edges_points.end(), distance_from_point.begin()->second), edges_points.end());
+	return glm::vec3(distance_from_point.begin()->second);
 }
 
 void RayTracer::CleanEdgePoints(std::vector<glm::vec3>& edges_points)
 {
-    if (edges_points.size() == 1) return;
+	if (edges_points.size() == 1) return;
 
-    for (int i = edges_points.size()-1; i >=0; --i) 
-        for (int j = i - 1; j >= 0; --j) {
-            glm::vec3 i_edge = edges_points[i];
-            glm::vec3 & j_edge = edges_points[j];
-            if (glm::distance(i_edge, j_edge) <= .5f) { 
-                j_edge = (i_edge + j_edge) / 2.0f;
-                edges_points.pop_back();
-                break;
-            };
-        }
+	for (int i = edges_points.size() - 1; i >= 0; --i)
+		for (int j = i - 1; j >= 0; --j) {
+			glm::vec3 i_edge = edges_points[i];
+			glm::vec3& j_edge = edges_points[j];
+			if (glm::distance(i_edge, j_edge) <= .5f) {
+				j_edge = (i_edge + j_edge) / 2.0f;
+				edges_points.pop_back();
+				break;
+			};
+		}
 }
 
 float RayTracer::CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency)
 {
-    float v = CalculateVOfEdge(start_position, edge_position, end_position, frequency);
+	float v = CalculateVOfEdge(start_position, edge_position, end_position, frequency);
 
-    return CalculateDiffractionByV(v);
+	return CalculateDiffractionByV(v);
 }
 
 float RayTracer::CalculateDiffractionByV(float v) {
-    return 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
+	return 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
 }
-float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency){
-    float wave_length = 3e8 / (frequency);
-    glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
+float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) {
+	float wave_length = 3e8 / (frequency);
+	glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
 
-    glm::vec3 start_to_edge_direction = glm::normalize(edge_position - start_position);
-    glm::vec3 end_to_edge_direction = glm::normalize(edge_position - end_position);
+	glm::vec3 start_to_edge_direction = glm::normalize(edge_position - start_position);
+	glm::vec3 end_to_edge_direction = glm::normalize(edge_position - end_position);
 
-    float angle_1 = glm::angle(start_to_edge_direction, start_to_end_direction);
-    float angle_2 = glm::angle(end_to_edge_direction, -start_to_end_direction);
-    float r1 = glm::distance(start_position, end_position);
-    float r2 = glm::distance(end_position, edge_position);
-    float s1 = r1 * cos(angle_1);
-    float s2 = r2 * cos(angle_2);
-    float h = sin(angle_1) * r1;
-    float v = h* sqrt( (2.0f/wave_length) * (s1 + s2) / ( r1 * r2)) ;
+	float angle_1 = glm::angle(start_to_edge_direction, start_to_end_direction);
+	float angle_2 = glm::angle(end_to_edge_direction, -start_to_end_direction);
+	float r1 = glm::distance(start_position, end_position);
+	float r2 = glm::distance(end_position, edge_position);
+	float s1 = r1 * cos(angle_1);
+	float s2 = r2 * cos(angle_2);
+	float h = sin(angle_1) * r1;
+	float v = h * sqrt((2.0f / wave_length) * (s1 + s2) / (r1 * r2));
 
-    std::cout << "wave length: " << wave_length << std::endl;
-    std::cout << "r1: " << r1 << " r2: " << r2 << "s1: " << s1 << "s2: " << s2 << "h: " << h << " angle1(deg): " << glm::degrees(angle_1) << " angle_2(deg):" << glm::degrees(angle_2) << std::endl;
-    std::cout << "Tx to Rx distance: " << glm::distance(end_position, start_position) << std::endl;
-    std::cout << "v: " << v << std::endl;
-    return v ;
+	//std::cout << "wave length: " << wave_length << std::endl;
+	//std::cout << "r1: " << r1 << " r2: " << r2 << "s1: " << s1 << "s2: " << s2 << "h: " << h << " angle1(deg): " << glm::degrees(angle_1) << " angle_2(deg):" << glm::degrees(angle_2) << std::endl;
+	//std::cout << "Tx to Rx distance: " << glm::distance(end_position, start_position) << std::endl;
+	//std::cout << "v: " << v << std::endl;
+	return v;
 }
-void RayTracer::CalculateCorrectionCosines( glm::vec3 start_position, 
-                                            std::vector<glm::vec3> edges, 
-                                            glm::vec3 end_position, std::pair<float, float>& calculated_cosines)
+void RayTracer::CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges,
+	glm::vec3 end_position, std::pair<float, float>& calculated_cosines)
 {
-    glm::vec3 p1 = start_position;
-    glm::vec3 p2 = NearestEdgeFromPoint(p1, edges);
-    glm::vec3 p3 = NearestEdgeFromPoint(p2, edges);
-    glm::vec3 p4 = NearestEdgeFromPoint(p3, edges);
-    glm::vec3 p5 = end_position;
+	glm::vec3 p1 = start_position;
+	glm::vec3 p2 = NearestEdgeFromPoint(p1, edges);
+	glm::vec3 p3 = NearestEdgeFromPoint(p2, edges);
+	glm::vec3 p4 = NearestEdgeFromPoint(p3, edges);
+	glm::vec3 p5 = end_position;
 
-    float d1 = glm::distance(glm::vec2(p1.x, p1.z), glm::vec2(p2.x, p2.z));
-    float d2 = glm::distance(glm::vec2(p2.x, p2.z), glm::vec2(p3.x, p3.z));
-    float d3 = glm::distance(glm::vec2(p3.x, p3.z), glm::vec2(p4.x, p4.z));
-    float d4 = glm::distance(glm::vec2(p4.x, p4.z), glm::vec2(p5.x, p5.z));
+	float d1 = glm::distance(glm::vec2(p1.x, p1.z), glm::vec2(p2.x, p2.z));
+	float d2 = glm::distance(glm::vec2(p2.x, p2.z), glm::vec2(p3.x, p3.z));
+	float d3 = glm::distance(glm::vec2(p3.x, p3.z), glm::vec2(p4.x, p4.z));
+	float d4 = glm::distance(glm::vec2(p4.x, p4.z), glm::vec2(p5.x, p5.z));
 
-    calculated_cosines.first = sqrt((d1*(d3+d4))/((d1+d2)*(d2+d3+d4))) ;
-    calculated_cosines.second = sqrt((d4*(d1+d2))/((d3+d4)*(d1+d2+d3)));
-    return;
+	calculated_cosines.first = sqrt((d1 * (d3 + d4)) / ((d1 + d2) * (d2 + d3 + d4)));
+	calculated_cosines.second = sqrt((d4 * (d1 + d2)) / ((d3 + d4) * (d1 + d2 + d3)));
+	return;
 }
-void RayTracer::DrawObjects(Camera * main_camera) const
+void RayTracer::DrawObjects(Camera* main_camera) const
 {
-    for (auto & object : objects_) {
-        object->DrawObject(main_camera);
-    }
+	for (auto& object : objects_) {
+		object->DrawObject(main_camera);
+	}
 }
 
-Point * RayTracer::InitializeOrCallPoint(glm::vec3 initialized_point)
+Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_point)
 {
-    if (points_[initialized_point] == nullptr) {
-        Point*  point = new Point(initialized_point);
-        ScanHit(point);
-        points_[initialized_point] = point;
-        return point;
-    }
-    return points_[initialized_point];
+	if (points_[initialized_point] == nullptr) {
+		Point* point = new Point(initialized_point);
+		points_[initialized_point] = point;
+		return point;
+	}
+	return points_[initialized_point];
 }

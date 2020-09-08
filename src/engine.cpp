@@ -92,7 +92,7 @@ void Engine::LoadRayTracer()
 	transmitter_ = new Transmitter(traismitter_trans, 2.3e9, ray_tracer_);
 	
 	// todo: implement multiple radiation patterns
-	pattern_ = new RadiationPattern("C:/Users/supaw/Code/wisim/assets/pattern/pattern-1.txt");
+	pattern_ = new RadiationPattern("../assets/patterns/pattern-1.txt");
 	// add pattern to transmitter
 	std::cout << "added pattern\n";
 	transmitter_->AssignRadiationPattern(pattern_);
@@ -364,6 +364,6 @@ void Engine::Visualize()
 	}*/
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
 	ray_tracer_->DrawObjects(main_camera_);
-	transmitter_->DrawRadiationPattern(main_camera_);
+	//transmitter_->DrawRadiationPattern(main_camera_);
 	test_receiver_->DrawObjects(main_camera_);
 }
