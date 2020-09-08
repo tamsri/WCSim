@@ -75,7 +75,7 @@ class Engine{
 
         Transmitter* transmitter_;
         //std::vector<Receiver*> receivers_;
-        Receiver* test_receiver_;
+        //Receiver * test_receiver_;
         RadiationPattern * pattern_;
 
         std::vector<Object*> render_objects_;

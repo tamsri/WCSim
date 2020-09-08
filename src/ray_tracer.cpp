@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stack>
+#include <iomanip>
 
 #include <glm/gtx/vector_angle.hpp>
 
@@ -320,7 +321,7 @@ void RayTracer::GetDrawPointsComponent(Point* start_point, Point* end_point, std
 			edges_from_start.push(start_position);
 			std::stack<glm::vec3> edges_from_end;
 			edges_from_end.push(end_position);
-			std::cout << "edges: " << edges_points.size() << std::endl;
+			//std::cout << "edges: " << edges_points.size() << std::endl;
 			glm::vec4 color = (edges_points.size() >= 5) ? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 			// separate the edges to each points
 			while (!edges_points.empty()) {
@@ -808,12 +809,13 @@ void RayTracer::DrawObjects(Camera* main_camera) const
 	}
 }
 
-Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_point)
+Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_position)
 {
-	if (points_[initialized_point] == nullptr) {
-		Point* point = new Point(initialized_point);
-		points_[initialized_point] = point;
+	initialized_position = glm::round(initialized_position);
+	if (points_[initialized_position] == nullptr) {
+		Point* point = new Point(initialized_position);
+		points_[initialized_position] = point;
 		return point;
 	}
-	return points_[initialized_point];
+	return points_[initialized_position];
 }

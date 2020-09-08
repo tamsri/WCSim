@@ -20,6 +20,8 @@ class Transmitter {
 public:
 	Transmitter(Transform transform, float frequency, RayTracer * ray_tracer);
 
+	// Actions
+	void AddReceiver(Receiver* receiver);
 	void DrawRadiationPattern(Camera * camera);
 	void AssignRadiationPattern(RadiationPattern* pattern);
 	float GetFrequency();
@@ -28,16 +30,20 @@ public:
 
 	// Movement
 	void Move(const Direction direction, float delta_time);
-	void Rotate(float theta, float phi);
+	void Rotate(const Rotation rotation, float delta_time);
 	
 	void Update();
 	void Reset();
+
+	// Visualisation
+	void DrawObjects(Camera * camera);
 private:
 	
 	// Variables
 	float transmitter_power_output_;
 	float frequency_;
 	float move_speed_;
+	float rotation_speed_;
 	glm::vec3 front_direction_, up_direction_;
 
 	Transform transform_;

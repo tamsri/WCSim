@@ -34,17 +34,31 @@ Transmitter::Transmitter(Transform transform,
 
 void Transmitter::Update()
 {
+	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
 	for (auto* receiver : receivers_) {
-		current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
 		receiver->Update();
 	}
 }
 
 void Transmitter::Reset()
 {
+	rotation_speed_ = 1.0f;
 	move_speed_ = 10.0f;
 	front_direction_ = glm::vec3(1.0f, 0.0f, 0.0);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0);
+}
+
+void Transmitter::DrawObjects(Camera* camera)
+{
+	DrawRadiationPattern(camera);
+	for (auto receiver : receivers_) {
+		receiver->DrawObjects(camera);
+	}
+}
+
+void Transmitter::AddReceiver(Receiver* receiver)
+{
+	receivers_.push_back(receiver);
 }
 
 void Transmitter::DrawRadiationPattern(Camera * camera)
@@ -142,4 +156,19 @@ void Transmitter::Move(const Direction direction, float delta_time)
 		break;
 	};
 	Update();
+}
+
+void Transmitter::Rotate(const Rotation rotation, float delta_time)
+{
+	float angular = delta_time * rotation_speed_;
+	switch(rotation) {
+	case kYaw: {
+		front_direction_ = glm::rotateX(front_direction_, angular);
+		break;
+	}
+	case kPitch: {
+		up_direction_ = glm::rotateY(up_direction_, angular);
+		break;
+	}
+	}
 }

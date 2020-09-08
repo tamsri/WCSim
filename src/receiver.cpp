@@ -81,7 +81,6 @@ void Receiver::Move(Direction direction,float delta_time) {
 		transform_.position -= up_direction_ * distance;
 		break;
 	};
-
 	Update();
 }
 

@@ -97,7 +97,13 @@ void Engine::LoadRayTracer()
 	std::cout << "added pattern\n";
 	transmitter_->AssignRadiationPattern(pattern_);
 	Transform receiver_trans{ glm::vec3(9.13651f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
-	test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
+	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
+	for (unsigned int i = 0; i < 20; ++i) {
+		glm::vec3 random_position = glm::vec3(rand() % 200 - 100.0f, rand() % 10 + 20.0f, rand() % 200 - 100.0f);
+		Transform receiver_trans{ random_position, glm::vec3(0.0f), glm::vec3(0.0f) };
+		Receiver * receiver = new Receiver(receiver_trans, ray_tracer_, transmitter_);
+		transmitter_->AddReceiver(receiver);
+	}
 }
 
 void Engine::LoadComponents()
@@ -263,7 +269,7 @@ void Engine::KeyMoveMode(float delta_time)
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kView;
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	/*if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		test_receiver_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		test_receiver_->Move(Direction::kLeft, delta_time);
@@ -274,7 +280,16 @@ void Engine::KeyMoveMode(float delta_time)
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		test_receiver_->Move(Direction::kUp, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		test_receiver_->Move(Direction::kDown, delta_time);
+		test_receiver_->Move(Direction::kDown, delta_time);*/
+
+	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+		transmitter_->Move(Direction::kForward, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+		transmitter_->Move(Direction::kLeft, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+		transmitter_->Move(Direction::kBackward, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+		transmitter_->Move(Direction::kRight, delta_time);
 }
 
 void Engine::MousePosition(double xpos, double ypos)
@@ -365,5 +380,6 @@ void Engine::Visualize()
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
 	ray_tracer_->DrawObjects(main_camera_);
 	//transmitter_->DrawRadiationPattern(main_camera_);
-	test_receiver_->DrawObjects(main_camera_);
+	transmitter_->DrawObjects(main_camera_);
+	//test_receiver_->DrawObjects(main_camera_);
 }
