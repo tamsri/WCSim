@@ -29,6 +29,7 @@ RayTracer::RayTracer(PolygonMesh* map) :map_(map)
 	direct_record_ = new Record(RecordType::kDirect);
 	records_.push_back(direct_record_);
 
+	store_points = false;
 	// Initialize voxel spaces; ?
 	//Test();
 	//InitializeVoxels(100, 100, 5);
@@ -42,7 +43,7 @@ void RayTracer::Test()
 	srand(0);
 	Point* transmitter_point = InitializeOrCallPoint(glm::vec3(0.0f, 10.0f, 0.0f));
 	glm::vec3 end_position = glm::vec3(40.0f, 5.00F, 6.0f);
-
+	
 	std::vector<Point*> points;
 	for (unsigned int i = 0; i < 20; ++i) {
 
@@ -810,11 +811,14 @@ void RayTracer::DrawObjects(Camera* main_camera) const
 
 Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_position)
 {
-	initialized_position = glm::round(initialized_position) + ((initialized_position*10.0f))/10.0f;
-	if (points_[initialized_position] == nullptr) {
-		Point* point = new Point(initialized_position);
-		points_[initialized_position] = point;
-		return point;
+	initialized_position = glm::round(initialized_position);
+	if (store_points) {
+		if (points_[initialized_position] == nullptr) {
+			Point* point = new Point(initialized_position);
+			points_[initialized_position] = point;
+			return point;
+		}
+		return points_[initialized_position];
 	}
-	return points_[initialized_position];
+	return new Point(initialized_position);
 }

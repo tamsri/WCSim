@@ -98,12 +98,13 @@ void Engine::LoadRayTracer()
 	transmitter_->AssignRadiationPattern(pattern_);
 	Transform receiver_trans{ glm::vec3(9.13651f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
 	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
-	for (unsigned int i = 0; i < 5; ++i) {
+	for (unsigned int i = 0; i < 10; ++i) {
 		glm::vec3 random_position = glm::vec3(rand() % 200 - 100.0f, rand() % 1 + 1.5f, rand() % 200 - 100.0f);
 		Transform receiver_trans{ random_position, glm::vec3(0.0f), glm::vec3(0.0f) };
 		Receiver * receiver = new Receiver(receiver_trans, ray_tracer_, transmitter_);
 		transmitter_->AddReceiver(receiver);
 	}
+	test_receiver_ = transmitter_->GetReceiver(0);
 }
 
 void Engine::LoadComponents()
@@ -269,7 +270,7 @@ void Engine::KeyMoveMode(float delta_time)
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kView;
 
-	/*if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		test_receiver_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		test_receiver_->Move(Direction::kLeft, delta_time);
@@ -280,7 +281,7 @@ void Engine::KeyMoveMode(float delta_time)
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		test_receiver_->Move(Direction::kUp, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		test_receiver_->Move(Direction::kDown, delta_time);*/
+		test_receiver_->Move(Direction::kDown, delta_time);
 
 	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
 		transmitter_->Move(Direction::kForward, delta_time);
@@ -295,6 +296,12 @@ void Engine::KeyMoveMode(float delta_time)
 		transmitter_->Rotate(Direction::kLeft, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
 		transmitter_->Rotate(Direction::kRight, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+		transmitter_->Rotate(Direction::kUp, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+		transmitter_->Rotate(Direction::kDown, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+		transmitter_->ToggleDisplay();
 }
 
 void Engine::MousePosition(double xpos, double ypos)
@@ -386,5 +393,5 @@ void Engine::Visualize()
 	ray_tracer_->DrawObjects(main_camera_);
 	//transmitter_->DrawRadiationPattern(main_camera_);
 	transmitter_->DrawObjects(main_camera_);
-	//test_receiver_->DrawObjects(main_camera_);
+	test_receiver_->DrawObjects(main_camera_);
 }

@@ -27,11 +27,12 @@ public:
 	float GetFrequency();
 	Point * GetPoint();
 	float GetTransmitterGain(glm::vec3 near_tx_position);
-
+	Receiver* GetReceiver(unsigned int index);
 	// Movement
 	void Move(const Direction direction, float delta_time);
 	void Rotate(const Direction rotation, float delta_time);
-	
+	void ToggleDisplay();
+
 	void Update();
 	void UpdateRadiationPattern();
 	void Reset();
@@ -47,6 +48,7 @@ private:
 	float rotation_speed_;
 	glm::vec3 front_direction_, up_direction_;
 
+	bool display_pattern_;
 	Transform transform_;
 	RadiationPattern * current_pattern_;
 	RayTracer* ray_tracer_;

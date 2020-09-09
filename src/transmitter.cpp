@@ -26,7 +26,7 @@ Transmitter::Transmitter(Transform transform,
 {
 	current_pattern_ = nullptr;
 	current_point_ = ray_tracer->InitializeOrCallPoint(transform_.position);
-
+	display_pattern_ = false;
 	Reset();
 	Update();
 }
@@ -34,7 +34,9 @@ Transmitter::Transmitter(Transform transform,
 
 void Transmitter::Update()
 {
+	//if (!ray_tracer_->store_points && current_point_ != nullptr) delete current_point_;
 	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
+
 	if(current_pattern_ != nullptr) UpdateRadiationPattern();
 	float average_path_loss = 0.0f;
 	unsigned int receivers_number = 0;
@@ -56,45 +58,53 @@ void Transmitter::UpdateRadiationPattern()
 	int skipper = 0;
 	float tx_theta = glm::angle(front_direction_, glm::vec3(1.0f, 0.0f, 0.0f));
 	float tx_phi = glm::angle(up_direction_, glm::vec3(0.0f, 1.0f, 0.0f));
-	std::cout << "tx_theta_angle : " << glm::degrees(tx_theta) << std::endl;
-	std::cout << "tx_phi_angle: " << glm::degrees(tx_phi) << std::endl;
+	//std::cout << "tx_theta_angle : " << glm::degrees(tx_theta) << std::endl;
+	//std::cout << "tx_phi_angle: " << glm::degrees(tx_phi) << std::endl;
 
 	Ray* front_ray = new Ray(current_point_->position, front_direction_);
 	front_ray->InitializeRay(10.0f);
-	front_ray->SetRayColor(glm::vec4(0.f, 1.f, 1.f, 1.0f));
+	front_ray->SetRayColor(glm::vec4(0.f, .6f, .5f, 1.0f));
 	
 	Ray* up_ray = new Ray(current_point_->position, up_direction_);
 	up_ray->InitializeRay(10.0f);
-	up_ray->SetRayColor(glm::vec4(0.f, 1.f, 1.f, 1.0f));
+	up_ray->SetRayColor(glm::vec4(0.f, .6f, .5f, 1.0f));
 	rays_.push_back(front_ray);
 	rays_.push_back(up_ray);
-	
-	for (auto& [theta, phi_value] : current_pattern_->pattern_) {
-		//if ((skipper++) % 10) continue;
-		for (auto& [phi, gain] : phi_value) {
-			glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(theta), glm::vec3(1.0f, 0.0f, 0.0f));
-			trans = glm::rotate(trans, glm::radians(phi), glm::vec3(0.0f, 1.0f, 0.0f));
-			glm::vec3 new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
-			new_direction = glm::rotateY(new_direction, -tx_theta);
-			new_direction = glm::rotateX(new_direction, -tx_phi);
-			Ray* ray = new Ray(current_point_->position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
+	if (display_pattern_) {
+		for (auto& [theta, phi_value] : current_pattern_->pattern_) {
+			//if ((skipper++) % 50 == 0) continue;
+			for (auto& [phi, gain] : phi_value) {
+				//if ((skipper++) % 50 == 0) continue;
 
-			float gain_lin = pow(10, gain / 10);
-			float max_gain_lin = pow(10, current_pattern_->max_gain_ / 10);
-			float min_gain_lin = pow(10, current_pattern_->min_gain_ / 10);
-			float normalized_gain = (gain_lin - min_gain_lin) / (max_gain_lin - min_gain_lin);
+				glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(theta), glm::vec3(1.0f, 0.0f, 0.0f));
+				trans = glm::rotate(trans, glm::radians(phi), glm::vec3(0.0f, 1.0f, 0.0f));
+				glm::vec3 new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
+				new_direction = glm::rotateY(new_direction, tx_theta);
+				new_direction = glm::rotateX(new_direction, tx_phi);
 
-			if (normalized_gain >= 0) ray->InitializeRay(normalized_gain * 5.0f);
-			else delete ray;
-			//std::cout << " is " << j << std::endl;
-			rays_.push_back(ray);
+				float gain_lin = pow(10, gain / 10);
+				float max_gain_lin = pow(10, current_pattern_->max_gain_ / 10);
+				float min_gain_lin = pow(10, current_pattern_->min_gain_ / 10);
+				float normalized_gain = (gain_lin + min_gain_lin) * 10 / (max_gain_lin - min_gain_lin);
+				/*std::cout << "max gain: " << max_gain_lin << std::endl;
+				std::cout << "n gain: " << normalized_gain << std::endl;
+				std::cout << "max gain: " << min_gain_lin << std::endl;*/
+
+
+
+				Ray* ray = new Ray(current_point_->position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
+				ray->InitializeRay(normalized_gain);
+				ray->SetRayColor(glm::vec4(.2f, .3f, .4f, 1.0f));
+				rays_.push_back(ray);
+
+			}
 		}
-	};
+	}
 }
 
 void Transmitter::Reset()
 {
-	rotation_speed_ = 5.0f;
+	rotation_speed_ = .5f;
 	move_speed_ = 10.0f;
 	front_direction_ = glm::vec3(1.0f, 0.0f, 0.0);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0);
@@ -159,15 +169,39 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 
 	//std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", " << glm::degrees(phi_to_near_tx) << "\n";
 
-	float pattern_theta_angle = glm::degrees(theta_to_near_tx - theta_tx);
-	float pattern_phi_angle = glm::degrees(phi_to_near_tx - phi_tx);
+	int pattern_theta_angle = std::round(glm::degrees(theta_to_near_tx - theta_tx)) + 90;
+	int pattern_phi_angle = std::round(glm::degrees(phi_to_near_tx - phi_tx));
+	if (pattern_theta_angle < 0.0f) pattern_theta_angle += 360.0f;
+	if (pattern_phi_angle < 0.0f) pattern_phi_angle += 360.0f;
+
+	if (pattern_theta_angle > 180.0f){
+
+		//std::cout << "---------------------------------" << std::endl;
+		//std::cout << "theta: " << pattern_theta_angle << "(deg)" << std::endl;
+		//std::cout << "phi: " << pattern_phi_angle << "(deg)" << std::endl;
+		//std::cout << "!! pattern out of range: return min gain !!" << std::endl;
+		//std::cout << "---------------------------------" << std::endl;
+
+		return current_pattern_->min_gain_;
+	}
+	//std::cout << "---------------------------------" << std::endl;
+	//std::cout << "theta: " << pattern_theta_angle << "(deg)" << std::endl;
+	//std::cout << "phi: " << pattern_phi_angle << "(deg)" << std::endl;
+
 	std::map<float, float> phi_value = (*current_pattern_->pattern_.lower_bound(pattern_theta_angle)).second;
 	float tx_gain = (*phi_value.lower_bound(pattern_phi_angle)).second;
-	//std::cout << "theta: " << pattern_theta_angle << std::endl;
-	//std::cout << "phi: " << pattern_phi_angle << std::endl;
+
 	//std::cout << "tx_gain: " << tx_gain << "[dB]" << std::endl;
+	//std::cout << "---------------------------------" << std::endl;
+
 	return tx_gain;
 	// return 0.0f;
+}
+
+Receiver* Transmitter::GetReceiver(unsigned int index)
+{
+	if (index >= receivers_.size()) return nullptr;
+	return receivers_[index];
 }
 
 void Transmitter::Move(const Direction direction, float delta_time)
@@ -201,7 +235,7 @@ void Transmitter::Move(const Direction direction, float delta_time)
 void Transmitter::Rotate(const Direction rotation, float delta_time)
 {
 	float angular = delta_time * rotation_speed_;
-	std::cout << "angular : " << angular  << std::endl;
+	//std::cout << "angular : " << angular  << std::endl;
 	switch(rotation) {
 	case kLeft: {
 		//front_direction_ = glm::rotateX(front_direction_, -angular);
@@ -222,4 +256,10 @@ void Transmitter::Rotate(const Direction rotation, float delta_time)
 	}
 	}
 	Update();
+}
+
+void Transmitter::ToggleDisplay()
+{
+	display_pattern_ = !display_pattern_;
+	UpdateRadiationPattern();
 }

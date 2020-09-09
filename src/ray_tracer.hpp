@@ -65,6 +65,8 @@ public:
 	// Visualization
 	std::vector<Object*> objects_;
 
+	// Memory Management
+	bool store_points;
 
 
 	point_map points_; // map of the points dict of <glm::vec3, Point*>
