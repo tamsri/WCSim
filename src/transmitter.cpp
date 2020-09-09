@@ -24,7 +24,7 @@ Transmitter::Transmitter(Transform transform,
 													frequency_(frequency),
 													ray_tracer_(ray_tracer)
 {
-	current_pattern = nullptr;
+	current_pattern_ = nullptr;
 	current_point_ = ray_tracer->InitializeOrCallPoint(transform_.position);
 
 	Reset();
@@ -70,34 +70,26 @@ void Transmitter::DrawRadiationPattern(Camera * camera)
 
 void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 {
-	current_pattern = pattern;
+	current_pattern_ = pattern;
 	rays_.clear();
 	int skipper = 0;
-	for (auto angles : current_pattern->pattern_) {
-		
+	for (auto & [theta, phi_value ] : current_pattern_->pattern_) {
 		//if ((skipper++) % 50)continue;
-		float theta = angles.first.first;
-		float phi = angles.first.second;
-		float gain = angles.second;
-		//if(gain>0.0f) std::cout << "phi: " << phi << ", theta: " << theta << " value: " << gain << std::endl;
-		glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(phi), glm::vec3(1.0f, 0.0f, 0.0f));
-		trans = glm::rotate(trans, glm::radians(theta), glm::vec3(0.0f, 1.0f, .0f));
-		auto new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
-		Ray* ray = new Ray(transform_.position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
-		
-		/*if (gain < 0.0f)
-			ray->InitializeRay(0.0f);
-		else*/
-		//std::cout << gain + abs(pattern->min_gain_) << std::endl;
-		//float normalized_gain = (gain)/(pattern->max_gain_ - pattern->min_gain_);
-		float gain_lin = pow(10, gain / 10.f);
-		float max_gain_lin = pow(10, pattern->max_gain_/10.0f);
-		float min_gain_lin = pow(10, pattern->min_gain_ /10.0f);
-		float normalized_gain = gain_lin*10.0f / (max_gain_lin - min_gain_lin);
-		
-		if(normalized_gain >= 1e-3) ray->InitializeRay(normalized_gain*10.0f);
-		//std::cout << " is " << j << std::endl;
-		rays_.push_back(ray);
+		for (auto& [phi, gain] : phi_value) {
+			glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(phi), glm::vec3(1.0f, 0.0f, 0.0f));
+			trans = glm::rotate(trans, glm::radians(theta), glm::vec3(0.0f, 1.0f, .0f));
+			auto new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
+			Ray* ray = new Ray(transform_.position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
+			
+			float gain_lin = pow(10, gain / 10.f);
+			float max_gain_lin = pow(10, pattern->max_gain_ / 10.0f);
+			float min_gain_lin = pow(10, pattern->min_gain_ / 10.0f);
+			float normalized_gain = gain_lin * 10.0f / (max_gain_lin - min_gain_lin);
+
+			if (normalized_gain >= 1e-3) ray->InitializeRay(normalized_gain * 10.0f);
+			//std::cout << " is " << j << std::endl;
+			rays_.push_back(ray);
+		}
 	};
 }
 
@@ -127,7 +119,12 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 
 	std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", " << glm::degrees(phi_to_near_tx) << "\n";
 
-	return 0.0f;
+	float pattern_theta_angle = glm::degrees(theta_to_near_tx - theta_tx);
+	float pattern_phi_angle = glm::degrees(phi_to_near_tx - phi_tx);
+	std::map<float, float> phi_value = (*current_pattern_->pattern_.lower_bound(pattern_theta_angle)).second;
+	float value = (*phi_value.lower_bound(pattern_phi_angle)).second;
+	std::cout << "tx_gain: " << value << " [dB], linear: " << pow(10, value / 10) << std::endl;
+	return value;
 }
 
 void Transmitter::Move(const Direction direction, float delta_time)

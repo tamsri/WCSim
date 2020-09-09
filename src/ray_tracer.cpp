@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <cmath>
 #include <stack>
-#include <iomanip>
 
 #include <glm/gtx/vector_angle.hpp>
 
@@ -811,7 +810,7 @@ void RayTracer::DrawObjects(Camera* main_camera) const
 
 Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_position)
 {
-	initialized_position = glm::round(initialized_position);
+	initialized_position = glm::round(initialized_position) + ((initialized_position*10.0f))/10.0f;
 	if (points_[initialized_position] == nullptr) {
 		Point* point = new Point(initialized_position);
 		points_[initialized_position] = point;

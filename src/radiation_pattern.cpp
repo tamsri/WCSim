@@ -15,7 +15,9 @@ RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 			float theta, phi, total_gain;
 			float reeth, imeth, rephi, imphi, gth, gphi;
 			input_file_stream >> theta >> phi >> reeth >> imeth >> rephi >> imphi >> gth >> gphi >> total_gain;
-			pattern_[std::make_pair(theta, phi)] = total_gain;
+			pattern_[theta].insert({ phi, total_gain });
+
+
 			if (total_gain < min_gain_) min_gain_ = total_gain;
 			if (total_gain > max_gain_) max_gain_ = total_gain;
 		}

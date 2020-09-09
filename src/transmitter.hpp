@@ -47,7 +47,7 @@ private:
 	glm::vec3 front_direction_, up_direction_;
 
 	Transform transform_;
-	RadiationPattern * current_pattern;
+	RadiationPattern * current_pattern_;
 	RayTracer* ray_tracer_;
 	Point* current_point_;
 	
