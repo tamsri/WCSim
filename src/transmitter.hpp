@@ -30,11 +30,12 @@ public:
 
 	// Movement
 	void Move(const Direction direction, float delta_time);
-	void Rotate(const Rotation rotation, float delta_time);
+	void Rotate(const Direction rotation, float delta_time);
 	
 	void Update();
+	void UpdateRadiationPattern();
 	void Reset();
-
+	void Clear();
 	// Visualisation
 	void DrawObjects(Camera * camera);
 private:

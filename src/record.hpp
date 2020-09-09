@@ -18,6 +18,8 @@ enum RecordType : int {
 };
 
 struct Result {
+	bool is_valid; // in the case where point is not receivable, the result is invalid
+
 	float direct_path_loss_in_linear;
 	float reflection_loss_in_linear;
 	float diffraction_loss_in_linear;

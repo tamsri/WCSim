@@ -24,6 +24,11 @@ Point* Receiver::GetPoint()
 	return current_point_;
 }
 
+Result Receiver::GetResult()
+{
+	return result_;
+}
+
 void Receiver::Update()
 {
 	Point* transmitter_point = transmitter_->GetPoint();
@@ -32,13 +37,17 @@ void Receiver::Update()
 	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
 	ray_tracer_->Trace(transmitter_point, current_point_);
 	if (ray_tracer_->CalculatePathLoss(transmitter_, this, result_)) {
-		std::cout << " ------------------------------- \n";
+		result_.is_valid = true;
+	/*	std::cout << " ------------------------------- \n";
 		std::cout << "Receiver Position: " << glm::to_string(current_point_->position) << std::endl;
 		std::cout << "Direct Path Loss: " << result_.direct_path_loss_in_linear << ", dB: " << 10.0 * log10(result_.direct_path_loss_in_linear) << std::endl;
 		std::cout << "Reflect Path Loss: " << result_.reflection_loss_in_linear << ", dB: " << 10.0 * log10(result_.reflection_loss_in_linear) << std::endl;
 		std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
 		std::cout << "Total Loss: " << result_.total_loss << " dB\n";
-		std::cout << " ------------------------------- \n";
+		std::cout << " ------------------------------- \n";*/
+	}
+	else {
+		result_.is_valid = false;
 	}
 
 

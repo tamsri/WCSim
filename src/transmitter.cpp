@@ -35,17 +35,76 @@ Transmitter::Transmitter(Transform transform,
 void Transmitter::Update()
 {
 	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
+	if(current_pattern_ != nullptr) UpdateRadiationPattern();
+	float average_path_loss = 0.0f;
+	unsigned int receivers_number = 0;
 	for (auto* receiver : receivers_) {
 		receiver->Update();
+		Result result = receiver->GetResult();
+		if (result.is_valid) {
+			average_path_loss += result.total_loss;
+			++receivers_number;
+		}
 	}
+	average_path_loss /= receivers_number;
+	std::cout << "average path loss: " << average_path_loss << std::endl;
+}
+
+void Transmitter::UpdateRadiationPattern()
+{
+	Clear();
+	int skipper = 0;
+	float tx_theta = glm::angle(front_direction_, glm::vec3(1.0f, 0.0f, 0.0f));
+	float tx_phi = glm::angle(up_direction_, glm::vec3(0.0f, 1.0f, 0.0f));
+	std::cout << "tx_theta_angle : " << glm::degrees(tx_theta) << std::endl;
+	std::cout << "tx_phi_angle: " << glm::degrees(tx_phi) << std::endl;
+
+	Ray* front_ray = new Ray(current_point_->position, front_direction_);
+	front_ray->InitializeRay(10.0f);
+	front_ray->SetRayColor(glm::vec4(0.f, 1.f, 1.f, 1.0f));
+	
+	Ray* up_ray = new Ray(current_point_->position, up_direction_);
+	up_ray->InitializeRay(10.0f);
+	up_ray->SetRayColor(glm::vec4(0.f, 1.f, 1.f, 1.0f));
+	rays_.push_back(front_ray);
+	rays_.push_back(up_ray);
+	
+	for (auto& [theta, phi_value] : current_pattern_->pattern_) {
+		//if ((skipper++) % 10) continue;
+		for (auto& [phi, gain] : phi_value) {
+			glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(theta), glm::vec3(1.0f, 0.0f, 0.0f));
+			trans = glm::rotate(trans, glm::radians(phi), glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::vec3 new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
+			new_direction = glm::rotateY(new_direction, -tx_theta);
+			new_direction = glm::rotateX(new_direction, -tx_phi);
+			Ray* ray = new Ray(current_point_->position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
+
+			float gain_lin = pow(10, gain / 10);
+			float max_gain_lin = pow(10, current_pattern_->max_gain_ / 10);
+			float min_gain_lin = pow(10, current_pattern_->min_gain_ / 10);
+			float normalized_gain = (gain_lin - min_gain_lin) / (max_gain_lin - min_gain_lin);
+
+			if (normalized_gain >= 0) ray->InitializeRay(normalized_gain * 5.0f);
+			else delete ray;
+			//std::cout << " is " << j << std::endl;
+			rays_.push_back(ray);
+		}
+	};
 }
 
 void Transmitter::Reset()
 {
-	rotation_speed_ = 1.0f;
+	rotation_speed_ = 5.0f;
 	move_speed_ = 10.0f;
 	front_direction_ = glm::vec3(1.0f, 0.0f, 0.0);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0);
+}
+
+void Transmitter::Clear()
+{
+	for (auto* ray : rays_)
+		delete ray;
+	rays_.clear();
 }
 
 void Transmitter::DrawObjects(Camera* camera)
@@ -71,26 +130,7 @@ void Transmitter::DrawRadiationPattern(Camera * camera)
 void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 {
 	current_pattern_ = pattern;
-	rays_.clear();
-	int skipper = 0;
-	for (auto & [theta, phi_value ] : current_pattern_->pattern_) {
-		//if ((skipper++) % 50)continue;
-		for (auto& [phi, gain] : phi_value) {
-			glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(phi), glm::vec3(1.0f, 0.0f, 0.0f));
-			trans = glm::rotate(trans, glm::radians(theta), glm::vec3(0.0f, 1.0f, .0f));
-			auto new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
-			Ray* ray = new Ray(transform_.position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
-			
-			float gain_lin = pow(10, gain / 10.f);
-			float max_gain_lin = pow(10, pattern->max_gain_ / 10.0f);
-			float min_gain_lin = pow(10, pattern->min_gain_ / 10.0f);
-			float normalized_gain = gain_lin * 10.0f / (max_gain_lin - min_gain_lin);
-
-			if (normalized_gain >= 1e-3) ray->InitializeRay(normalized_gain * 10.0f);
-			//std::cout << " is " << j << std::endl;
-			rays_.push_back(ray);
-		}
-	};
+	UpdateRadiationPattern();
 }
 
 float Transmitter::GetFrequency()
@@ -117,14 +157,17 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 	float phi_tx = glm::angle(up_direction, up_direction_);
 
 
-	std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", " << glm::degrees(phi_to_near_tx) << "\n";
+	//std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", " << glm::degrees(phi_to_near_tx) << "\n";
 
 	float pattern_theta_angle = glm::degrees(theta_to_near_tx - theta_tx);
 	float pattern_phi_angle = glm::degrees(phi_to_near_tx - phi_tx);
 	std::map<float, float> phi_value = (*current_pattern_->pattern_.lower_bound(pattern_theta_angle)).second;
-	float value = (*phi_value.lower_bound(pattern_phi_angle)).second;
-	std::cout << "tx_gain: " << value << " [dB], linear: " << pow(10, value / 10) << std::endl;
-	return value;
+	float tx_gain = (*phi_value.lower_bound(pattern_phi_angle)).second;
+	//std::cout << "theta: " << pattern_theta_angle << std::endl;
+	//std::cout << "phi: " << pattern_phi_angle << std::endl;
+	//std::cout << "tx_gain: " << tx_gain << "[dB]" << std::endl;
+	return tx_gain;
+	// return 0.0f;
 }
 
 void Transmitter::Move(const Direction direction, float delta_time)
@@ -155,17 +198,28 @@ void Transmitter::Move(const Direction direction, float delta_time)
 	Update();
 }
 
-void Transmitter::Rotate(const Rotation rotation, float delta_time)
+void Transmitter::Rotate(const Direction rotation, float delta_time)
 {
 	float angular = delta_time * rotation_speed_;
+	std::cout << "angular : " << angular  << std::endl;
 	switch(rotation) {
-	case kYaw: {
-		front_direction_ = glm::rotateX(front_direction_, angular);
+	case kLeft: {
+		//front_direction_ = glm::rotateX(front_direction_, -angular);
+		front_direction_ = glm::rotateY(front_direction_, angular);
 		break;
 	}
-	case kPitch: {
-		up_direction_ = glm::rotateY(up_direction_, angular);
+	case kRight: {
+		front_direction_ = glm::rotateY(front_direction_, -angular);
+		break;
+	}
+	case kUp: {
+		up_direction_ = glm::rotateX(up_direction_, angular);
+		break;
+	}
+	case kDown: {
+		up_direction_ = glm::rotateX(up_direction_, -angular);
 		break;
 	}
 	}
+	Update();
 }

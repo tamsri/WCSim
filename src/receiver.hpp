@@ -23,6 +23,7 @@ public:
 	Transform transform_;
 	glm::vec3 velocity_;
 	Point* GetPoint();
+	Result GetResult();
 
 	float move_speed_;
 	glm::vec3 front_direction_;
