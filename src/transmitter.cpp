@@ -2,10 +2,11 @@
 
 #include <iostream>
 
+#include "object.hpp"
 #include "ray.hpp"
 #include "line.hpp"
+
 #include "record.hpp"
-#include "object.hpp"
 #include "receiver.hpp"
 
 #include "radiation_pattern.hpp"
@@ -61,15 +62,16 @@ void Transmitter::UpdateRadiationPattern()
 	float tx_phi = glm::angle(up_direction_, glm::vec3(0.0f, 1.0f, 0.0f));
 	//std::cout << "tx_theta_angle : " << glm::degrees(tx_theta) << std::endl;
 	//std::cout << "tx_phi_angle: " << glm::degrees(tx_phi) << std::endl;
-
-	Line* front_ray = new Line(current_point_->position, front_direction_*10.0f);
-	front_ray->SetRayColor(glm::vec4(0.f, .6f, .5f, 1.0f));
+	glm::vec3 position = current_point_->position;
+	Line* front_ray = new Line(position, position + front_direction_*5.0f);
+	front_ray->SetColor(glm::vec4(0.f, .6f, .5f, 1.0f));
 	
-	Ray* up_ray = new Ray(current_point_->position, up_direction_);
-	up_ray->InitializeRay(10.0f);
-	up_ray->SetRayColor(glm::vec4(0.f, .6f, .5f, 1.0f));
-	rays_.push_back(front_ray);
-	rays_.push_back(up_ray);
+	Line* up_ray = new Line(position, position + up_direction_ * 5.0f);
+	up_ray->SetColor(glm::vec4(0.f, .6f, .5f, 1.0f));
+
+	objects_.push_back(front_ray);
+	objects_.push_back(up_ray);
+
 	if (display_pattern_) {
 		/*for (auto& [theta, phi_value] : current_pattern_->pattern_) {
 			if ((skipper++) % 20 == 0) continue;
@@ -100,7 +102,7 @@ void Transmitter::UpdateRadiationPattern()
 		auto& phi_value = current_pattern_->pattern_[0.0f];
 		int distance = 10;
 		for (unsigned int i = 0; i < phi_value.size() - 1; ++i) {
-			Ray* ray = new Ray();
+			//Ray* ray = new Ray();
 		}
 	}
 }
@@ -115,9 +117,9 @@ void Transmitter::Reset()
 
 void Transmitter::Clear()
 {
-	for (Ray * ray : rays_)
-		delete ray;
-	rays_.clear();
+	for (Object * object : objects_)
+		delete object;
+	objects_.clear();
 }
 
 void Transmitter::DrawObjects(Camera* camera)
@@ -135,7 +137,7 @@ void Transmitter::AddReceiver(Receiver* receiver)
 
 void Transmitter::DrawRadiationPattern(Camera * camera)
 {
-	for (auto & ray : rays_) {
+	for (auto & ray : objects_) {
 		ray->DrawObject(camera);
 	}
 }
@@ -197,8 +199,8 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 	std::cout << "tx_gain: " << tx_gain << "[dB]" << std::endl;
 	std::cout << "---------------------------------" << std::endl;
 
-	return tx_gain;
-	// return 0.0f;
+	//return tx_gain;
+	 return 0.0f;
 }
 
 Receiver* Transmitter::GetReceiver(unsigned int index)

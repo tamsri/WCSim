@@ -2,7 +2,7 @@
 #define LINE_H
 #include "object.hpp"
 
-class Line : Object {
+class Line : public Object{
 
 public:
 	Line(glm::vec3 start_position, glm::vec3 end_position);

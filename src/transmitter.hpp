@@ -59,6 +59,6 @@ private:
 	std::vector<Receiver* > receivers_;
 	std::vector<Result> receiver_results;
 	// Visualization
-	std::vector<Ray* > rays_;
+	std::vector<Object* > objects_;
 };
 #endif

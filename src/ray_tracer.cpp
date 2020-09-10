@@ -13,6 +13,7 @@
 #include "object.hpp"
 #include "cube.hpp"
 #include "ray.hpp"
+#include "line.hpp"
 #include "triangle.hpp"
 #include "polygon_mesh.hpp"
 #include "shader.hpp"
@@ -281,40 +282,39 @@ void RayTracer::InitializeDrawPointsComponents(Point* start_point, Point* end_po
 
 void RayTracer::GetDrawPointsComponent(Point* start_point, Point* end_point, std::vector<Object*>& draw_components)
 {
-	Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
+	// Visualize the receiver (end_point)
 	Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
-	draw_components.push_back(start_cube);
 	draw_components.push_back(end_cube);
+
 	const glm::vec3 start_position = start_point->position;
 	const glm::vec3 end_position = end_point->position;
 
 	auto records = start_point->neighbour_record[end_point];
+
 	for (auto record : records) {
 		switch (record->type) {
 		case RecordType::kDirect: {
-			Ray* direct_ray = new Ray(start_position, glm::normalize(end_position - start_position));
-			direct_ray->InitializeRay(glm::distance(start_position, end_position));
-			direct_ray->SetRayColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-			draw_components.push_back(direct_ray);
+			Line * direct_line = new Line(start_position, end_position);
+			direct_line->SetColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+			draw_components.push_back(direct_line);
+			break;
 		}
-								break;
 		case RecordType::kReflect: {
 			for (auto reflected_position : record->data) {
-				Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.0f) });
-				Ray* start_to_point_ray = new Ray(start_position, glm::normalize(reflected_position - start_position));
-				start_to_point_ray->InitializeRay(glm::distance(start_position, reflected_position));
-				Ray* point_to_end_ray = new Ray(reflected_position, glm::normalize(end_position - reflected_position));
-				point_to_end_ray->InitializeRay(glm::distance(reflected_position, end_position));
+				Cube* reflected_point = new Cube(Transform{ reflected_position, glm::vec3(0.1f, 0.1f, 0.1f), glm::vec3(0.0f) });
 
-				start_to_point_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				point_to_end_ray->SetRayColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				Line * start_to_point_line = new Line(start_position, reflected_position);
+				Line* point_to_end_line = new Line(reflected_position, end_position);
+
+				start_to_point_line->SetColor(glm::vec4(.5f, 0.0f, 0.0f, 1.0f));
+				point_to_end_line->SetColor(glm::vec4(.5f, 0.0f, 0.0f, 1.0f));
 
 				draw_components.push_back(reflected_point);
-				draw_components.push_back(start_to_point_ray);
-				draw_components.push_back(point_to_end_ray);
+				draw_components.push_back(start_to_point_line);
+				draw_components.push_back(point_to_end_line);
 			}
+			break;
 		}
-								 break;
 		case RecordType::kEdgeDiffraction: {
 
 			auto edges_points = record->data;
@@ -323,7 +323,30 @@ void RayTracer::GetDrawPointsComponent(Point* start_point, Point* end_point, std
 			std::stack<glm::vec3> edges_from_end;
 			edges_from_end.push(end_position);
 			//std::cout << "edges: " << edges_points.size() << std::endl;
-			glm::vec4 color = (edges_points.size() >= 5) ? glm::vec4(1.00f, 0.50f, 1.00f, 1.00f) : glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			glm::vec4 color;
+			switch (edges_points.size()) {
+			case(1): {
+				color = glm::vec4(1.00f, 0.20f, 1.00f, 1.00f);
+				break;
+			}
+			case(2): {
+				color = glm::vec4(1.00f, 0.30f, 1.00f, 1.00f);
+				break;
+			}
+			case(3): {
+				color = glm::vec4(1.00f, 0.40f, 1.00f, 1.00f);
+				break;
+			}
+			case(4): {
+				color = glm::vec4(1.00f, 0.50f, 1.00f, 1.00f);
+				break;
+			}
+			default: {
+				color = glm::vec4(1.00f, 0.60f, 1.00f, 1.00f);
+				break;
+			}
+			}
+			
 			// separate the edges to each points
 			while (!edges_points.empty()) {
 				edges_from_start.push(NearestEdgeFromPoint(edges_from_start.top(), edges_points));
@@ -335,29 +358,27 @@ void RayTracer::GetDrawPointsComponent(Point* start_point, Point* end_point, std
 
 				glm::vec3 center_edge_position = edges_from_start.top();
 				edges_from_start.pop();
-				Ray* start_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_start.top() - center_edge_position));
-				start_to_center_ray->InitializeRay(glm::distance(edges_from_start.top(), center_edge_position));
+				Line* start_to_center_ray = new Line(center_edge_position, edges_from_start.top());
 
-				Ray* end_to_center_ray = new Ray(center_edge_position, glm::normalize(edges_from_end.top() - center_edge_position));
-				end_to_center_ray->InitializeRay(glm::distance(edges_from_end.top(), center_edge_position));
+				Line* end_to_center_ray = new Line(center_edge_position, edges_from_end.top() );
 
 				Cube* center_point = new Cube(Transform{ center_edge_position, glm::vec3(0.1f), glm::vec3(0.0f) });
 
-				start_to_center_ray->SetRayColor(color);
-				end_to_center_ray->SetRayColor(color);
+				start_to_center_ray->SetColor(color);
+				end_to_center_ray->SetColor(color);
 
 				draw_components.push_back(start_to_center_ray);
 				draw_components.push_back(end_to_center_ray);
 				draw_components.push_back(center_point);
+
 				if (edges_from_start.size() < 2) continue; // already done, go back
 
 			}
 			/* *------------* */
 			else {
-				Ray* between_ray = new Ray(edges_from_start.top(), glm::normalize(edges_from_end.top() - edges_from_start.top()));
-				between_ray->InitializeRay(glm::distance(edges_from_start.top(), edges_from_end.top()));
-				between_ray->SetRayColor(color);
-				draw_components.push_back(between_ray);
+				Line* between_line = new Line(edges_from_start.top(), edges_from_end.top());
+				between_line->SetColor(color);
+				draw_components.push_back(between_line);
 			}
 
 
@@ -367,15 +388,13 @@ void RayTracer::GetDrawPointsComponent(Point* start_point, Point* end_point, std
 				glm::vec3 begin_at_end = edges_from_end.top();
 				edges_from_start.pop();
 				edges_from_end.pop();
-				Ray* from_start_ray = new Ray(begin_at_start, glm::normalize(edges_from_start.top() - begin_at_start));
+				Line* from_start_ray = new Line(begin_at_start, edges_from_start.top());
 				Cube* from_start_point = new Cube(Transform{ begin_at_start, glm::vec3(0.1f), glm::vec3(0.0f) });
-				from_start_ray->InitializeRay(glm::distance(begin_at_start, edges_from_start.top()));
-				Ray* from_end_ray = new Ray(begin_at_end, glm::normalize(edges_from_end.top() - begin_at_end));
+				Line* from_end_ray = new Line(begin_at_end, edges_from_end.top() );
 				Cube* from_end_point = new Cube(Transform{ begin_at_end, glm::vec3(0.1f), glm::vec3(0.0f) });
-				from_end_ray->InitializeRay(glm::distance(begin_at_end, edges_from_end.top()));
 
-				from_start_ray->SetRayColor(color);
-				from_end_ray->SetRayColor(color);
+				from_start_ray->SetColor(color);
+				from_end_ray->SetColor(color);
 
 				draw_components.push_back(from_start_point);
 				draw_components.push_back(from_end_point);
@@ -763,6 +782,7 @@ float RayTracer::CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 ed
 float RayTracer::CalculateDiffractionByV(float v) {
 	return 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
 }
+
 float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) {
 	float wave_length = 3e8 / (frequency);
 	glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
@@ -785,6 +805,7 @@ float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_posit
 	//std::cout << "v: " << v << std::endl;
 	return v;
 }
+
 void RayTracer::CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges,
 	glm::vec3 end_position, std::pair<float, float>& calculated_cosines)
 {
@@ -803,6 +824,7 @@ void RayTracer::CalculateCorrectionCosines(glm::vec3 start_position, std::vector
 	calculated_cosines.second = sqrt((d4 * (d1 + d2)) / ((d3 + d4) * (d1 + d2 + d3)));
 	return;
 }
+
 void RayTracer::DrawObjects(Camera* main_camera) const
 {
 	for (auto& object : objects_) {
@@ -814,6 +836,17 @@ void RayTracer::TogglePrint()
 {
 	std::cout << " Toggle Print\n";
 	print_each_ = !print_each_;
+}
+
+void RayTracer::ClearPoint(Point* point)
+{
+	// Clear Hit triangle
+	point->hit_triangles.clear();
+	// Clear Record
+	for (auto& [record_point, records] : point->neighbour_record)
+		for (auto* record : records)
+			delete record;
+	delete point;
 }
 
 Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_position)

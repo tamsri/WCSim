@@ -69,7 +69,7 @@ public:
 	// Memory Management
 	bool store_points;
 	bool print_each_;
-
+	void ClearPoint(Point* point);
 	point_map points_; // map of the points dict of <glm::vec3, Point*>
 	Point * InitializeOrCallPoint(glm::vec3 initialized_point); // initialize the point and scan
 

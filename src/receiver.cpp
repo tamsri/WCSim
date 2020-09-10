@@ -35,6 +35,7 @@ void Receiver::Update()
 	float transmitter_frequency = transmitter_->GetFrequency();
 
 	//if (!ray_tracer_->store_points && current_point_ != nullptr) delete current_point_;
+	//ray_tracer_->ClearPoint(current_point_);
 	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
 
 	ray_tracer_->Trace(transmitter_point, current_point_);
