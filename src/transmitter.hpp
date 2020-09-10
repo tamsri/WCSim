@@ -18,7 +18,9 @@ struct Result;
 
 class Transmitter {
 public:
-	Transmitter(Transform transform, float frequency, RayTracer * ray_tracer);
+	Transmitter(Transform transform, 
+				float frequency, 
+				RayTracer * ray_tracer);
 
 	// Actions
 	void AddReceiver(Receiver* receiver);

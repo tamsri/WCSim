@@ -40,13 +40,17 @@ void Receiver::Update()
 	ray_tracer_->Trace(transmitter_point, current_point_);
 	if (ray_tracer_->CalculatePathLoss(transmitter_, this, result_)) {
 		result_.is_valid = true;
-	/*	std::cout << " ------------------------------- \n";
-		std::cout << "Receiver Position: " << glm::to_string(current_point_->position) << std::endl;
-		std::cout << "Direct Path Loss: " << result_.direct_path_loss_in_linear << ", dB: " << 10.0 * log10(result_.direct_path_loss_in_linear) << std::endl;
-		std::cout << "Reflect Path Loss: " << result_.reflection_loss_in_linear << ", dB: " << 10.0 * log10(result_.reflection_loss_in_linear) << std::endl;
-		std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
-		std::cout << "Total Loss: " << result_.total_loss << " dB\n";
-		std::cout << " ------------------------------- \n";*/
+		if (ray_tracer_->print_each_ == true) {
+			std::cout << " ------------------------------- \n";
+			std::cout << "Receiver Position: " << glm::to_string(current_point_->position) << std::endl;
+			std::cout << "Transmitter Position: " << glm::to_string(transmitter_point->position) << std::endl;
+			std::cout << "Direct Distance: " << glm::distance(current_point_->position, transmitter_point->position) << std::endl;
+			std::cout << "Direct Path Loss: " << result_.direct_path_loss_in_linear << ", dB: " << 10.0 * log10(result_.direct_path_loss_in_linear) << std::endl;
+			std::cout << "Reflect Path Loss: " << result_.reflection_loss_in_linear << ", dB: " << 10.0 * log10(result_.reflection_loss_in_linear) << std::endl;
+			std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
+			std::cout << "Total Loss: " << result_.total_loss << " dB\n";
+			std::cout << " ------------------------------- \n";
+		}
 	}
 	else {
 		result_.is_valid = false;

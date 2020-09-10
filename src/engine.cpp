@@ -98,7 +98,7 @@ void Engine::LoadRayTracer()
 	transmitter_->AssignRadiationPattern(pattern_);
 	Transform receiver_trans{ glm::vec3(9.13651f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
 	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
-	for (unsigned int i = 0; i < 10; ++i) {
+	for (unsigned int i = 0; i < 2; ++i) {
 		glm::vec3 random_position = glm::vec3(rand() % 200 - 100.0f, rand() % 1 + 1.5f, rand() % 200 - 100.0f);
 		Transform receiver_trans{ random_position, glm::vec3(0.0f), glm::vec3(0.0f) };
 		Receiver * receiver = new Receiver(receiver_trans, ray_tracer_, transmitter_);
@@ -302,6 +302,10 @@ void Engine::KeyMoveMode(float delta_time)
 		transmitter_->Rotate(Direction::kDown, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		transmitter_->ToggleDisplay();
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
+		ray_tracer_->print_each_ = true;
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+		ray_tracer_->print_each_ = false;
 }
 
 void Engine::MousePosition(double xpos, double ypos)

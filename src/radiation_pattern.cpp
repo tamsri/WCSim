@@ -14,7 +14,7 @@ RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 			if (line[0] == '#' || line[0] == '*')continue;
 			float theta, phi, total_gain;
 			float reeth, imeth, rephi, imphi, gth, gphi;
-			input_file_stream >> theta >> phi >> reeth >> imeth >> rephi >> imphi >> gth >> gphi >> total_gain;
+			input_file_stream >> phi >> theta >> reeth >> imeth >> rephi >> imphi >> gth >> gphi >> total_gain;
 			pattern_[theta].insert({ phi, total_gain });
 
 

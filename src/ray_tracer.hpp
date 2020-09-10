@@ -65,9 +65,10 @@ public:
 	// Visualization
 	std::vector<Object*> objects_;
 
+	void TogglePrint();
 	// Memory Management
 	bool store_points;
-
+	bool print_each_;
 
 	point_map points_; // map of the points dict of <glm::vec3, Point*>
 	Point * InitializeOrCallPoint(glm::vec3 initialized_point); // initialize the point and scan

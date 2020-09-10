@@ -30,6 +30,7 @@ RayTracer::RayTracer(PolygonMesh* map) :map_(map)
 	records_.push_back(direct_record_);
 
 	store_points = false;
+	print_each_ = false;
 	// Initialize voxel spaces; ?
 	//Test();
 	//InitializeVoxels(100, 100, 5);
@@ -407,7 +408,7 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, 
 	const float wave_length = c / frequency;
 
 	const float pi = atan(1.0f) * 4;
-	const float coff = 0.8f;
+	const float aref = 0.8f;
 
 	result.direct_path_loss_in_linear = 0.0f;
 	result.reflection_loss_in_linear = 0.0f;
@@ -435,7 +436,7 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, 
 				float d1 = glm::distance(reflect_position, transmitter_position);
 				float d2 = glm::distance(reflect_position, receiver_position);
 
-				result.reflection_loss_in_linear += 0.8*tx_gain_in_linear / (pow(4 * pi * (d1 + d2) / (wave_length * coff), 2));
+				result.reflection_loss_in_linear += 0.8*tx_gain_in_linear / (pow(4 * pi * (d1 + d2) / (wave_length * aref), 2));
 			}
 
 			break;
@@ -809,10 +810,16 @@ void RayTracer::DrawObjects(Camera* main_camera) const
 	}
 }
 
+void RayTracer::TogglePrint()
+{
+	std::cout << " Toggle Print\n";
+	print_each_ = !print_each_;
+}
+
 Point* RayTracer::InitializeOrCallPoint(glm::vec3 initialized_position)
 {
-	initialized_position = glm::round(initialized_position);
 	if (store_points) {
+		initialized_position = glm::round(initialized_position);
 		if (points_[initialized_position] == nullptr) {
 			Point* point = new Point(initialized_position);
 			points_[initialized_position] = point;
