@@ -99,12 +99,49 @@ void Transmitter::UpdateRadiationPattern()
 
 			}
 		}*/
-		auto& phi_value = current_pattern_->pattern_[0.0f];
-		int distance = 10;
-		for (unsigned int i = 0; i < phi_value.size() - 1; ++i) {
-			//Ray* ray = new Ray();
-		}
+
 	}
+	float min_linear = pow(10, current_pattern_->min_gain_ / 10);
+	float max_linear = pow(10, current_pattern_->max_gain_ / 10);
+	float step = 0.1f;
+	int distance = 10;
+	for (float angle = 0.0f; angle < 360.0f; angle = angle + step) {
+		//std::cout << "i : " <<  std::endl;
+		float start_angle = glm::radians(angle);
+		float end_angle = glm::radians(angle+step);
+		// Harizontal Line
+		auto harizontal_direction_1 = glm::rotateY(front_direction_, start_angle);
+		auto harizontal_direction_2 = glm::rotateY(front_direction_, end_angle);
+		float h_value_1 = current_pattern_->pattern_[glm::degrees(start_angle)][90.0f] - current_pattern_->min_gain_;
+		float h_value_2 = current_pattern_->pattern_[glm::degrees(end_angle)][90.0f] - current_pattern_->min_gain_;
+		// Vertical Line
+		auto vertical_direction_1 = glm::rotateZ(up_direction_, start_angle);
+		auto vertical_direction_2 = glm::rotateZ(up_direction_, end_angle);
+		
+		float v_value_1 = current_pattern_->pattern_[90.0f][glm::degrees(start_angle)] - current_pattern_->min_gain_;
+		float v_value_2 = current_pattern_->pattern_[90.0f][glm::degrees(end_angle)] - current_pattern_->min_gain_;
+
+		/*h_value_1 = pow(10, h_value_1 / 10);
+		h_value_2 = pow(10, h_value_2 / 10);
+		h_value_1 = (h_value_1 + min_linear) / max_linear;
+		h_value_2 = (h_value_2 + min_linear) / max_linear;
+
+		v_value_1 = pow(10, v_value_1 / 10);
+		v_value_2 = pow(10, v_value_2 / 10);
+		v_value_1 = (v_value_1 + min_linear) * 100.0f  / max_linear;
+		v_value_2 = (v_value_2 + min_linear) * 100.0f / max_linear;*/
+
+		Line* harizontal_line = new Line(	position + harizontal_direction_1 * h_value_1, 
+											position + harizontal_direction_2 * h_value_2);
+		Line* vertical_line = new Line(		position + vertical_direction_1 * v_value_1, 
+											position + vertical_direction_2 * v_value_2);
+
+		harizontal_line->SetColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+		vertical_line->SetColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+		objects_.push_back(harizontal_line);
+		objects_.push_back(vertical_line);
+	}
+	
 }
 
 void Transmitter::Reset()
