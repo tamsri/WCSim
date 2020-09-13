@@ -103,10 +103,12 @@ void Transmitter::UpdateRadiationPattern()
 	}
 	float min_linear = pow(10, current_pattern_->min_gain_ / 10);
 	float max_linear = pow(10, current_pattern_->max_gain_ / 10);
+	float min_max_linear = max_linear - min_linear;
 	float min_dB =  current_pattern_->min_gain_;
 	float max_dB = current_pattern_->max_gain_;
 	float step = 2.0f;
 	int distance = 10;
+	const bool display_dB = false;
 	for (float angle = 0.0f; angle < 360.0f; angle = angle + step) {
 		//std::cout << "i : " <<  std::endl;
 		const float start_angle = glm::radians(angle);
@@ -116,19 +118,33 @@ void Transmitter::UpdateRadiationPattern()
 		// Harizontal Line
 		auto harizontal_direction_1 = glm::rotateY(front_direction_, start_angle);
 		auto harizontal_direction_2 = glm::rotateY(front_direction_, end_angle);
-		float h_value_1 = current_pattern_->GetGain(start_angle, harizontal_angle) + abs(min_dB);
-		float h_value_2 = current_pattern_->GetGain(end_angle, harizontal_angle) + abs(min_dB);
-		h_value_1 /= (max_dB - 2*min_dB);
-		h_value_2 /= (max_dB - 2*min_dB);
+		float h_value_1 = current_pattern_->GetGain(start_angle, harizontal_angle) ;
+		float h_value_2 = current_pattern_->GetGain(end_angle, harizontal_angle) ;
+		// Normalize the pattern
+		if (!display_dB) {
+			h_value_1 = pow(10, h_value_1 / 10) / (min_max_linear);
+			h_value_2 = pow(10, h_value_2 / 10) / (min_max_linear);
+		}
+		else {
+			h_value_1 = (h_value_1 + abs(min_dB)) / (max_dB - 2 * min_dB);
+			h_value_2 = (h_value_2 + abs(min_dB)) / (max_dB - 2 * min_dB);
+		}
 		h_value_1 *= distance;
 		h_value_2 *= distance;
 		// Vertical Line
 		auto vertical_direction_1 = glm::rotateZ(up_direction_, -start_angle);
 		auto vertical_direction_2 = glm::rotateZ(up_direction_, -end_angle);
-		float v_value_1 = current_pattern_->GetGain(vertical_angle, start_angle) + abs(min_dB);
-		float v_value_2 = current_pattern_->GetGain(vertical_angle, end_angle) + abs(min_dB);
-		v_value_1 /= (max_dB - 2*min_dB);
-		v_value_2 /= (max_dB - 2*min_dB);
+		float v_value_1 = current_pattern_->GetGain(vertical_angle, start_angle) ;
+		float v_value_2 = current_pattern_->GetGain(vertical_angle, end_angle) ;
+		// Normalize the pattern
+		if (!display_dB) {
+			v_value_1 = pow(10, v_value_1 / 10) / (min_max_linear);
+			v_value_2 = pow(10, v_value_2 / 10) / (min_max_linear);
+		}
+		else {
+			v_value_1 = (v_value_1 +abs(min_dB)) / (max_dB - 2 * min_dB);
+			v_value_2 = (v_value_2 +abs(min_dB)) /(max_dB - 2 * min_dB);
+		}
 		v_value_1 *= distance;
 		v_value_2 *= distance;
 		Line* harizontal_line = new Line(	position + harizontal_direction_1 * h_value_1, 
