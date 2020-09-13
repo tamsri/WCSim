@@ -10,6 +10,7 @@ public:
 	RadiationPattern(std::string pattern_file_path);
 
 	std::map<float, std::map<float, float>> pattern_;
+	float GetGain(float theta, float phi);
 	float min_gain_;
 	float max_gain_;
 };

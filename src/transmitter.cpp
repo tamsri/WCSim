@@ -103,34 +103,34 @@ void Transmitter::UpdateRadiationPattern()
 	}
 	float min_linear = pow(10, current_pattern_->min_gain_ / 10);
 	float max_linear = pow(10, current_pattern_->max_gain_ / 10);
-	float step = 0.1f;
+	float min_dB =  current_pattern_->min_gain_;
+	float max_dB = current_pattern_->max_gain_;
+	float step = 2.0f;
 	int distance = 10;
 	for (float angle = 0.0f; angle < 360.0f; angle = angle + step) {
 		//std::cout << "i : " <<  std::endl;
-		float start_angle = glm::radians(angle);
-		float end_angle = glm::radians(angle+step);
+		const float start_angle = glm::radians(angle);
+		const float end_angle = glm::radians(angle+step);
+		constexpr float harizontal_angle = glm::radians(90.0f);
+		constexpr float vertical_angle = glm::radians(0.0f);
 		// Harizontal Line
 		auto harizontal_direction_1 = glm::rotateY(front_direction_, start_angle);
 		auto harizontal_direction_2 = glm::rotateY(front_direction_, end_angle);
-		float h_value_1 = current_pattern_->pattern_[glm::degrees(start_angle)][90.0f] - current_pattern_->min_gain_;
-		float h_value_2 = current_pattern_->pattern_[glm::degrees(end_angle)][90.0f] - current_pattern_->min_gain_;
+		float h_value_1 = current_pattern_->GetGain(start_angle, harizontal_angle) + abs(min_dB);
+		float h_value_2 = current_pattern_->GetGain(end_angle, harizontal_angle) + abs(min_dB);
+		h_value_1 /= (max_dB - 2*min_dB);
+		h_value_2 /= (max_dB - 2*min_dB);
+		h_value_1 *= distance;
+		h_value_2 *= distance;
 		// Vertical Line
-		auto vertical_direction_1 = glm::rotateZ(up_direction_, start_angle);
-		auto vertical_direction_2 = glm::rotateZ(up_direction_, end_angle);
-		
-		float v_value_1 = current_pattern_->pattern_[90.0f][glm::degrees(start_angle)] - current_pattern_->min_gain_;
-		float v_value_2 = current_pattern_->pattern_[90.0f][glm::degrees(end_angle)] - current_pattern_->min_gain_;
-
-		/*h_value_1 = pow(10, h_value_1 / 10);
-		h_value_2 = pow(10, h_value_2 / 10);
-		h_value_1 = (h_value_1 + min_linear) / max_linear;
-		h_value_2 = (h_value_2 + min_linear) / max_linear;
-
-		v_value_1 = pow(10, v_value_1 / 10);
-		v_value_2 = pow(10, v_value_2 / 10);
-		v_value_1 = (v_value_1 + min_linear) * 100.0f  / max_linear;
-		v_value_2 = (v_value_2 + min_linear) * 100.0f / max_linear;*/
-
+		auto vertical_direction_1 = glm::rotateZ(up_direction_, -start_angle);
+		auto vertical_direction_2 = glm::rotateZ(up_direction_, -end_angle);
+		float v_value_1 = current_pattern_->GetGain(vertical_angle, start_angle) + abs(min_dB);
+		float v_value_2 = current_pattern_->GetGain(vertical_angle, end_angle) + abs(min_dB);
+		v_value_1 /= (max_dB - 2*min_dB);
+		v_value_2 /= (max_dB - 2*min_dB);
+		v_value_1 *= distance;
+		v_value_2 *= distance;
 		Line* harizontal_line = new Line(	position + harizontal_direction_1 * h_value_1, 
 											position + harizontal_direction_2 * h_value_2);
 		Line* vertical_line = new Line(		position + vertical_direction_1 * v_value_1, 
@@ -199,39 +199,13 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 {
 	glm::vec3 tx_position = current_point_->position;
 	glm::vec3 tx_to_point_direction = glm::normalize(near_tx_position - tx_position);
-	const glm::vec3 front_direction = glm::vec3(1.0f, 0.0f, 0.0f);
-	const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	float theta_to_near_tx = glm::angle(front_direction, tx_to_point_direction );
-	float phi_to_near_tx = glm::angle(up_direction, tx_to_point_direction);
-
-	float theta_tx = glm::angle(front_direction, front_direction_);
-	float phi_tx = glm::angle(up_direction, up_direction_);
+	float theta_to_near_tx = glm::angle(front_direction_, tx_to_point_direction );
+	float phi_to_near_tx = glm::angle(up_direction_, tx_to_point_direction);
 
 
-	std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", " << glm::degrees(phi_to_near_tx) << "\n";
-
-	int pattern_theta_angle = std::round(glm::degrees(theta_to_near_tx - theta_tx));
-	int pattern_phi_angle = std::round(glm::degrees(phi_to_near_tx - phi_tx)) + 90;
-	if (pattern_theta_angle < 0.0f) pattern_theta_angle += 360.0f;
-	if (pattern_phi_angle < 0.0f) pattern_phi_angle += 360.0f;
-
-	if (pattern_phi_angle > 180.0f){
-
-		std::cout << "---------------------------------" << std::endl;
-		std::cout << "theta: " << pattern_theta_angle << "(deg)" << std::endl;
-		std::cout << "phi: " << pattern_phi_angle << "(deg)" << std::endl;
-		std::cout << "!! pattern out of range: return min gain !!" << std::endl;
-		std::cout << "---------------------------------" << std::endl;
-
-		return current_pattern_->min_gain_;
-	}
-	std::cout << "---------------------------------" << std::endl;
-	std::cout << "theta: " << pattern_theta_angle << "(deg)" << std::endl;
-	std::cout << "phi: " << pattern_phi_angle << "(deg)" << std::endl;
-
-	std::map<float, float> phi_value = (*current_pattern_->pattern_.lower_bound(pattern_theta_angle)).second;
-	float tx_gain = (*phi_value.lower_bound(pattern_phi_angle)).second;
+	std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", phi:  " << glm::degrees(phi_to_near_tx) << "\n";
+	float tx_gain = current_pattern_->GetGain(theta_to_near_tx, phi_to_near_tx);
 
 	std::cout << "tx_gain: " << tx_gain << "[dB]" << std::endl;
 	std::cout << "---------------------------------" << std::endl;

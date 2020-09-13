@@ -1,7 +1,9 @@
 #include "radiation_pattern.hpp"
-
 #include<iostream>
 #include<fstream>
+
+#include <glm/glm.hpp>
+
 
 RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 	std::ifstream input_file_stream(pattern_file_path);
@@ -27,4 +29,27 @@ RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 	else {
 		std::cout << "Couldn't open radiation pattern file." << std::endl;
 	}
+}
+
+float RadiationPattern::GetGain(float theta, float phi)
+{
+	//std::cout << "getting gain. " << std::endl;
+	float theta_deg = glm::degrees(theta);
+	float phi_deg = glm::degrees(phi);
+	if (theta_deg >= 360.0f || phi_deg >= 360.0f) {
+		std::cout << "!!! theta:" << theta_deg << " phi:" << phi_deg << std::endl;
+
+		theta_deg = (int)theta_deg % 360;
+		phi_deg = (int)phi_deg % 360;
+
+	}
+
+	if (phi_deg > 180.0f) return min_gain_; // Out of range, return the minimum gain
+
+	auto& phi_value = (*pattern_.lower_bound(theta_deg)).second;
+	auto gain = (*phi_value.lower_bound(phi_deg)).second;
+	std::cout << "theta:" << theta_deg << " phi:" << phi_deg << " total gain: " << gain << std::endl;
+
+	// Debug the problem
+	return gain;
 }
