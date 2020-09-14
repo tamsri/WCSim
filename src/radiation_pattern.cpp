@@ -37,18 +37,22 @@ float RadiationPattern::GetGain(float theta, float phi)
 	float theta_deg = glm::degrees(theta);
 	float phi_deg = glm::degrees(phi);
 	if (theta_deg >= 360.0f || phi_deg >= 360.0f) {
-		std::cout << "!!! theta:" << theta_deg << " phi:" << phi_deg << std::endl;
+		//std::cout << "!!! theta:" << theta_deg << " phi:" << phi_deg << std::endl;
 
 		theta_deg = (int)theta_deg % 360;
 		phi_deg = (int)phi_deg % 360;
 
 	}
 
-	if (phi_deg > 180.0f) return min_gain_; // Out of range, return the minimum gain
+	/*if (phi_deg >= 180.0f) {
+		//phi_deg = phi_deg - 180.0f;// Out of range, flip the angle
+		//theta_deg = 360.0f - theta_deg;
+		return min_gain_;
+	}*/
 
 	auto& phi_value = (*pattern_.lower_bound(theta_deg)).second;
 	auto gain = (*phi_value.lower_bound(phi_deg)).second;
-	std::cout << "theta:" << theta_deg << " phi:" << phi_deg << " total gain: " << gain << std::endl;
+	//std::cout << "theta:" << theta_deg << " phi:" << phi_deg << " total gain: " << gain << std::endl;
 
 	// Debug the problem
 	return gain;

@@ -134,8 +134,16 @@ void Transmitter::UpdateRadiationPattern()
 		// Vertical Line
 		auto vertical_direction_1 = glm::rotateZ(up_direction_, -start_angle);
 		auto vertical_direction_2 = glm::rotateZ(up_direction_, -end_angle);
-		float v_value_1 = current_pattern_->GetGain(vertical_angle, start_angle) ;
-		float v_value_2 = current_pattern_->GetGain(vertical_angle, end_angle) ;
+		float v_value_1;
+		float v_value_2;
+		if (angle >= 180.0f) {
+			v_value_1 = current_pattern_->GetGain(glm::radians(180.0f), glm::radians(180.0f)-start_angle);
+			v_value_2 = current_pattern_->GetGain(glm::radians(180.0f), glm::radians(180.0f)-end_angle);
+		}
+		else {
+			v_value_1 = current_pattern_->GetGain(vertical_angle, start_angle);
+			v_value_2 = current_pattern_->GetGain(vertical_angle, end_angle);
+		}
 		// Normalize the pattern
 		if (!display_dB) {
 			v_value_1 = pow(10, v_value_1 / 10) / (min_max_linear);
