@@ -302,10 +302,10 @@ void Engine::KeyMoveMode(float delta_time)
 		transmitter_->Rotate(Direction::kDown, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		transmitter_->ToggleDisplay();
-	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
-		ray_tracer_->print_each_ = true;
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		ray_tracer_->print_each_ = false;
+	//if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
+	//	ray_tracer_->print_each_ = true;
+	//if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+	//	ray_tracer_->print_each_ = false;
 }
 
 void Engine::MousePosition(double xpos, double ypos)
@@ -394,7 +394,6 @@ void Engine::Visualize()
 		ray->DrawObject(main_camera_);
 	}*/
 	//test_transmitter_->DrawRadiationPattern(main_camera_);
-	ray_tracer_->DrawObjects(main_camera_);
 	//transmitter_->DrawRadiationPattern(main_camera_);
 	transmitter_->DrawObjects(main_camera_);
 	test_receiver_->DrawObjects(main_camera_);

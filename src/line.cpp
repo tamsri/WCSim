@@ -14,13 +14,14 @@ Line::Line(glm::vec3 start_position, glm::vec3 end_position)
 	float vertices[] = {
 		start_position.x, start_position.y, start_position.z,
 		end_position.x, end_position.y, end_position.z,
+
 	};
 	glGenVertexArrays(1, &vao_);
 	glGenBuffers(1, &vbo_);
 
 	glBindVertexArray(vao_);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
 	// safe end

@@ -11,7 +11,7 @@
 
 class Triangle;
 
-enum RecordType : int {
+enum class RecordType : int {
 	kDirect = 0,
 	kReflect,
 	kEdgeDiffraction
@@ -44,10 +44,9 @@ struct Point {
 
 	std::map<const Triangle*, bool> hit_triangles;
 
-	std::unordered_map <Point*, std::vector<const Record *>> neighbour_record;
+	//std::unordered_map <Point*, std::vector<const Record *>> neighbour_record;
 
 };
-
-typedef std::unordered_map<glm::vec3, Point*> point_map;
+//typedef std::unordered_map<glm::vec3, Point*> point_map;
 
 #endif // !RECORD_H_

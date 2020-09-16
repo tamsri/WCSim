@@ -9,7 +9,7 @@
 class Window;
 class GLFWwindow;
 
-enum Direction : unsigned int {
+enum class Direction : unsigned int {
 	kForward = 0,
 	kBackward,
 	kLeft,
@@ -17,7 +17,7 @@ enum Direction : unsigned int {
 	kUp,
 	kDown
 };
-enum Rotation : unsigned  int {
+enum class Rotation : unsigned  int {
 	kYaw = 0,
 	kRoll,
 	kPitch

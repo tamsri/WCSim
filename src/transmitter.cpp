@@ -27,7 +27,6 @@ Transmitter::Transmitter(Transform transform,
 													ray_tracer_(ray_tracer)
 {
 	current_pattern_ = nullptr;
-	current_point_ = ray_tracer->InitializeOrCallPoint(transform_.position);
 	display_pattern_ = false;
 	Reset();
 	Update();
@@ -36,8 +35,8 @@ Transmitter::Transmitter(Transform transform,
 
 void Transmitter::Update()
 {
-	//if (!ray_tracer_->store_points && current_point_ != nullptr) delete current_point_;
-	current_point_ = ray_tracer_->InitializeOrCallPoint(transform_.position);
+	//if (current_point_ != nullptr) delete current_point_;
+	current_point_ = new Point(transform_.position);
 
 	if(current_pattern_ != nullptr) UpdateRadiationPattern();
 	float average_path_loss = 0.0f;
@@ -71,36 +70,7 @@ void Transmitter::UpdateRadiationPattern()
 
 	objects_.push_back(front_ray);
 	objects_.push_back(up_ray);
-
-	if (display_pattern_) {
-		/*for (auto& [theta, phi_value] : current_pattern_->pattern_) {
-			if ((skipper++) % 20 == 0) continue;
-			for (auto& [phi, gain] : phi_value) {
-				//if ((skipper++) % 50 == 0) continue;
-
-				glm::mat4 trans = glm::rotate(glm::mat4(1.0f), glm::radians(theta), glm::vec3(1.0f, 0.0f, 0.0f));
-				trans = glm::rotate(trans, glm::radians(phi), glm::vec3(0.0f, 1.0f, 0.0f));
-				glm::vec3 new_direction = glm::normalize(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // todo implement later
-				new_direction = glm::rotateY(new_direction, tx_theta - glm::radians(90.0f));
-				new_direction = glm::rotateX(new_direction, tx_phi);
-
-				float gain_lin = pow(10, gain / 10);
-				float max_gain_lin = pow(10, current_pattern_->max_gain_ / 10);
-				float min_gain_lin = pow(10, current_pattern_->min_gain_ / 10);
-				float normalized_gain = (gain_lin + min_gain_lin) * 10 / (max_gain_lin - min_gain_lin);
-				/*std::cout << "max gain: " << max_gain_lin << std::endl;
-				std::cout << "n gain: " << normalized_gain << std::endl;
-				std::cout << "max gain: " << min_gain_lin << std::endl;
-
-				Ray* ray = new Ray(current_point_->position, glm::vec3(new_direction.x, new_direction.y, new_direction.z));
-				ray->InitializeRay(normalized_gain);
-				ray->SetRayColor(glm::vec4(.2f, .3f, .4f, 1.0f));
-				rays_.push_back(ray);
-
-			}
-		}*/
-
-	}
+	if (!display_pattern_) return;
 	float min_linear = pow(10, current_pattern_->min_gain_ / 10);
 	float max_linear = pow(10, current_pattern_->max_gain_ / 10);
 	float min_max_linear = max_linear - min_linear;
@@ -221,21 +191,58 @@ Point* Transmitter::GetPoint()
 
 float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 {
-	glm::vec3 tx_position = current_point_->position;
+	/*glm::vec3 tx_position = current_point_->position;
 	glm::vec3 tx_to_point_direction = glm::normalize(near_tx_position - tx_position);
+	glm::vec3 left_direction = glm::cross(front_direction_, up_direction_);
+	std::cout << "left: " << left_direction.x << ", " << left_direction.y << ", " << left_direction.z << std::endl;
+	float angle_to_front = glm::degrees(glm::angle(front_direction_, tx_to_point_direction ));
+	float angle_to_up = glm::degrees(glm::angle(up_direction_, tx_to_point_direction));
+	float angle_to_left = glm::degrees(glm::angle(left_direction, tx_to_point_direction));
+	
+	float phi_to_near_tx = angle_to_up;
+	float theta_to_near_tx; 
+	if (angle_to_left <= 90.0f) {
+		theta_to_near_tx = angle_to_front;
+	}
+	else {
+		theta_to_near_tx = 360.0f - angle_to_front;
+	}
 
-	float theta_to_near_tx = glm::angle(front_direction_, tx_to_point_direction );
-	float phi_to_near_tx = glm::angle(up_direction_, tx_to_point_direction);
-
-
-	std::cout << "theta: " << glm::degrees(theta_to_near_tx) << ", phi:  " << glm::degrees(phi_to_near_tx) << "\n";
+	std::cout << "theta: " << theta_to_near_tx  << ", phi:  " << phi_to_near_tx << "\n";
 	float tx_gain = current_pattern_->GetGain(theta_to_near_tx, phi_to_near_tx);
 
 	std::cout << "tx_gain: " << tx_gain << "[dB]" << std::endl;
-	std::cout << "---------------------------------" << std::endl;
+	std::cout << "---------------------------------" << std::endl;*/
 
-	//return tx_gain;
-	 return 0.0f;
+	// Calculate Theta (X, Z) plane angle
+	glm::vec3 tx_position = current_point_->position;
+	glm::vec2 tx_on_xz = glm::vec2(tx_position.x, tx_position.z);
+	glm::vec2 near_tx_on_xz = glm::vec2(near_tx_position.x, near_tx_position.z);
+	glm::vec2 to_near_tx_on_xz_direction = glm::normalize(near_tx_on_xz - tx_on_xz);
+	glm::vec2 front_on_xz_direction = glm::vec2(front_direction_.x, front_direction_.z);
+	float angle_on_front = glm::angle(front_on_xz_direction, to_near_tx_on_xz_direction);
+	
+	glm::vec2 tx_on_xy = glm::vec2(tx_position.x, tx_position.y);
+	glm::vec2 near_tx_on_xy = glm::vec2(near_tx_position.x, near_tx_position.y);
+	glm::vec2 to_near_tx_on_xy_direction = glm::normalize(near_tx_on_xy - tx_on_xy);
+	glm::vec2 up_on_xy_direction = glm::vec2(up_direction_.x, up_direction_.y);
+	float phi = glm::angle(up_on_xy_direction, to_near_tx_on_xy_direction);
+
+	glm::vec3 left_direction = glm::cross(front_direction_, up_direction_);
+	glm::vec3 tx_to_near_direction = glm::normalize(near_tx_position - tx_position);
+	float angle_to_left = glm::degrees(glm::angle(left_direction, tx_to_near_direction));
+	float theta;
+	if (angle_to_left <= 90.0f) {
+		theta = glm::radians(360.0f - glm::degrees(angle_on_front));
+	}
+	else {
+		theta = angle_on_front;
+	}
+	std::cout << "theta: " << glm::degrees(theta) << ", phi: " << glm::degrees(phi); 
+
+	float tx_gain = current_pattern_->GetGain(theta, phi);
+	std::cout << " total gain: " << tx_gain << std::endl;
+	return tx_gain;
 }
 
 Receiver* Transmitter::GetReceiver(unsigned int index)
@@ -248,24 +255,24 @@ void Transmitter::Move(const Direction direction, float delta_time)
 {
 	float distance = delta_time * move_speed_;
 	switch (direction) {
-	case kForward:
+	case Direction::kForward:
 		transform_.position += front_direction_ * distance;
 		break;
-	case kBackward:
+	case Direction::kBackward:
 		transform_.position -= front_direction_ * distance;
 		break;
-	case kRight:
+	case Direction::kRight:
 		glm::vec3 left_direction = glm::normalize(glm::cross(front_direction_, up_direction_));
 		transform_.position += left_direction * distance;
 		break;
-	case kLeft:
+	case Direction::kLeft:
 		glm::vec3 right_direction = glm::normalize(glm::cross(-front_direction_, up_direction_));
 		transform_.position += right_direction * distance;
 		break;
-	case kUp:
+	case Direction::kUp:
 		transform_.position += up_direction_ * distance;
 		break;
-	case kDown:
+	case Direction::kDown:
 		transform_.position -= up_direction_ * distance;
 		break;
 	};
@@ -277,20 +284,20 @@ void Transmitter::Rotate(const Direction rotation, float delta_time)
 	float angular = delta_time * rotation_speed_;
 	//std::cout << "angular : " << angular  << std::endl;
 	switch(rotation) {
-	case kLeft: {
+	case Direction::kLeft: {
 		//front_direction_ = glm::rotateX(front_direction_, -angular);
 		front_direction_ = glm::rotateY(front_direction_, angular);
 		break;
 	}
-	case kRight: {
+	case Direction::kRight: {
 		front_direction_ = glm::rotateY(front_direction_, -angular);
 		break;
 	}
-	case kUp: {
+	case Direction::kUp: {
 		up_direction_ = glm::rotateX(up_direction_, angular);
 		break;
 	}
-	case kDown: {
+	case Direction:: kDown: {
 		up_direction_ = glm::rotateX(up_direction_, -angular);
 		break;
 	}

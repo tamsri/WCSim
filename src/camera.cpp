@@ -17,25 +17,25 @@ void Camera::Move(const Direction camera_direction, float delta_time)
 {
 	float distance = delta_time * camera_move_speed_;
 	switch (camera_direction) {
-	case kForward:
+	case Direction::kForward:
 		position_ += front_direction_ * distance;
 		break;
-	case kBackward:
+	case Direction::kBackward:
 		position_ -= front_direction_ * distance;
 		break;
-	case kRight:
+	case Direction::kRight:
 		glm::vec3 left_direction = glm::normalize(glm::cross(front_direction_, up_direction_));
 		position_ += left_direction * distance;
 		break;
 
-	case kLeft:
+	case Direction::kLeft:
 		glm::vec3 right_direction = glm::normalize(glm::cross(-front_direction_, up_direction_));
 		position_ += right_direction * distance;
 		break;
-	case kUp:
+	case Direction::kUp:
 		position_ += up_direction_ * distance;
 		break;
-	case kDown:
+	case Direction::kDown:
 		position_ -= up_direction_ * distance;
 		break;
 	};
@@ -47,13 +47,13 @@ void Camera::Rotate(const Rotation camera_rotation, float delta_time)
 {
 	float angle = camera_rotate_speed_ * delta_time;
 	switch (camera_rotation) {
-	case kYaw:
+	case Rotation::kYaw:
 		yaw_ += angle;
 		break;
-	case kRoll:
+	case Rotation::kRoll:
 		/// TODO: to be implemented (maybe)
 		break;
-	case kPitch:
+	case Rotation::kPitch:
 		pitch_ += angle;
 		break;
 	}
