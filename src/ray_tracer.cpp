@@ -215,7 +215,7 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, 
 				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position);
 				float d1 = glm::distance(reflect_position, transmitter_position);
 				float d2 = glm::distance(reflect_position, receiver_position);
-
+				std::cout << "ref coe: " << ref_coe << std::endl;
 				result.reflection_loss_in_linear += 0.8*tx_gain_in_linear / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
 			}
 
@@ -386,28 +386,35 @@ float RayTracer::CalculateReflectionCofficient(glm::vec3 start_position, glm::ve
 {
 	glm::vec3 ref_to_start_direction = glm::normalize(start_position - reflection_position);
 	glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflection_position);
-	float angle = glm::angle(ref_to_start_direction, ref_to_end_direction)/2.0f; //Angle between the reflection direction to the normal of surface
+	float angle_1 = glm::angle(ref_to_start_direction, ref_to_end_direction)/2.0f; //Angle between the reflection direction to the normal of surface
 	enum Polarization : bool {
 		TM = true,
 		TE = false
 	};
 	Polarization polar = TM; /// Question: TM or TE???
-	//float air_refractive_index = 1.0003f;
-	float n = 5.31f; // concrete's relative permittivity according to ITU-R, P.2040-1. (Only for 1-100 GHz)
-	float reflection_coefficient;
-	float sqrt_n_minus_sinsq = sqrt(n - pow(sin(angle), 2));
-	float cos_angle = cos(angle);
+
+	// Calculate the angle_2
+	float n1 = 1.0003f;
+	float n2 = 5.31f; // concrete's relative permittivity according to ITU-R, P.2040-1. (Only for 1-100 GHz)
+	const float c = 3e8;
+	float c1 = c / sqrt(n1);
+	float c2 = c / sqrt(n2);
+	float angle_2 = asin(c2*sin(angle_1)/c1); // Refraction angle according to Snell's law
+
+
+	//std::cout << "angle_1: " << glm::degrees(angle_1) << "deg \n";
+	//std::cout << "angle_2: " << glm::degrees(angle_2) << "deg \n";
+
 	switch (polar) {
-	case TM: {
-		reflection_coefficient = (cos_angle  - sqrt_n_minus_sinsq) / (cos_angle + sqrt_n_minus_sinsq);
-		break;
-	}
 	case TE: {
-		reflection_coefficient = (n*cos_angle - sqrt_n_minus_sinsq) / (n*cos_angle + sqrt_n_minus_sinsq);
-		break;
+		if (sqrt(abs(n1 / n2)) * sin(angle_1) >= 1) return 1.0f;
+		return (sqrt(n1)*cos(angle_1)  - sqrt(n2)*cos(angle_2)) / (sqrt(n1)*cos(angle_1) + sqrt(n2)*cos(angle_2));
+	}
+	case TM: {
+		if (sqrt(abs(n1 / n2)) * sin(angle_1) >= 1) return 1.0f;
+		return (sqrt(n2) * cos(angle_1) - sqrt(n1) * cos(angle_2)) / (sqrt(n2) * cos(angle_1) + sqrt(n1) * cos(angle_2));
 	}
 	}
-	return reflection_coefficient;
 }
 
 
