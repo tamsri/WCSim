@@ -40,7 +40,7 @@ void Receiver::Update()
 	std::vector<Record> records;
 	ray_tracer_->Trace(transmitter_positon, receiver_position, records);
 	
-	if (ray_tracer_->CalculatePathLoss(transmitter_, this, records, result_)) {
+	if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records, result_)) {
 		result_.is_valid = true;
 		std::cout << " ------------------------------- \n";
 		std::cout << "Receiver Position: " << glm::to_string(receiver_position) << std::endl;

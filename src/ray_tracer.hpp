@@ -31,7 +31,8 @@ public:
 	// Ray Tracing Part
 	void Trace(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record> & records) const;
 	void GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record> & records, std::vector<Object *> & objects) const;
-	bool CalculatePathLoss(Transmitter * transmitter, Receiver * receiver, const std::vector<Record> & records ,Result & result) const;
+	bool CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency , const std::vector<Record> & records ,Result & result) const;
+	bool CalculatePathLossWithGain(Transmitter* transmitter, const glm::vec3 receiver_position, const std::vector<Record>& records, Result& result) const;
 	// Line of Sight
 	bool IsDirectHit(const glm::vec3 start_point, const glm::vec3 end_point) const;
 	
