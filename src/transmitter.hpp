@@ -26,10 +26,12 @@ public:
 	void AddReceiver(Receiver* receiver);
 	void DrawRadiationPattern(Camera * camera);
 	void AssignRadiationPattern(RadiationPattern* pattern);
+
+
 	float GetFrequency();
-	Point * GetPoint();
 	float GetTransmitterGain(glm::vec3 near_tx_position);
 	Receiver* GetReceiver(unsigned int index);
+	glm::vec3 GetPosition();
 	// Movement
 	void Move(const Direction direction, float delta_time);
 	void Rotate(const Direction rotation, float delta_time);

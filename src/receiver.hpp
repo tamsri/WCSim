@@ -19,29 +19,32 @@ public:
 
 	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
 
-	// Variables
-	Transform transform_;
-	glm::vec3 velocity_;
-	Point* GetPoint();
-	Result GetResult();
+	Result GetResult() const;
+	glm::vec3 GetPosition() const;
+	// Actions
+	void MoveTo(const glm::vec3 position);
+	void Move(Direction direction, float delta_time);
 
-	float move_speed_;
-	glm::vec3 front_direction_;
-	glm::vec3 up_direction_;
 	// Visualization
 	void Update();
 	void Reset();
-	void Move(glm::vec3 step);
-	void Move(Direction direction, float delta_time);
+ 
+
 	void Clear();
-	// Calculation
-	void CalculateReceivePower();
 
 	void DrawObjects(Camera* main_camera);
 private:
+
 	Result result_;
+
+	// Variables
+	Transform transform_;
+	glm::vec3 velocity_;
+	float move_speed_;
+	glm::vec3 front_direction_;
+	glm::vec3 up_direction_;
+
 	// Ray Tracer
-	Point* current_point_;
 	RayTracer * ray_tracer_;
 	Transmitter* transmitter_;
 	

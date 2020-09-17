@@ -28,9 +28,9 @@ RayTracer::RayTracer(PolygonMesh* map) :map_(map)
 {
 }
 
-void RayTracer::ScanHit(Point* point) const
+std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 position) const
 {
-	if (!point->hit_triangles.empty()) return;
+	std::map<Triangle*, bool> hit_triangles;
 	// Approach I: when the triangles are more than the generated scanning rays
 	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
 	float scan_precision = 1.0f;
@@ -41,34 +41,27 @@ void RayTracer::ScanHit(Point* point) const
 			auto new_direction = trans_direction * direction;
 			glm::vec3 i_direction = glm::vec3(new_direction);
 
-			Ray* ray = new Ray(point->position, i_direction);
+			Ray ray{ position, i_direction };
 			Triangle* hit_triangle = nullptr;
 			float hit_distance; // doesnt do anything yet // maybe implement later. 
-			if (map_->IsHit(*ray, hit_distance, hit_triangle)) {
-				point->hit_triangles[hit_triangle] = true;
+			if (map_->IsHit(ray, hit_distance, hit_triangle)) {
+				hit_triangles[hit_triangle] = true;
 			}
-			delete ray;
 		}
+	return hit_triangles;
 }
 
-void RayTracer::Trace(Point* start_point, Point* end_point, std::vector<Record> & records)
+void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_position, std::vector<Record> & records) const
 {
-	//if (!start_point->neighbour_record[end_point].empty()) return;
-
-	const glm::vec3 start_position = start_point->position;
-	const glm::vec3 end_position = end_point->position;
-
-	// find if LOS
-	if (IsDirectHit(start_point->position, end_point->position)) {
-		//start_point->neighbour_record[end_point].push_back(direct_record_); //start_point has LOS with end_point
-		//end_point->neighbour_record[start_point].push_back(direct_record_); //end_point has LOS with start_point
+	// Trace Line of Sight
+	if (IsDirectHit(start_position, end_position)) {
 		records.push_back(Record{ RecordType::kDirect });
 	}
 	else {
 		// Implement multiple knife-edge diffraction
 		std::vector<glm::vec3> edges_points;
 
-		if (IsKnifeEdgeDiffraction(start_point, end_point, edges_points)) {
+		if (IsKnifeEdgeDiffraction(start_position, end_position, edges_points)) {
 			Record saving_record{ RecordType::kEdgeDiffraction, edges_points };
 			records.push_back(saving_record);
 		}
@@ -76,7 +69,7 @@ void RayTracer::Trace(Point* start_point, Point* end_point, std::vector<Record> 
 
 	// find possible reflections
 	std::vector <glm::vec3> reflected_points;
-	if (IsReflected(start_point, end_point, reflected_points)) {
+	if (IsReflected(start_position, end_position, reflected_points)) {
 		//std::cout << "Reflected!!" << std::endl;
 		Record saving_record{ RecordType::kReflect, reflected_points };
 		records.push_back(saving_record);
@@ -84,14 +77,8 @@ void RayTracer::Trace(Point* start_point, Point* end_point, std::vector<Record> 
 
 }
 
-void RayTracer::GetDrawComponents(Point* start_point, Point* end_point, std::vector<Record>& records, std::vector<Object*>& objects) const
+void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record>& records, std::vector<Object*>& objects) const
 {
-	Cube* start_cube = new Cube(Transform{ start_point->position,glm::vec3(0.2f, 10.0f, 0.2f), glm::vec3(0.0f) });
-	Cube* end_cube = new Cube(Transform{ end_point->position,glm::vec3(0.5f, .5f, 0.5f), glm::vec3(0.0f) });
-	objects.push_back(start_cube);
-	objects.push_back(end_cube);
-	const glm::vec3 start_position = start_point->position;
-	const glm::vec3 end_position = end_point->position;
 
 	for (auto record : records) {
 		switch (record.type) {
@@ -192,14 +179,11 @@ void RayTracer::GetDrawComponents(Point* start_point, Point* end_point, std::vec
 
 bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, const std::vector<Record> & records, Result& result) const
 {
-	Point* transmitter_point = transmitter->GetPoint();
-	const float frequency = transmitter->GetFrequency();
-	Point * receiver_point = receiver->GetPoint();
-
 	if (records.size() == 0) return false;
 
-	const glm::vec3 transmitter_position = transmitter_point->position;
-	const glm::vec3 receiver_position = receiver_point->position;
+	const glm::vec3 transmitter_position = transmitter->GetPosition();
+	const glm::vec3 receiver_position = receiver->GetPosition();
+	const float frequency = transmitter->GetFrequency();
 
 	const float c = 3e8;
 	const float wave_length = c / frequency;
@@ -228,12 +212,11 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, 
 
 				const float tx_gain_in_dB = transmitter->GetTransmitterGain(reflect_position);
 				const float tx_gain_in_linear = pow(10, tx_gain_in_dB / 10.0f);
-				const float aref = 0.8f;
-
+				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position);
 				float d1 = glm::distance(reflect_position, transmitter_position);
 				float d2 = glm::distance(reflect_position, receiver_position);
 
-				result.reflection_loss_in_linear += 0.8*tx_gain_in_linear / (pow(4 * pi * (d1 + d2) / (wave_length * aref), 2));
+				result.reflection_loss_in_linear += 0.8*tx_gain_in_linear / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
 			}
 
 			break;
@@ -337,13 +320,12 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver* receiver, 
 	return true;
 }
 
-bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) const
+bool RayTracer::IsDirectHit(const glm::vec3 start_position,const glm::vec3 end_position) const
 {
 	// get direction from start point to end point
-	glm::vec3 origin = start_position;
-	glm::vec3 direction = glm::normalize(end_position - origin);
+	glm::vec3 direction = glm::normalize(end_position - start_position);
 	float start_to_end_distance = glm::distance(start_position, end_position);
-	Ray ray{ origin, direction };
+	Ray ray{ start_position, direction };
 	float distance = -1;
 	// trace the ray on this direction 
 	// check if the direction hit something and the t is not betwen start_point to end_point length
@@ -353,21 +335,18 @@ bool RayTracer::IsDirectHit(glm::vec3 start_position, glm::vec3 end_position) co
 	return true;
 }
 
-bool RayTracer::IsReflected(Point* start_point, Point* end_point, std::vector<glm::vec3>& reflected_points) const
+bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const
 {
-	// search the hitable triangles between two points
-	glm::vec3 start_position = start_point->position;
-	glm::vec3 end_position = end_point->position;
 	// match the co-exist triangles between two points
 	std::vector<const Triangle*> check_triangles;
 
 	// Searching for check triangles
 	if (map_->GetObjects().size() > 129600) {
 		// scan hit_triangles
-		ScanHit(start_point); // it won't scan if the point is already checked
-		ScanHit(end_point);
-		for (auto const& [triangle, exist_value] : start_point->hit_triangles)
-			if (end_point->hit_triangles[triangle] == true) check_triangles.push_back(triangle);
+		std::map<Triangle *, bool> start_hits = ScanHit(start_position); // it won't scan if the point is already checked
+		std::map<Triangle*, bool> end_hits = ScanHit(start_position);
+		for (auto const& [triangle, exist_value] : start_hits)
+			if (end_hits[triangle] == true) check_triangles.push_back(triangle);
 	}
 	else {
 		check_triangles = map_->GetObjects();
@@ -453,13 +432,11 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec
 	return  points + 2 * t * n; // reverse average point from average point 
 }
 
-bool RayTracer::IsKnifeEdgeDiffraction(Point* start_point, Point* end_point, std::vector<glm::vec3>& edges_points) const
+bool RayTracer::IsKnifeEdgeDiffraction(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& edges_points) const
 {
-	const glm::vec3 start_position = start_point->position;
-	const glm::vec3 end_position = end_point->position;
-	// try multiple edges scanning
-	unsigned int max_scan = 5;
+	const unsigned int max_scan = 5; // Maximum Scan
 	unsigned int current_scan = 0;
+
 	glm::vec3 left_position = start_position;
 	glm::vec3 right_position = end_position;
 	while (!IsDirectHit(left_position, right_position) && current_scan < max_scan) {
@@ -490,7 +467,7 @@ bool RayTracer::IsKnifeEdgeDiffraction(Point* start_point, Point* end_point, std
 	return false;
 }
 
-bool RayTracer::FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::vec3& edge_position) const
+bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_position, glm::vec3& edge_position) const
 {
 	const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
 	const float scan_precision = 0.05f;
@@ -532,7 +509,6 @@ bool RayTracer::FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::
 		}
 	}
 
-	//float distance_to_obstacle_on_xz = cos();
 	glm::vec3 start_end_on_xz_direction = glm::normalize(glm::vec3(start_end_direction.x, 0.0f, start_end_direction.z));
 	double start_end_to_on_xz_angle = glm::angle(latest_hit_direction, start_end_on_xz_direction);
 	float distance_on_xz = latest_hit_distance * cos(start_end_to_on_xz_angle);

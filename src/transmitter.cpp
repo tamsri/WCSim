@@ -184,11 +184,6 @@ float Transmitter::GetFrequency()
 	return frequency_;
 }
 
-Point* Transmitter::GetPoint()
-{
-	return current_point_;
-}
-
 float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 {
 	/*glm::vec3 tx_position = current_point_->position;
@@ -249,6 +244,11 @@ Receiver* Transmitter::GetReceiver(unsigned int index)
 {
 	if (index >= receivers_.size()) return nullptr;
 	return receivers_[index];
+}
+
+glm::vec3 Transmitter::GetPosition()
+{
+	return glm::vec3(transform_.position);
 }
 
 void Transmitter::Move(const Direction direction, float delta_time)

@@ -19,32 +19,33 @@ Receiver::Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * tr
 	Update();
 }
 
-Point* Receiver::GetPoint()
-{
-	return current_point_;
-}
-
-Result Receiver::GetResult()
+Result Receiver::GetResult() const
 {
 	return result_;
 }
 
+glm::vec3 Receiver::GetPosition() const
+{
+	return glm::vec3(transform_.position);
+}
+
 void Receiver::Update()
 {
-	Point* transmitter_point = transmitter_->GetPoint();
+
+	const glm::vec3 receiver_position = transform_.position;
+	const glm::vec3 transmitter_positon = transmitter_->GetPosition();
 	float transmitter_frequency = transmitter_->GetFrequency();
 
-	//if (current_point_ != nullptr) delete current_point_;
-	current_point_ = new Point (transform_.position);
 
 	std::vector<Record> records;
-	ray_tracer_->Trace(transmitter_point, current_point_, records);
+	ray_tracer_->Trace(transmitter_positon, receiver_position, records);
+	
 	if (ray_tracer_->CalculatePathLoss(transmitter_, this, records, result_)) {
 		result_.is_valid = true;
 		std::cout << " ------------------------------- \n";
-		std::cout << "Receiver Position: " << glm::to_string(current_point_->position) << std::endl;
-		std::cout << "Transmitter Position: " << glm::to_string(transmitter_point->position) << std::endl;
-		std::cout << "Direct Distance: " << glm::distance(current_point_->position, transmitter_point->position) << std::endl;
+		std::cout << "Receiver Position: " << glm::to_string(receiver_position) << std::endl;
+		std::cout << "Transmitter Position: " << glm::to_string(transmitter_positon) << std::endl;
+		std::cout << "Direct Distance: " << glm::distance(transmitter_positon, receiver_position) << std::endl;
 		std::cout << "Direct Path Loss: " << result_.direct_path_loss_in_linear << ", dB: " << 10.0 * log10(result_.direct_path_loss_in_linear) << std::endl;
 		std::cout << "Reflect Path Loss: " << result_.reflection_loss_in_linear << ", dB: " << 10.0 * log10(result_.reflection_loss_in_linear) << std::endl;
 		std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
@@ -57,7 +58,7 @@ void Receiver::Update()
 
 	//Clear Visualisation
 	Clear();
-	ray_tracer_->GetDrawComponents(transmitter_point, current_point_, records ,objects_);
+	ray_tracer_->GetDrawComponents(transmitter_positon, receiver_position, records ,objects_);
 }
 void Receiver::Reset()
 {
@@ -65,8 +66,9 @@ void Receiver::Reset()
 	front_direction_ = glm::vec3(1.0f, 0.0f, 0.0);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0);
 }
-void Receiver::Move(glm::vec3 step) {
-	transform_.position += step;
+
+void Receiver::MoveTo(const glm::vec3 position) {
+	transform_.position = position;
 	Update();
 }
 
@@ -100,12 +102,8 @@ void Receiver::Move(Direction direction,float delta_time) {
 void Receiver::Clear()
 {
 	for (auto * object : objects_)
-		delete object;
+		free(object);
 	objects_.clear();
-}
-
-void Receiver::CalculateReceivePower()
-{
 }
 
 void Receiver::DrawObjects(Camera * main_camera)
