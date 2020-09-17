@@ -56,6 +56,7 @@ class Engine{
         void InitializeVoxels();
         void TracePathFrom(glm::vec3 position);
         void Update();
+        void PrintMap();
 
     private:
         // Engine Parameters

@@ -54,27 +54,40 @@ std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 position) const
 void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_position, std::vector<Record> & records) const
 {
 	// Trace Line of Sight
+	using namespace std::chrono;
+	//auto direct_start = high_resolution_clock::now();
+	//bool is_direct = IsDirectHit(start_position, end_position);
+	//auto direct_end = high_resolution_clock::now();
+	//auto duration = duration_cast<microseconds>(direct_end - direct_start);
+	//std::cout << "Direct Hit Tracer takes: " << duration.count()/1000.0f << " s\n";
+
 	if (IsDirectHit(start_position, end_position)) {
 		records.push_back(Record{ RecordType::kDirect });
 	}
 	else {
 		// Implement multiple knife-edge diffraction
 		std::vector<glm::vec3> edges_points;
-
+		//auto diff_start = high_resolution_clock::now();
 		if (IsKnifeEdgeDiffraction(start_position, end_position, edges_points)) {
 			Record saving_record{ RecordType::kEdgeDiffraction, edges_points };
 			records.push_back(saving_record);
 		}
+		//auto diff_end = high_resolution_clock::now();
+		//auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
+		//std::cout << "Diffraction Tracer takes " << diff_duration.count()/1000.0f << " s\n";
 	}
 
 	// find possible reflections
 	std::vector <glm::vec3> reflected_points;
+	//auto ref_start = high_resolution_clock::now();
 	if (IsReflected(start_position, end_position, reflected_points)) {
 		//std::cout << "Reflected!!" << std::endl;
 		Record saving_record{ RecordType::kReflect, reflected_points };
 		records.push_back(saving_record);
 	}
-
+	//auto ref_end = high_resolution_clock::now();
+	//auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
+	//std::cout << "Reflection Tracer takes " << ref_duration.count()/1000.0f << " s\n";
 }
 
 void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record>& records, std::vector<Object*>& objects) const
@@ -177,10 +190,15 @@ void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec
 	}
 }
 
-bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency, const std::vector<Record> & records, Result& result) const
+bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency, const std::vector<Record>& records, Result& result) const
 {
-	if (records.size() == 0) return false;
 
+	if (records.size() == 0)
+	{
+		result.is_valid = false;
+		return false;
+	}
+	result.is_valid = true;
 	const float c = 3e8;
 	const float wave_length = c / frequency;
 
@@ -205,7 +223,7 @@ bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const gl
 				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position);
 				float d1 = glm::distance(reflect_position, transmitter_position);
 				float d2 = glm::distance(reflect_position, receiver_position);
-				std::cout << "ref coe: " << ref_coe << std::endl;
+				//std::cout << "ref coe: " << ref_coe << std::endl;
 				result.reflection_loss_in_linear += 0.8 / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
 			}
 
@@ -305,7 +323,11 @@ bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const gl
 
 bool RayTracer::CalculatePathLossWithGain(Transmitter * transmitter, const glm::vec3 receiver_position, const std::vector<Record>& records, Result& result) const
 {
-	if (records.size() == 0) return false;
+	if (records.size() == 0) { 
+		result.is_valid = false;
+		return false; 
+	}
+	result.is_valid = true;
 	const glm::vec3 transmitter_position = transmitter->GetPosition();
 	const float frequency = transmitter->GetFrequency();
 
@@ -469,7 +491,7 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 	if (map_->GetObjects().size() > 129600) {
 		// scan hit_triangles
 		std::map<Triangle *, bool> start_hits = ScanHit(start_position); // it won't scan if the point is already checked
-		std::map<Triangle*, bool> end_hits = ScanHit(start_position);
+		std::map<Triangle*, bool> end_hits = ScanHit(end_position);
 		for (auto const& [triangle, exist_value] : start_hits)
 			if (end_hits[triangle] == true) check_triangles.push_back(triangle);
 	}
@@ -478,6 +500,7 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 	}
 
 	// check the reflection points on matches triangles
+
 	for (const Triangle* matched_triangle : check_triangles) {
 		// reflect one of the point on the triangle plane
 		glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);

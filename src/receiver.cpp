@@ -41,7 +41,6 @@ void Receiver::Update()
 	ray_tracer_->Trace(transmitter_positon, receiver_position, records);
 	
 	if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records, result_)) {
-		result_.is_valid = true;
 		std::cout << " ------------------------------- \n";
 		std::cout << "Receiver Position: " << glm::to_string(receiver_position) << std::endl;
 		std::cout << "Transmitter Position: " << glm::to_string(transmitter_positon) << std::endl;
@@ -51,9 +50,6 @@ void Receiver::Update()
 		std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
 		std::cout << "Total Loss: " << result_.total_loss << " dB\n";
 		std::cout << " ------------------------------- \n";
-	}
-	else {
-		result_.is_valid = false;
 	}
 
 	//Clear Visualisation

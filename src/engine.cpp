@@ -16,17 +16,14 @@
 #include "cube.hpp"
 #include "ray.hpp"
 
-
-
-
 #include "ray_tracer.hpp"
 #include "transmitter.hpp"
 #include "receiver.hpp"
 
 #include "radiation_pattern.hpp"
-
 #include "transform.hpp"
 
+#include "printer.hpp"
 
 unsigned int Engine::global_engine_id_ = 0;
 
@@ -115,23 +112,13 @@ void Engine::LoadComponents()
 	LoadTexture();
 	LoadMap();
 	LoadRayTracer(); // LoadRayTracer() tracer must be after LoadMap()
+	PrintMap();
 }
 
 void Engine::LoadMap()
 {
 	std::cout << "Engine:Loading map" << std::endl;
 	map_ = new PolygonMesh("../assets/obj/new2.obj", default_shader_);
-	Cube * test_cube_1 = new Cube(Transform{ glm::vec3(10.0f, 10.0f, 2.0f), glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) }, default_shader_);
-	Cube * test_cube_2 = new Cube(Transform{ glm::vec3(-10.0f, 5.0f, 10.0f), glm::vec3(.5f, 0.5f, .5f), glm::vec3(0.0f) }, default_shader_);
-
-
-	//Transform transmitter_transform{ glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f) };
-	//test_transmitter_ = new Transmitter(transmitter_transform, default_shader_);
-
-	render_objects_.push_back(test_cube_1);
-	render_objects_.push_back(test_cube_2);
-	render_objects_.push_back(map_);
-	//render_objects_.push_back(test_ray_);
 
 }
 
@@ -205,6 +192,13 @@ void Engine::TracePathFrom(glm::vec3 position)
 void Engine::Update()
 {
 	KeyActions(); // Get key from each loop
+}
+
+void Engine::PrintMap()
+{
+	std::cout << "Printing\n";
+	Printer printer{ray_tracer_};
+	printer.Print("../test.ppm", glm::vec3(0.0f, 5.0f, 0.0f), 2.5e9f, 1.5f );
 }
 
 void Engine::KeyActions()
