@@ -198,7 +198,7 @@ void Engine::PrintMap()
 {
 	std::cout << "Printing\n";
 	Printer printer{ray_tracer_};
-	printer.Print("../test.ppm", glm::vec3(0.0f, 5.0f, 0.0f), 2.5e9f, 1.5f );
+	printer.Print("../test.ppm", glm::vec3(0.0f, 8.0f, 0.0f), 2.5e9f, 1.5f );
 }
 
 void Engine::KeyActions()

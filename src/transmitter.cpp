@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "triangle.hpp"
 #include "object.hpp"
 #include "ray.hpp"
 #include "line.hpp"

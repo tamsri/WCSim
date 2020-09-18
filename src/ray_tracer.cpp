@@ -51,15 +51,37 @@ std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 position) const
 	return hit_triangles;
 }
 
+std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 position) const
+{
+	std::vector <Triangle*> hit_triangles;
+	// Approach I: when the triangles are more than the generated scanning rays
+	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
+	float scan_precision = 2.0f;
+	for (float i = 0; i < 360; i += scan_precision)
+		for (float j = 0; j < 360; j += scan_precision) {
+			auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
+			trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
+			auto new_direction = trans_direction * direction;
+			glm::vec3 i_direction = glm::vec3(new_direction);
+
+			Ray ray{ position, i_direction };
+			Triangle* hit_triangle = nullptr;
+			float hit_distance; // doesnt do anything yet // maybe implement later. 
+			if (map_->IsHit(ray, hit_distance, hit_triangle)) {
+				hit_triangles.push_back(hit_triangle);
+			}
+		}
+	return hit_triangles;
+}
 void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_position, std::vector<Record> & records) const
 {
 	// Trace Line of Sight
 	using namespace std::chrono;
-	//auto direct_start = high_resolution_clock::now();
-	//bool is_direct = IsDirectHit(start_position, end_position);
-	//auto direct_end = high_resolution_clock::now();
-	//auto duration = duration_cast<microseconds>(direct_end - direct_start);
-	//std::cout << "Direct Hit Tracer takes: " << duration.count()/1000.0f << " s\n";
+	auto direct_start = high_resolution_clock::now();
+	bool is_direct = IsDirectHit(start_position, end_position);
+	auto direct_end = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(direct_end - direct_start);
+	//std::cout << "Direct Hit Tracer takes: " << duration.count()/1000.0f << " ms\n";
 
 	if (IsDirectHit(start_position, end_position)) {
 		records.push_back(Record{ RecordType::kDirect });
@@ -67,27 +89,67 @@ void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_positio
 	else {
 		// Implement multiple knife-edge diffraction
 		std::vector<glm::vec3> edges_points;
-		//auto diff_start = high_resolution_clock::now();
+		auto diff_start = high_resolution_clock::now();
 		if (IsKnifeEdgeDiffraction(start_position, end_position, edges_points)) {
 			Record saving_record{ RecordType::kEdgeDiffraction, edges_points };
 			records.push_back(saving_record);
 		}
-		//auto diff_end = high_resolution_clock::now();
-		//auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
-		//std::cout << "Diffraction Tracer takes " << diff_duration.count()/1000.0f << " s\n";
+		auto diff_end = high_resolution_clock::now();
+		auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
+		std::cout << "Diffraction Tracer takes " << diff_duration.count()/1000.0f << " ms\n";
 	}
 
 	// find possible reflections
 	std::vector <glm::vec3> reflected_points;
-	//auto ref_start = high_resolution_clock::now();
+	auto ref_start = high_resolution_clock::now();
 	if (IsReflected(start_position, end_position, reflected_points)) {
 		//std::cout << "Reflected!!" << std::endl;
 		Record saving_record{ RecordType::kReflect, reflected_points };
 		records.push_back(saving_record);
 	}
-	//auto ref_end = high_resolution_clock::now();
-	//auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
-	//std::cout << "Reflection Tracer takes " << ref_duration.count()/1000.0f << " s\n";
+	auto ref_end = high_resolution_clock::now();
+	auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
+	std::cout << "Reflection Tracer takes " << ref_duration.count()/1000.0f << " ms\n";
+}
+
+void RayTracer::Trace(Transmitter * transmitter, const glm::vec3 end_position, std::vector<Record>& records) const
+{
+	// Trace Line of Sight
+	glm::vec3 start_position = transmitter->GetPosition();
+	using namespace std::chrono;
+	auto direct_start = high_resolution_clock::now();
+	bool is_direct = IsDirectHit(start_position, end_position);
+	auto direct_end = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(direct_end - direct_start);
+	//std::cout << "Direct Hit Tracer takes: " << duration.count() / 1000.0f << " ms\n";
+
+	if (IsDirectHit(start_position, end_position)) {
+		records.push_back(Record{ RecordType::kDirect });
+	}
+	else {
+		// Implement multiple knife-edge diffraction
+		std::vector<glm::vec3> edges_points;
+		auto diff_start = high_resolution_clock::now();
+		if (IsKnifeEdgeDiffraction(start_position, end_position, edges_points)) {
+			Record saving_record{ RecordType::kEdgeDiffraction, edges_points };
+			records.push_back(saving_record);
+		}
+		auto diff_end = high_resolution_clock::now();
+		auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
+		std::cout << "Diffraction Tracer takes " << diff_duration.count() / 1000.0f << " ms\n";
+	}
+
+	// find possible reflections
+	std::vector <glm::vec3> reflected_points;
+	auto ref_start = high_resolution_clock::now();
+	if (IsReflected(transmitter, end_position, reflected_points)) {
+		//std::cout << "Reflected!!" << std::endl;
+		Record saving_record{ RecordType::kReflect, reflected_points };
+		records.push_back(saving_record);
+	}
+	auto ref_end = high_resolution_clock::now();
+	auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
+	std::cout << "Reflection Tracer takes " << ref_duration.count() / 1000.0f << " ms\n";
 }
 
 void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record>& records, std::vector<Object*>& objects) const
@@ -510,6 +572,61 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
 		std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
 
+		float found_surface = false;
+		float surface_to_end_distance;
+		glm::vec3 reflection_point_position;
+		float reflection_point_to_end_distance = glm::distance(reflected_position, end_position);
+		float hit_something = false;
+		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
+
+			for (auto const [distance, triangle] : hit_triangles) {
+				if (triangle == matched_triangle) {
+					reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
+
+					//if (IsDirectHit(reflection_point_position, end_position) &&
+					//	IsDirectHit(reflection_point_position, start_position))
+					//	reflected_points.push_back(reflection_point_position);
+					//break;
+
+					found_surface = true;
+					surface_to_end_distance = distance;
+					continue;
+				}
+				if (found_surface) {
+					if (distance < reflection_point_to_end_distance) {
+						hit_something = true;
+					}
+					if (distance > reflection_point_to_end_distance) break;
+				}
+			}
+			if(found_surface && hit_something == false && IsDirectHit(start_position, reflection_point_position))
+				reflected_points.push_back(reflection_point_position);
+		}
+	}
+	if (reflected_points.empty()) return false;
+	return true;
+}
+
+bool RayTracer::IsReflected( Transmitter * transmitter, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const
+{
+	// match the co-exist triangles between two points
+
+	glm::vec3 start_position = transmitter->GetPosition();
+	if (transmitter->hit_triangles.empty()) transmitter->hit_triangles = ScanHitVec(start_position);
+	
+	//std::vector<Triangle*> & check_triangles = transmitter->hit_triangles;
+
+	// check the reflection points on matches triangles
+
+	for (const Triangle* matched_triangle : transmitter->hit_triangles) { // why with scan triangle is much slower???
+		// reflect one of the point on the triangle plane
+		glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
+		// trace from the reflected point 
+		glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
+
+		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
+		std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
+
 
 		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
 
@@ -625,7 +742,7 @@ bool RayTracer::IsKnifeEdgeDiffraction(const glm::vec3 start_position, const glm
 bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_position, glm::vec3& edge_position) const
 {
 	const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
-	const float scan_precision = 0.05f;
+	const float scan_precision = 1.f;
 	glm::vec3 start_end_direction = glm::normalize(end_position - start_position);
 
 	const float min_x = std::min(end_position.x, start_position.x);
@@ -644,7 +761,7 @@ bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_posi
 		glm::mat3 direction_trans = glm::rotate(glm::mat4(1.0f), glm::radians(current_angle), start_cross_direction);
 		scan_direction = glm::normalize(glm::vec3(direction_trans * start_end_direction));
 		// if scan_direction is near almost equal to up_direction, then we stop scanning
-		if (glm::degrees(glm::angle(scan_direction, up_direction)) < .5f) return false;
+		if (glm::degrees(glm::angle(scan_direction, up_direction)) < 1.0f) return false;
 
 		Ray scan_ray{ start_position, scan_direction }; //implement to heap later
 

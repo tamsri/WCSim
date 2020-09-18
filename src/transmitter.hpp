@@ -2,7 +2,7 @@
 #define TRANSMITTER_H
 
 #include <vector>
-
+#include <map>
 #include "transform.hpp"
 #include <glm/matrix.hpp>
 #include "camera.hpp"
@@ -14,6 +14,8 @@ class RadiationPattern;
 class RayTracer;
 class Object;
 class Receiver;
+class Triangle;
+
 struct Result;
 
 class Transmitter {
@@ -30,6 +32,7 @@ public:
 
 	float GetFrequency();
 	float GetTransmitterGain(glm::vec3 near_tx_position);
+	
 	Receiver* GetReceiver(unsigned int index);
 	glm::vec3 GetPosition();
 	// Movement
@@ -43,6 +46,9 @@ public:
 	void Clear();
 	// Visualisation
 	void DrawObjects(Camera * camera);
+
+	std::vector<Triangle*> hit_triangles;
+
 private:
 	
 	// Variables

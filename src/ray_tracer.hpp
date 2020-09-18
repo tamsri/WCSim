@@ -30,6 +30,8 @@ public:
 	
 	// Ray Tracing Part
 	void Trace(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record> & records) const;
+	void Trace(Transmitter * transmitter, const glm::vec3 end_position, std::vector<Record>& records) const;
+
 	void GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record> & records, std::vector<Object *> & objects) const;
 	bool CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency , const std::vector<Record> & records ,Result & result) const;
 	bool CalculatePathLossWithGain(Transmitter* transmitter, const glm::vec3 receiver_position, const std::vector<Record>& records, Result& result) const;
@@ -38,7 +40,9 @@ public:
 	
 	// Reflection
 	std::map<Triangle *, bool> ScanHit(const glm::vec3 position) const;
+	std::vector <Triangle*> ScanHitVec(const glm::vec3 position) const;
 	bool IsReflected(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3> & reflected_points) const;
+	bool IsReflected(Transmitter* transmitter, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const;
 	float CalculateReflectionCofficient(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 reflection_position) const;
 	glm::vec3 ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 point) const ;
 
