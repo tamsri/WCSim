@@ -50,8 +50,8 @@ public:
 	bool IsKnifeEdgeDiffraction(const glm::vec3 start_point, const glm::vec3 end_point, std::vector<glm::vec3> & edges_points) const;
 	bool FindEdge(const glm::vec3 start_position, const glm::vec3 end_position, glm::vec3 & edge_position) const;
 	glm::vec3 NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> & edges_points ) const;
-	void CleanEdgePoints(std::vector<glm::vec3> & edges_points) const;
-	
+	void CleanEdgePoints(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3> & edges_points) const;
+	float GetHighestPoint(std::vector<glm::vec3> edges) const;
 	// Calculations
 	float CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) const;
 	float CalculateDiffractionByV(float v) const;

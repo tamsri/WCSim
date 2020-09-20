@@ -15,6 +15,8 @@ public:
 
 	void Print(const std::string & output_path, glm::vec3 transmitter_location, float frequency, float scanning_height);
 
+	void TestPrint(const std::string& output_path);
+
 private:
 	void ScanMap(glm::vec3 transmitter_position, float frequency, float scanning_heigh, float x_resolution, float z_resolution);
 	glm::vec3 GetHeatColor(float min_value, float max_value, float value);

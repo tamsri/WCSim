@@ -30,10 +30,9 @@ void Printer::Print(const std::string & output_path, glm::vec3 transmitter_locat
 		return;
 	}
 
-	int x_width = 1000;
-	int z_width = 1000;
+	int x_width = 500;
+	int z_width = 500;
 	ScanMap(transmitter_location, frequency, scanning_heigh, x_width, z_width);
-
 
 	output_file << "P3\n" << x_width << " " << z_width << "\n255\n";
 	for (auto& x_row : print_map_)
@@ -42,7 +41,6 @@ void Printer::Print(const std::string & output_path, glm::vec3 transmitter_locat
 			if (result.is_valid) {
 				color = GetHeatColor(min_value_, max_value_, result.total_loss);
 				output_file << int(color.x * 256.0f) << " " << int(color.y * 256.0f) << " " << int(color.z * 256.0f) << "\n";
-
 			}
 			else {
 				output_file << 0 << " " << 0 << " " << 0 << "\n";
@@ -50,9 +48,30 @@ void Printer::Print(const std::string & output_path, glm::vec3 transmitter_locat
 		}
 	std::cout << "min: " << min_value_  << " max: " << max_value_ << std::endl;
 	std::cout << " Completed printing" << std::endl;
+	output_file.close();
 	return;
 }
+void Printer::TestPrint(const std::string& output_path) {
 
+	std::ofstream output_file(output_path);
+	if (!output_file.is_open()) {
+		std::cout << "Cannot print the map" << std::endl;
+		return;
+	}
+	std::cout << "Start Testing the printer heat map\n";
+	const int x_width = 500;
+	const int y_width = 500;
+	output_file << "P3\n" << x_width << " " << y_width << "\n255\n";
+	for (auto i = 0; i < x_width; ++i) {
+		for (auto j = 0; j < y_width; ++j) {
+			glm::vec3 color;
+			color = GetHeatColor(0, x_width, i);
+			output_file << int(color.x * 256.0f) << " " << int(color.y * 256.0f) << " " << int(color.z * 256.0f) << "\n";
+		}
+	}
+
+
+};
 void Printer::ScanMap(glm::vec3 transmitter_position, float frequency, float scanning_heigh, float x_resolution, float z_resolution)
 {
 	/// Scanner's info
@@ -73,15 +92,19 @@ void Printer::ScanMap(glm::vec3 transmitter_position, float frequency, float sca
 			glm::vec3 receiver_position = glm::vec3(x, scanning_heigh, z);
 			//std::cout << glm::to_string(receiver_position) << "\n";
 			std::vector<Record> records;
-
 			ray_tracer_->Trace(transmitter_position, receiver_position, records);
 			
 			Result result;
 			ray_tracer_->CalculatePathLoss(transmitter_position, receiver_position, frequency, records, result);
+			
+			
+			
 			if (result.is_valid) {
 				min_value_ = std::min({ result.total_loss, min_value_ });
 				max_value_ = std::max({ result.total_loss, max_value_});
 			}
+
+
 			z_map.push_back(result);
 		}
 		auto row_end = high_resolution_clock::now();
@@ -102,11 +125,21 @@ void Printer::ScanMap(glm::vec3 transmitter_position, float frequency, float sca
 
 glm::vec3 Printer::GetHeatColor(float min_value, float max_value, float value)
 {
+	if (value > max_value) return glm::vec3(0.9f, 0.0f, 0.0f);
+	if (value < min_value) return glm::vec3(0.0f, 0.0f, 0.9f);
 	glm::vec3 color; // assume x is reg, y is green, z is blue;
 	float n_value = (value-min_value) / (max_value - min_value); // nomrlaized value
 
-	color.x = std::max( 2.0f * n_value -1, 0.0f);
-	color.z = std::max(-2.0f * n_value + 1.0f, 0.0f);
-	color.y = 1.0f - color.x - color.z;
+	// Simple Linear Color
+	color.z = std::max(2.0f * (-n_value + 0.5f), 0.0f);
+	color.x = std::max(2.0f * ( n_value - 0.5f), 0.0f);
+	
+	// Sigmoid Function Implementation
+	//float sl = 0.05f; // slope
+	//color.x = 1.0f / (1.0f + exp((n_value - 0.25f)/sl));
+	//color.z = 1.0f / (1.0f + exp((-n_value + 0.75f)/sl));
+	
+	color.y = 1.0 - color.x - color.z;
+	color = glm::normalize(color);
 	return glm::vec3(color);
 }

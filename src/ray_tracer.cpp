@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <cmath>
 #include <stack>
+#include <queue>
 
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
 #include "object.hpp"
@@ -96,7 +98,7 @@ void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_positio
 		}
 		auto diff_end = high_resolution_clock::now();
 		auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
-		std::cout << "Diffraction Tracer takes " << diff_duration.count()/1000.0f << " ms\n";
+		//std::cout << "Diffraction Tracer takes " << diff_duration.count()/1000.0f << " ms\n";
 	}
 
 	// find possible reflections
@@ -109,7 +111,7 @@ void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_positio
 	}
 	auto ref_end = high_resolution_clock::now();
 	auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
-	std::cout << "Reflection Tracer takes " << ref_duration.count()/1000.0f << " ms\n";
+	//std::cout << "Reflection Tracer takes " << ref_duration.count()/1000.0f << " ms\n";
 }
 
 void RayTracer::Trace(Transmitter * transmitter, const glm::vec3 end_position, std::vector<Record>& records) const
@@ -154,7 +156,7 @@ void RayTracer::Trace(Transmitter * transmitter, const glm::vec3 end_position, s
 
 void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record>& records, std::vector<Object*>& objects) const
 {
-
+	
 	for (auto record : records) {
 		switch (record.type) {
 		case RecordType::kDirect: {
@@ -250,6 +252,7 @@ void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec
 		}
 		}
 	}
+
 }
 
 bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency, const std::vector<Record>& records, Result& result) const
@@ -572,35 +575,18 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
 		std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
 
-		float found_surface = false;
-		float surface_to_end_distance;
 		glm::vec3 reflection_point_position;
-		float reflection_point_to_end_distance = glm::distance(reflected_position, end_position);
-		float hit_something = false;
 		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
 
 			for (auto const [distance, triangle] : hit_triangles) {
 				if (triangle == matched_triangle) {
 					reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
-
-					//if (IsDirectHit(reflection_point_position, end_position) &&
-					//	IsDirectHit(reflection_point_position, start_position))
-					//	reflected_points.push_back(reflection_point_position);
-					//break;
-
-					found_surface = true;
-					surface_to_end_distance = distance;
-					continue;
-				}
-				if (found_surface) {
-					if (distance < reflection_point_to_end_distance) {
-						hit_something = true;
-					}
-					if (distance > reflection_point_to_end_distance) break;
+					if (IsDirectHit(reflection_point_position, end_position) &&
+						IsDirectHit(reflection_point_position, start_position))
+						reflected_points.push_back(reflection_point_position);
+					break;
 				}
 			}
-			if(found_surface && hit_something == false && IsDirectHit(start_position, reflection_point_position))
-				reflected_points.push_back(reflection_point_position);
 		}
 	}
 	if (reflected_points.empty()) return false;
@@ -656,10 +642,10 @@ float RayTracer::CalculateReflectionCofficient(glm::vec3 start_position, glm::ve
 		TM = true,
 		TE = false
 	};
-	Polarization polar = TM; /// Question: TM or TE???
+	Polarization polar = Polarization::TM; /// Question: TM or TE???
 
 	// Calculate the angle_2
-	float n1 = 1.0003f;
+	float n1 = 1.0003f; // air
 	float n2 = 5.31f; // concrete's relative permittivity according to ITU-R, P.2040-1. (Only for 1-100 GHz)
 	const float c = 3e8;
 	float c1 = c / sqrt(n1);
@@ -721,12 +707,14 @@ bool RayTracer::IsKnifeEdgeDiffraction(const glm::vec3 start_position, const glm
 		if (IsDirectHit(edge_from_left_position, edge_from_right_position)) {
 			if (glm::distance(edge_from_left_position, edge_from_right_position) < 0.5f) {
 				edges_points.push_back((edge_from_left_position + edge_from_right_position) / 2.0f);
-				CleanEdgePoints(edges_points);
+				CleanEdgePoints(start_position, end_position, edges_points);
+				if (edges_points.size() == 0) return false;
 				return true;
 			}
 			edges_points.push_back(edge_from_left_position);
 			edges_points.push_back(edge_from_right_position);
-			CleanEdgePoints(edges_points);
+			CleanEdgePoints(start_position, end_position, edges_points);
+			if (edges_points.size() == 0) return false;
 			return true;
 		}
 		// search more eges
@@ -734,7 +722,6 @@ bool RayTracer::IsKnifeEdgeDiffraction(const glm::vec3 start_position, const glm
 		right_position = edge_from_right_position;
 		edges_points.push_back(edge_from_left_position);
 		edges_points.push_back(edge_from_right_position);
-		CleanEdgePoints(edges_points); // Check optimize the edges in the case if they are too near
 	}
 	return false;
 }
@@ -742,7 +729,7 @@ bool RayTracer::IsKnifeEdgeDiffraction(const glm::vec3 start_position, const glm
 bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_position, glm::vec3& edge_position) const
 {
 	const glm::vec3 up_direction = glm::vec3(0.0f, 1.0f, 0.0f);
-	const float scan_precision = 1.f;
+	const float scan_precision = .5f;
 	glm::vec3 start_end_direction = glm::normalize(end_position - start_position);
 
 	const float min_x = std::min(end_position.x, start_position.x);
@@ -804,20 +791,59 @@ glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<
 	return glm::vec3(distance_from_point.begin()->second);
 }
 
-void RayTracer::CleanEdgePoints(std::vector<glm::vec3>& edges_points) const
+void RayTracer::CleanEdgePoints(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& edges_points) const
 {
 	if (edges_points.size() == 1) return;
 
-	for (int i = edges_points.size() - 1; i >= 0; --i)
-		for (int j = i - 1; j >= 0; --j) {
-			glm::vec3 i_edge = edges_points[i];
-			glm::vec3& j_edge = edges_points[j];
-			if (glm::distance(i_edge, j_edge) <= .5f) {
-				j_edge = (i_edge + j_edge) / 2.0f;
-				edges_points.pop_back();
+	if (edges_points.size() < 3) {
+		for (int i = edges_points.size() - 1; i >= 0; --i)
+			for (int j = i - 1; j >= 0; --j) {
+				glm::vec3 i_edge = edges_points[i];
+				glm::vec3& j_edge = edges_points[j];
+				if (glm::distance(i_edge, j_edge) <= .1f) {
+					j_edge = (i_edge + j_edge) / 2.0f;
+					edges_points.pop_back();
+					break;
+				};
+			}
+		return;
+	}
+	// Find the highest point to reference the check point
+	std::vector<glm::vec3> left_to_right_edges;
+	std::vector<glm::vec3> optimized_edges;
+	std::vector<glm::vec3> unoptimized_edges = edges_points;
+	left_to_right_edges.push_back(start_position);
+	while (!unoptimized_edges.empty())
+		left_to_right_edges.push_back(NearestEdgeFromPoint(left_to_right_edges.back(),unoptimized_edges));
+	left_to_right_edges.push_back(end_position);
+	// Trace the lestest path to furthest path for direct hit.
+	for (unsigned int i = 0; i < left_to_right_edges.size()-1; ++i) {
+		glm::vec3 stand_edge = left_to_right_edges[i];
+		for (unsigned int j = left_to_right_edges.size() - 1; j > i; --j) {
+			if (i == j -1) {
+				if(stand_edge != start_position) optimized_edges.push_back(stand_edge);
 				break;
-			};
+			}
+			glm::vec3 check_edge = left_to_right_edges[j];
+			if (IsDirectHit(stand_edge, check_edge)) {
+				if(i!=0)optimized_edges.push_back(stand_edge);
+				i = j-1;
+				break;
+			}		
 		}
+	}
+	edges_points = optimized_edges;
+	return;
+}
+
+float RayTracer::GetHighestPoint(std::vector<glm::vec3> edges) const
+{
+	float highest_point = 0;
+	for (auto edge : edges)
+		if (edge.y > highest_point) {
+			highest_point = edge.y;
+		}
+	return highest_point;
 }
 
 float RayTracer::CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) const
