@@ -19,6 +19,7 @@ class Transmitter;
 class RayTracer;
 class Receiver;
 class RadiationPattern;
+class Communicator;
 
 enum EngineMode : int {
     kView = 0,
@@ -108,6 +109,9 @@ class Engine{
         // Control from Windows
 
         // Control from Communication Pipe
+
+        // Communication
+        Communicator* communicator_;
 };
 
 #endif // !ENGINE_H

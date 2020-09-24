@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 
+#include "pattern.hpp"
 
 RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 	std::ifstream input_file_stream(pattern_file_path);
@@ -28,7 +29,19 @@ RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 	}
 	else {
 		std::cout << "Couldn't open radiation pattern file." << std::endl;
+		return;
 	}
+
+	for (int phi = 0; phi < 180; phi += 10) {
+		for (int theta = 0; theta < 360; theta += 10) {
+			float value = pattern_[theta][phi];
+		}
+	}
+}
+
+void RadiationPattern::GetPattern()
+{
+	//pattern_object_ = new Pattern(pattern_);
 }
 
 float RadiationPattern::GetGain(float theta, float phi)

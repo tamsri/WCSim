@@ -476,9 +476,11 @@ bool RayTracer::CalculatePathLossWithGain(Transmitter * transmitter, const glm::
 
 				std::pair<float, float> correction_cosines;
 				CalculateCorrectionCosines(transmitter_position, record.data, receiver_position, correction_cosines);
-				float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
-				float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
+				float c_1_cap = (6.0f - c2 + c1) * correction_cosines.first;
+				float c_2_cap = (6.0f - c2 + c3) * correction_cosines.second;
+				std::cout << "c1: " << c1 << " c2: " << c2 << " c3: " << c3 << std::endl;
+				std::cout << "c_1_cap: " << c_1_cap << ", c_2_cap: " << c_1_cap << std::endl;
+ 				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
 
 				diffraction_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB - tx_gain_in_dB;
 
@@ -653,7 +655,7 @@ float RayTracer::CalculateReflectionCofficient(glm::vec3 start_position, glm::ve
 	float angle_2 = asin(c2*sin(angle_1)/c1); // Refraction angle according to Snell's law
 
 
-	//std::cout << "angle_1: " << glm::degrees(angle_1) << "deg \n";
+	std::cout << "angle_1: " << glm::degrees(angle_1) << "deg \n";
 	//std::cout << "angle_2: " << glm::degrees(angle_2) << "deg \n";
 
 	switch (polar) {

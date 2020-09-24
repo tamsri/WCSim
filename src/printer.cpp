@@ -30,8 +30,8 @@ void Printer::Print(const std::string & output_path, glm::vec3 transmitter_locat
 		return;
 	}
 
-	int x_width = 500;
-	int z_width = 500;
+	int x_width = 400;
+	int z_width = 400;
 	ScanMap(transmitter_location, frequency, scanning_heigh, x_width, z_width);
 
 	output_file << "P3\n" << x_width << " " << z_width << "\n255\n";
@@ -89,23 +89,34 @@ void Printer::ScanMap(glm::vec3 transmitter_position, float frequency, float sca
 		std::vector<Result> z_map;
 		auto row_start = high_resolution_clock::now();
 		for (float x = min_x; x < max_x; x += x_step) {
-			glm::vec3 receiver_position = glm::vec3(x, scanning_heigh, z);
 			//std::cout << glm::to_string(receiver_position) << "\n";
-			std::vector<Record> records;
-			ray_tracer_->Trace(transmitter_position, receiver_position, records);
+			Result average_result; 
+			average_result.is_valid = false;
+			average_result.total_loss = 0.0f;
+			unsigned int valid_rev = 0;
+			for (unsigned int i = 0; i < 5; ++i) {
+				std::vector<Record> records;
+				float x_margin = x_step * ((float)rand() / RAND_MAX)*pow(-1,rand()%2)*0.1f;
+				float z_margin = z_step * ((float)rand() / RAND_MAX)*pow(-1, rand()%2)*0.1f;
+
+				glm::vec3 receiver_position = glm::vec3(x + x_margin, scanning_heigh, z + z_margin);
+				//std::cout << x_margin << "," << z_margin<< std::endl;
+				ray_tracer_->Trace(transmitter_position, receiver_position, records);
+				Result result;
+				ray_tracer_->CalculatePathLoss(transmitter_position, receiver_position, frequency, records, result);
+
+				if (result.is_valid) {
+					min_value_ = std::min({ result.total_loss, min_value_ });
+					max_value_ = std::max({ result.total_loss, max_value_ });
+					++valid_rev;
+					average_result.is_valid = true;
+					average_result.total_loss += result.total_loss;
+				}
 			
-			Result result;
-			ray_tracer_->CalculatePathLoss(transmitter_position, receiver_position, frequency, records, result);
-			
-			
-			
-			if (result.is_valid) {
-				min_value_ = std::min({ result.total_loss, min_value_ });
-				max_value_ = std::max({ result.total_loss, max_value_});
 			}
+			average_result.total_loss /= (float)valid_rev;
 
-
-			z_map.push_back(result);
+			z_map.push_back(average_result);
 		}
 		auto row_end = high_resolution_clock::now();
 		float duration = duration_cast<microseconds>(row_end - row_start).count() / 1e6f;

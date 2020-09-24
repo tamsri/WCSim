@@ -24,6 +24,7 @@
 #include "transform.hpp"
 
 #include "printer.hpp"
+#include "communicator.hpp"
 
 unsigned int Engine::global_engine_id_ = 0;
 
@@ -34,7 +35,7 @@ Engine::Engine():
 							main_camera_(nullptr)
 {
 	main_camera_ = nullptr;
-	
+	communicator_ = new Communicator();
 	std::cout << "Initalize Engine without window. (ID: " << engine_id_ << ")." << std::endl;
 }
 Engine::Engine(Window* window) :
@@ -44,6 +45,7 @@ Engine::Engine(Window* window) :
 							main_camera_(nullptr)
 {
 	main_camera_ = new Camera(window_);
+	communicator_ = new Communicator();
 	std::cout << "Initialize Engine with window. (ID: " << engine_id_ << ")." << std::endl;
 	InitalizeWindowController();
 }
@@ -112,7 +114,7 @@ void Engine::LoadComponents()
 	LoadTexture();
 	LoadMap();
 	LoadRayTracer(); // LoadRayTracer() tracer must be after LoadMap()
-	PrintMap();
+	//PrintMap();
 }
 
 void Engine::LoadMap()

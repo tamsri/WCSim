@@ -17,19 +17,34 @@
 
 
 
-PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullptr), 
+PolygonMesh::PolygonMesh(std::map<float, std::map<float, float>> pattern_)
+{
+    shader_ = nullptr;
+    model_ = glm::mat4(1.0f);
+
+}
+
+PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullptr),
                                                                      vao_(0),
                                                                       vbo_(0)
 {
     shader_ = shader;
     model_ = glm::mat4(1.0f);
 
-    /* Read the .obj file */
+    LoadObj(path);
+    tree_ = new KDTree(objects_);
+    SetupMesh();
+}
+
+bool PolygonMesh::LoadObj(const std::string& path)
+{
+    /// move constructor to obj loader
+    ///     /* Read the .obj file */
     if (path.substr(path.length() - 4) != ".obj") {
         assert("Cannot read PolygonMesh .obj");
-        return;
-    }
-    else 
+        return false;
+    } 
+    else
     {
         std::ifstream input_file_stream(path, std::ios::in);
 
@@ -39,13 +54,13 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullp
 
         for (std::string buffer; input_file_stream >> buffer;) {
             //std::cout << "buffer" << buffer << std::endl;
-            
+
             if (buffer == "v") {
                 float x, y, z;
                 input_file_stream >> x >> y >> z;
                 vertices.push_back(glm::vec3(x, y, z));
             }
-            else if (buffer == "vn") { 
+            else if (buffer == "vn") {
                 float x, y, z;
                 input_file_stream >> x >> y >> z;
                 normals.push_back(glm::vec3(x, y, z));
@@ -59,37 +74,30 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullp
                 unsigned int vertex_index[3], uv_index[3], normal_index[3];
                 for (auto i = 0; i < 3; ++i) {
                     char trash_char;
-                    input_file_stream   >> vertex_index[i] >> trash_char
-                                        >> uv_index[i] >> trash_char
-                                        >> normal_index[i];
+                    input_file_stream >> vertex_index[i] >> trash_char
+                        >> uv_index[i] >> trash_char
+                        >> normal_index[i];
                     --vertex_index[i];
                     --uv_index[i];
                     --normal_index[i];
 
-                    vertices_.push_back({ vertices[vertex_index[i]], uvs[uv_index[i]], normals[normal_index[i]]});
+                    vertices_.push_back({ vertices[vertex_index[i]], uvs[uv_index[i]], normals[normal_index[i]] });
                 }
- 
+
                 // Build triangles for ray tracer
-                const std::vector<glm::vec3> points = { vertices[vertex_index[0]], vertices[vertex_index[1]], vertices[vertex_index[2]]};
+                const std::vector<glm::vec3> points = { vertices[vertex_index[0]], vertices[vertex_index[1]], vertices[vertex_index[2]] };
                 //std::cout << "first normal" << normals[normal_index[0]].x << ", " << normals[normal_index[0]].y << ", " << normals[normal_index[0]].z << std::endl;
                 //std::cout << "second normal" << normals[normal_index[1]].x << ", " << normals[normal_index[1]].y << ", " << normals[normal_index[1]].z << std::endl;
                 //std::cout << "third normal" << normals[normal_index[2]].x << ", " << normals[normal_index[2]].y << ", " << normals[normal_index[2]].z << std::endl;
 
                 objects_.push_back(new Triangle(points, normals[normal_index[0]]));
             }
-            
-		}
+
+        }
 
         input_file_stream.close();
 
-	}
-    tree_ = new KDTree(objects_);
-    SetupMesh();
-}
-
-bool PolygonMesh::LoadObj(const std::string& path, std::vector<glm::vec3>& vertices, std::vector<glm::vec3>& uvs, std::vector<glm::vec3>& normals)
-{
-
+    }
     return true;
 }
 
@@ -124,7 +132,7 @@ bool PolygonMesh::IsHit(Ray &ray, float & t) const
 {
     float temp_t;
     std::set<float> t_list;
-    //return tree_->IsHit(ray, t); ; /// to implement later, it hits but doesn't give correct t
+    //return tree_->IsClosestHit(ray, t); ; /// to implement later, it hits but doesn't give correct t
     for (auto object : objects_) {
         if (object->IsHit(ray, temp_t)) {
             t_list.insert(temp_t);

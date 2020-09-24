@@ -5,7 +5,7 @@
 #include <iostream>
 #include <set>
 #include <utility>
-
+#include <map>
 #include <glm/glm.hpp>
 
 #include "object.hpp"
@@ -15,7 +15,6 @@ class Shader;
 class Camera;
 class KDTree;
 class Ray;
-
 
 struct Vertex {
 	glm::vec3 position;
@@ -31,11 +30,9 @@ struct Texture{
 class PolygonMesh : public Object {
 
 public:
+	PolygonMesh(std::map<float, std::map<float, float>> pattern_);
 	PolygonMesh(const std::string & path, Shader * shader);
-	bool LoadObj(	const std::string& path, 
-					std::vector <glm::vec3> & vertices,
-					std::vector <glm::vec3> & uvs,
-					std::vector <glm::vec3> & normals);
+	bool LoadObj(	const std::string& path);
 	virtual void Draw() const;
 	void SetupMesh();
 	bool IsHit(Ray & ray, float & t) const; // return the nearest hit distance
@@ -45,10 +42,11 @@ public:
 	std::vector<const Triangle*> GetObjects();
 
 private:
-	// for ray tracer
+	// For Visualisation
 	std::vector<glm::vec3> full_vertices_, normals_;
 	std::vector<glm::vec2> uvs_;
 	
+	// For Ray Tracer
 	std::vector<const Triangle*> objects_;
 
 
