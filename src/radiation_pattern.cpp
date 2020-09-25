@@ -1,18 +1,19 @@
 #include "radiation_pattern.hpp"
-#include<iostream>
-#include<fstream>
 
+#include<iostream>
+
+#include<fstream>
 #include <glm/glm.hpp>
 
-#include "pattern.hpp"
+#include "transform.hpp"
+#include "polygon_mesh.hpp"
 
-RadiationPattern::RadiationPattern(std::string pattern_file_path) {
+RadiationPattern::RadiationPattern(std::string pattern_file_path) : min_gain_(0.0f), max_gain_(0.0f), pattern_shape_(nullptr) {
+
 	std::ifstream input_file_stream(pattern_file_path);
 	if (input_file_stream.is_open()) {
 		std::cout << "Reading Radiation Pattern file" << std::endl;
 		std::string line;
-		min_gain_ = 0.0f;
-		max_gain_ = 0.0f;
 		while(getline(input_file_stream, line)) {
 			if (line[0] == '#' || line[0] == '*')continue;
 			float theta, phi, total_gain;
@@ -39,9 +40,18 @@ RadiationPattern::RadiationPattern(std::string pattern_file_path) {
 	}
 }
 
-void RadiationPattern::GetPattern()
+void RadiationPattern::PrepareVisualPattern()
 {
-	//pattern_object_ = new Pattern(pattern_);
+	if (pattern_.empty()) return;
+	pattern_shape_ = new PolygonMesh(*this);
+}
+
+void RadiationPattern::DrawPattern(Camera* camera, Transform& transform)
+{
+	if (pattern_shape_ == nullptr) PrepareVisualPattern();
+	if (pattern_shape_ == nullptr) return;
+	pattern_shape_->UpdateTransform(transform);
+	pattern_shape_->DrawObject(camera);
 }
 
 float RadiationPattern::GetGain(float theta, float phi)

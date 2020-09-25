@@ -15,6 +15,8 @@ class Shader;
 class Camera;
 class KDTree;
 class Ray;
+struct Transform;
+class RadiationPattern;
 
 struct Vertex {
 	glm::vec3 position;
@@ -30,10 +32,11 @@ struct Texture{
 class PolygonMesh : public Object {
 
 public:
-	PolygonMesh(std::map<float, std::map<float, float>> pattern_);
+	PolygonMesh(const RadiationPattern& radiaton_pattern);
 	PolygonMesh(const std::string & path, Shader * shader);
 	bool LoadObj(	const std::string& path);
 	virtual void Draw() const;
+	void UpdateTransform(Transform& transform);
 	void SetupMesh();
 	bool IsHit(Ray & ray, float & t) const; // return the nearest hit distance
 	bool IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const; // return the nearest hit triangle

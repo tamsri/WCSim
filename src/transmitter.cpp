@@ -39,7 +39,9 @@ void Transmitter::Update()
 	//if (current_point_ != nullptr) delete current_point_;
 	current_point_ = new Point(transform_.position);
 
-	if(current_pattern_ != nullptr) UpdateRadiationPattern();
+	//if(current_pattern_ != nullptr) UpdateRadiationPattern();
+
+	if (receivers_.empty()) return;
 	float average_path_loss = 0.0f;
 	unsigned int receivers_number = 0;
 	for (auto* receiver : receivers_) {
@@ -51,7 +53,7 @@ void Transmitter::Update()
 		}
 	}
 	average_path_loss /= receivers_number;
-	std::cout << "average path loss: " << average_path_loss << std::endl;
+	std::cout << "Average path loss: " << average_path_loss << std::endl;
 }
 
 void Transmitter::UpdateRadiationPattern()
@@ -103,8 +105,8 @@ void Transmitter::UpdateRadiationPattern()
 		h_value_1 *= distance;
 		h_value_2 *= distance;
 		// Vertical Line
-		auto vertical_direction_1 = glm::rotateZ(up_direction_, -start_angle);
-		auto vertical_direction_2 = glm::rotateZ(up_direction_, -end_angle);
+		auto vertical_direction_1 = glm::rotateZ(-up_direction_, start_angle);
+		auto vertical_direction_2 = glm::rotateZ(-up_direction_, end_angle);
 		float v_value_1;
 		float v_value_2;
 		if (angle >= 180.0f) {
@@ -160,6 +162,8 @@ void Transmitter::DrawObjects(Camera* camera)
 	for (auto receiver : receivers_) {
 		receiver->DrawObjects(camera);
 	}
+	if (current_pattern_ != nullptr)
+		current_pattern_->DrawPattern(camera, transform_);
 }
 
 void Transmitter::AddReceiver(Receiver* receiver)
