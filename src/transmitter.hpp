@@ -56,7 +56,7 @@ private:
 	float frequency_;
 	float move_speed_;
 	float rotation_speed_;
-	glm::vec3 front_direction_, up_direction_;
+	//glm::vec3 front_direction_, up_direction_;
 
 	bool display_pattern_;
 	Transform transform_;

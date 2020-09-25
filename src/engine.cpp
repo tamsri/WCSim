@@ -284,9 +284,9 @@ void Engine::KeyMoveMode(float delta_time)
 		transmitter_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
 		transmitter_->Move(Direction::kLeft, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-		transmitter_->Move(Direction::kBackward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+		transmitter_->Move(Direction::kBackward, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
 		transmitter_->Move(Direction::kRight, delta_time);
 
 	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)

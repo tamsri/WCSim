@@ -26,27 +26,31 @@ PolygonMesh::PolygonMesh(const RadiationPattern & radiaton_pattern)
 {
     shader_ = Object::default_shader_;
     model_ = glm::mat4(1.0f);
-    // Create Vertex
-    const glm::vec3 x_axis{1.0f, 0.0f, 0.0f};
-    const glm::vec3 y_axis{0.0f, 1.0f, 0.0f};
-    const glm::vec3 z_axis{0.0f, 0.0f, 1.0f};
+
+    /// Adding pattern to vertices
     auto pattern = radiaton_pattern.pattern_;
-    const auto min_g = radiaton_pattern.min_gain_;
-    const auto range_g = radiaton_pattern.max_gain_ - 2.0f*min_g;
-    float step = .5;
-    bool is_dB = true;
+
+    // For Normalization of Pattern
+    bool is_dB = false;
     const float min_linear = pow(10, radiaton_pattern.min_gain_ / 10);
     const float max_linear = pow(10, radiaton_pattern.max_gain_ / 10);
     const float min_max_linear = max_linear - min_linear;
     const float min_dB = radiaton_pattern.min_gain_;
     const float max_dB = radiaton_pattern.max_gain_;
     const float range = (max_dB - 2 * min_dB);
-    for(float phi = 0; phi < 180; phi+= step)
-        for (float theta = 0; theta < 360; theta += step) {
-            float gain_1 = pattern[theta][phi];
-            float gain_2 = pattern[theta + step][phi];
-            float gain_3 = pattern[theta + step][phi + step];
-            float gain_4 = pattern[theta][phi + step];
+    
+    unsigned int step = 10;
+    for(unsigned int phi = 0.0f; phi <= 180.0f; phi+= step)
+        for (unsigned int theta = 0.0f; theta <= 360.0f; theta += step) {
+            float r_theta = theta % 360;
+            float t_theta_s = (theta + step) % 360;
+            float r_phi = phi % 180;
+            float r_phi_s = (phi + step) % 360;
+
+            float gain_1 = pattern[r_theta][r_phi];
+            float gain_2 = pattern[t_theta_s][r_phi];
+            float gain_3 = pattern[t_theta_s][r_phi_s];
+            float gain_4 = pattern[r_theta][r_phi_s];
             
             if (is_dB) {
                 gain_1 = (gain_1 + abs(min_dB)) / range;
@@ -61,23 +65,12 @@ PolygonMesh::PolygonMesh(const RadiationPattern & radiaton_pattern)
                 gain_4 = pow(10, gain_4 / 10) / (min_max_linear);
             }
             
-            //std::cout << "gaains: " << gain_1 << " " << gain_2 << " " << gain_3 << " " << gain_4 << std::endl;
-            
-           /* glm::vec3 d1 =  glm::rotateY(x_axis, glm::radians((float)theta)) + glm::rotateZ(y_axis, -glm::radians((float)phi));
-            glm::vec3 d2=   glm::rotateY(x_axis, glm::radians((float)theta+step)) + glm::rotateZ(y_axis, -glm::radians((float)phi));
-            glm::vec3 d3 =  glm::rotateY(x_axis, glm::radians((float)theta+step)) + glm::rotateZ(y_axis, -glm::radians((float)phi + step));
-            glm::vec3 d4 =  glm::rotateY(x_axis, glm::radians((float)theta)) + glm::rotateZ(y_axis, -glm::radians((float)phi+step));*/
-           
             glm::vec3 d1 = glm::normalize( glm::vec3(cos(glm::radians((float)theta)), cos(glm::radians((float)phi)), sin(glm::radians((float)theta))) );
             glm::vec3 d2 = glm::normalize(glm::vec3(cos(glm::radians((float)theta + step)), cos(glm::radians((float)phi)), sin(glm::radians((float)theta + step))) );
             glm::vec3 d3 = glm::normalize(glm::vec3(cos(glm::radians((float)theta + step)), cos(glm::radians((float)phi + step)), sin(glm::radians((float)theta + step))) );
             glm::vec3 d4 = glm::normalize(glm::vec3(cos(glm::radians((float)theta)), cos(glm::radians((float)phi+step)), sin(glm::radians((float)theta))) );
             
-            //glm::vec3 d2 = glm::normalize(glm::rotateY(x_axis, glm::radians((float)theta)) + glm::rotateZ(y_axis, glm::radians(float(phi)))) / 2.0f;
-            //glm::vec3 d3 = glm::normalize(glm::rotateY(x_axis, glm::radians((float)theta)) + glm::rotateZ(y_axis, glm::radians(float(phi)))) / 2.0f;
-            //glm::vec3 d4 = glm::normalize(glm::rotateY(x_axis, glm::radians((float)theta)) + glm::rotateZ(y_axis, glm::radians(float(phi)))) / 2.0f;
-
-            
+            // Get Point Poisition
             glm::vec3 p1 = gain_1 * d1;
             glm::vec3 p2 = gain_2 * d2;
             glm::vec3 p3 = gain_3 * d3;
@@ -95,7 +88,6 @@ PolygonMesh::PolygonMesh(const RadiationPattern & radiaton_pattern)
             vertices_.push_back({ p3*10.0f, glm::vec3{1.0f}, t2_n });
         }
     SetupMesh();
-    //std::cout << "ver: " << vertices_.size() << std::endl;
 } 
 
 PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullptr),
@@ -250,7 +242,8 @@ void PolygonMesh::UpdateTransform(Transform& transform) {
     transform_ = transform;
     model_ = glm::translate(glm::mat4(1.0f), transform_.position);
     //model_ = glm::scale(model_, transform.scale);
-    //model_ = glm::rotate(model_, transform.rotation); // implement later
+    model_ = glm::rotate(model_, transform.rotation.x, glm::vec3{0.0, -1.0, 0.0}); 
+    model_ = glm::rotate(model_, transform.rotation.y, glm::vec3{0.0, 0.0, -1.0 });
 }
 
 void PolygonMesh::Draw() const {
