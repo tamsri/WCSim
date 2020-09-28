@@ -21,10 +21,12 @@ int main(){
     //        boost::system::error_code ignored_error;
     //        boost::asio::write(socket, boost::asio::buffer("Server: Hello Client~"), ignored_error);
     //        size_t len = socket.read_some(boost::asio::buffer(buf), ignored_error);
+    //        std::string data(buf.begin(), buf.end());
+    //        while(data != 'end){
 
+    //            }
     //        std::cout.write(buf.data(), len) << std::endl;
     //        boost::asio::write(socket, boost::asio::buffer("Server: Hello Back~"), ignored_error);
-
     //    }
     //}
     //catch(std::exception & err){

@@ -30,8 +30,8 @@ void Printer::Print(const std::string & output_path, glm::vec3 transmitter_locat
 		return;
 	}
 
-	int x_width = 400;
-	int z_width = 400;
+	int x_width = 60;
+	int z_width = 60;
 	ScanMap(transmitter_location, frequency, scanning_heigh, x_width, z_width);
 
 	output_file << "P3\n" << x_width << " " << z_width << "\n255\n";
@@ -39,7 +39,7 @@ void Printer::Print(const std::string & output_path, glm::vec3 transmitter_locat
 		for (auto& result : x_row) {
 			glm::vec3 color;  
 			if (result.is_valid) {
-				color = GetHeatColor(min_value_, max_value_, result.total_loss);
+				color = GetHeatColor(/*min_value_*/ -130.0f, max_value_, result.total_loss);
 				output_file << int(color.x * 256.0f) << " " << int(color.y * 256.0f) << " " << int(color.z * 256.0f) << "\n";
 			}
 			else {
@@ -94,7 +94,7 @@ void Printer::ScanMap(glm::vec3 transmitter_position, float frequency, float sca
 			average_result.is_valid = false;
 			average_result.total_loss = 0.0f;
 			unsigned int valid_rev = 0;
-			for (unsigned int i = 0; i < 5; ++i) {
+			for (unsigned int i = 0; i < 1; ++i) {
 				std::vector<Record> records;
 				float x_margin = x_step * ((float)rand() / RAND_MAX)*pow(-1,rand()%2)*0.1f;
 				float z_margin = z_step * ((float)rand() / RAND_MAX)*pow(-1, rand()%2)*0.1f;

@@ -26,13 +26,16 @@
 #include "printer.hpp"
 #include "communicator.hpp"
 
+#include "recorder.hpp"
+
 unsigned int Engine::global_engine_id_ = 0;
 
 Engine::Engine():	
 							window_(nullptr), 
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
-							main_camera_(nullptr)
+							main_camera_(nullptr),
+							recorder_(nullptr)
 {
 	main_camera_ = nullptr;
 	communicator_ = new Communicator();
@@ -42,7 +45,8 @@ Engine::Engine(Window* window) :
 							window_(window), 
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
-							main_camera_(nullptr)
+							main_camera_(nullptr),
+							recorder_(nullptr)
 {
 	main_camera_ = new Camera(window_);
 	communicator_ = new Communicator();
@@ -52,8 +56,6 @@ Engine::Engine(Window* window) :
 
 Engine::~Engine()
 {
-	//delete Ray::global_ray_shader_;
-	//delete Object::default_shader_;
 	delete window_;
 	delete main_camera_;
 	delete map_;
@@ -92,6 +94,7 @@ void Engine::LoadRayTracer()
 	
 	// todo: implement multiple radiation patterns
 	pattern_ = new RadiationPattern("../assets/patterns/pattern-1.txt");
+	recorder_ = new Recorder("../assets/records/");
 	// add pattern to transmitter
 	std::cout << "added pattern\n";
 	transmitter_->AssignRadiationPattern(pattern_);
@@ -101,6 +104,7 @@ void Engine::LoadRayTracer()
 		glm::vec3 random_position = glm::vec3(rand() % 200 - 100.0f, rand() % 1 + 1.5f, rand() % 200 - 100.0f);
 		Transform receiver_trans{ random_position, glm::vec3(0.0f), glm::vec3(0.0f) };
 		Receiver * receiver = new Receiver(receiver_trans, ray_tracer_, transmitter_);
+		receiver->AddRecorder(recorder_);
 		transmitter_->AddReceiver(receiver);
 	}
 	test_receiver_ = transmitter_->GetReceiver(0);

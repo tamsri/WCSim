@@ -2,21 +2,27 @@
 
 #include <iostream>
 
-
 #include "object.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "ray_tracer.hpp"
 #include "transmitter.hpp"
+#include "recorder.hpp"
 
+#include <glm/gtx/string_cast.hpp>
 
 
 Receiver::Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter): 
 	transform_(transform),	
 	ray_tracer_(ray_tracer),
-	transmitter_(transmitter)
+	transmitter_(transmitter),
+	recorder_(nullptr)
 {
 	Reset();
 	Update();
+}
+
+void Receiver::AddRecorder(Recorder* recorder)
+{
+	recorder_ = recorder;
 }
 
 Result Receiver::GetResult() const
@@ -40,7 +46,7 @@ void Receiver::Update()
 	std::vector<Record> records;
 	ray_tracer_->Trace(transmitter_positon, receiver_position, records);
 	
-	if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records, result_)) {
+	if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records, result_, recorder_)) {
 		std::cout << " ------------------------------- \n";
 		std::cout << "Receiver Position: " << glm::to_string(receiver_position) << std::endl;
 		std::cout << "Transmitter Position: " << glm::to_string(transmitter_positon) << std::endl;

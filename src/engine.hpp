@@ -20,6 +20,7 @@ class RayTracer;
 class Receiver;
 class RadiationPattern;
 class Communicator;
+class Recorder;
 
 enum EngineMode : int {
     kView = 0,
@@ -73,7 +74,7 @@ class Engine{
         Cube * test_cube_;
         Ray * test_ray_;
         std::vector<Ray*> rays_;
-
+        Recorder* recorder_;
 
         Transmitter* transmitter_;
         //std::vector<Receiver*> receivers_;

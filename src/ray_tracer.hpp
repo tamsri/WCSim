@@ -19,10 +19,16 @@ class Object;
 class Camera;
 class Transmitter;
 class Receiver;
+class Recorder;
 
 struct Record;
 struct Point;
 struct Result;
+
+enum Polarization : bool {
+	TM = true,
+	TE = false
+};
 
 class RayTracer {
 public:
@@ -33,8 +39,8 @@ public:
 	void Trace(Transmitter * transmitter, const glm::vec3 end_position, std::vector<Record>& records) const;
 
 	void GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record> & records, std::vector<Object *> & objects) const;
-	bool CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency , const std::vector<Record> & records ,Result & result) const;
-	bool CalculatePathLossWithGain(Transmitter* transmitter, const glm::vec3 receiver_position, const std::vector<Record>& records, Result& result) const;
+	bool CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency , const std::vector<Record> & records ,Result & result , Recorder * recorder = nullptr) const;
+	bool CalculatePathLossWithGain(Transmitter* transmitter, const glm::vec3 receiver_position, const std::vector<Record>& records, Result& result, Recorder * recorder = nullptr) const;
 	// Line of Sight
 	bool IsDirectHit(const glm::vec3 start_point, const glm::vec3 end_point) const;
 	
@@ -43,7 +49,7 @@ public:
 	std::vector <Triangle*> ScanHitVec(const glm::vec3 position) const;
 	bool IsReflected(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3> & reflected_points) const;
 	bool IsReflected(Transmitter* transmitter, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const;
-	float CalculateReflectionCofficient(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 reflection_position) const;
+	float CalculateReflectionCofficient(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 reflection_position, Polarization polar) const;
 	glm::vec3 ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 point) const ;
 
 	// Diffraction
@@ -59,6 +65,7 @@ public:
 	void CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position, std::pair<float, float> & calculated_cosines) const;
 
 	PolygonMesh * map_;
+
 
 };
 #endif // !RAY_TRACER_H

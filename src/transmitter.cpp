@@ -58,6 +58,7 @@ void Transmitter::Update()
 
 void Transmitter::UpdateRadiationPattern()
 {
+	return;
 	Clear();
 	float tx_theta = transform_.rotation.x;
 	float tx_phi = transform_.rotation.y;

@@ -12,12 +12,15 @@ class RayTracer;
 class Transmitter;
 class Object;
 struct Result;
+class Recorder;
 
 class Receiver {
 
 public:
 
 	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
+
+	void AddRecorder(Recorder* recorder);
 
 	Result GetResult() const;
 	glm::vec3 GetPosition() const;
@@ -47,8 +50,10 @@ private:
 	// Ray Tracer
 	RayTracer * ray_tracer_;
 	Transmitter* transmitter_;
-	
+	Recorder* recorder_;
+
 	// Visualisation
 	std::vector<Object*> objects_;
+
 };
 #endif //!RECEIVER_H
