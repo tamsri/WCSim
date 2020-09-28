@@ -100,11 +100,12 @@ void Engine::LoadRayTracer()
 	transmitter_->AssignRadiationPattern(pattern_);
 	Transform receiver_trans{ glm::vec3(9.13651f, 20.0f, 100.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
 	//test_receiver_ = new Receiver(receiver_trans, ray_tracer_, transmitter_);
-	for (unsigned int i = 0; i < 1; ++i) {
+	for (unsigned int i = 0; i < 200; ++i) {
 		glm::vec3 random_position = glm::vec3(rand() % 200 - 100.0f, rand() % 1 + 1.5f, rand() % 200 - 100.0f);
 		Transform receiver_trans{ random_position, glm::vec3(0.0f), glm::vec3(0.0f) };
 		Receiver * receiver = new Receiver(receiver_trans, ray_tracer_, transmitter_);
 		receiver->AddRecorder(recorder_);
+		receiver->Update();
 		transmitter_->AddReceiver(receiver);
 	}
 	test_receiver_ = transmitter_->GetReceiver(0);

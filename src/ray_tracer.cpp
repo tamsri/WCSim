@@ -278,7 +278,7 @@ bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const gl
 
 			const float distance = glm::distance(transmitter_position, receiver_position);
 			float path_loss_linear = 1.0f / pow(4 * pi * distance / wave_length, 2);
-			if (recorder != nullptr) recorder->RecordDirectPath(transmitter_position, frequency, receiver_position, distance, 10 * log10(path_loss_linear));
+			if (recorder != nullptr) recorder->RecordDirectPath(transmitter_position, frequency, receiver_position, distance, -10 * log10(path_loss_linear));
 			result.direct_path_loss_in_linear = path_loss_linear;
 			break;
 		}
@@ -288,10 +288,10 @@ bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const gl
 
 				float d1 = glm::distance(reflect_position, transmitter_position);
 				float d2 = glm::distance(reflect_position, receiver_position);
-				Polarization polar = TE;
+				Polarization polar = Polarization::TE;
 				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position, polar);
 				float reflection_loss_linear = 1.0f / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
-				if (recorder != nullptr) recorder->RecordRefection(transmitter_position, frequency, receiver_position, reflect_position, polar, ref_coe, 10 * log10(reflection_loss_linear));
+				if (recorder != nullptr) recorder->RecordRefection(transmitter_position, frequency, receiver_position, reflect_position, polar, ref_coe, -10 * log10(reflection_loss_linear));
 
 				result.reflection_loss_in_linear += 0.8  * reflection_loss_linear;
 			}
@@ -451,7 +451,7 @@ bool RayTracer::CalculatePathLossWithGain(Transmitter* transmitter, const glm::v
 
 			const float distance = glm::distance(transmitter_position, receiver_position);
 			float path_loss_linear = 1.0f / pow(4 * pi * distance / wave_length, 2);
-			if (recorder != nullptr) recorder->RecordDirectPath(transmitter_position, frequency, receiver_position, distance, 10*log10(path_loss_linear));
+			if (recorder != nullptr) recorder->RecordDirectPath(transmitter_position, frequency, receiver_position, distance, -10*log10(path_loss_linear));
 			result.direct_path_loss_in_linear = tx_gain_in_linear * path_loss_linear;
 			break;
 		}
@@ -466,8 +466,8 @@ bool RayTracer::CalculatePathLossWithGain(Transmitter* transmitter, const glm::v
 				Polarization polar = TE;
 				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position, polar);
 				float reflection_loss_linear = 1.0f / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
-				if (recorder != nullptr) recorder->RecordRefection(transmitter_position, frequency, receiver_position, reflect_position, polar, ref_coe, 10*log10(reflection_loss_linear));
-
+				if (recorder != nullptr) 
+					recorder->RecordRefection(transmitter_position, frequency, receiver_position, reflect_position, polar, ref_coe, -10*log10(reflection_loss_linear));
 				result.reflection_loss_in_linear += 0.8 * tx_gain_in_linear * reflection_loss_linear;
 			}
 
