@@ -9,15 +9,33 @@
 
 #include <glm/gtx/string_cast.hpp>
 
+unsigned int Receiver::global_id_ = 0;
+Receiver::Receiver(Transform transform, RayTracer* ray_tracer):	id_(global_id_++),
+														transform_(transform),
+														ray_tracer_(ray_tracer),
+														transmitter_(nullptr),
+														recorder_(nullptr){
+	Reset();
+}
 
 Receiver::Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter): 
+	id_(global_id_++),
 	transform_(transform),	
 	ray_tracer_(ray_tracer),
 	transmitter_(transmitter),
 	recorder_(nullptr)
 {
 	Reset();
-	Update();
+}
+
+unsigned int Receiver::GetID() const
+{
+	return id_;
+}
+
+void Receiver::AssignTransmitter(Transmitter* transmitter)
+{
+	transmitter_ = transmitter;
 }
 
 void Receiver::AddRecorder(Recorder* recorder)
@@ -35,7 +53,7 @@ glm::vec3 Receiver::GetPosition() const
 	return glm::vec3(transform_.position);
 }
 
-void Receiver::Update()
+void Receiver::UpdateResult()
 {
 
 	const glm::vec3 receiver_position = transform_.position;
@@ -65,40 +83,58 @@ void Receiver::Update()
 void Receiver::Reset()
 {
 	move_speed_ = 10.0f;
-	front_direction_ = glm::vec3(1.0f, 0.0f, 0.0);
-	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0);
 }
 
 void Receiver::MoveTo(const glm::vec3 position) {
 	transform_.position = position;
-	Update();
+	UpdateResult();
 }
 
 void Receiver::Move(Direction direction,float delta_time) {
 	float distance = delta_time * move_speed_;
+	glm::vec3& rotation = transform_.rotation;
+
+	glm::mat4 trans = glm::rotate(glm::mat4(1.0f), -transform_.rotation.x, glm::vec3(0.0f, 1.0f, 0.0f));
+	trans = glm::rotate(trans, -transform_.rotation.y, glm::vec3(0.0f, 0.0f, 1.0f));
+
+	glm::vec3 front_direction;
+	glm::vec3 up_direction;
+	glm::vec3 right_direction;
+
+	constexpr glm::vec3 x_axis = glm::vec3(1.0f, 0.0f, 0.0f);
+	constexpr glm::vec3 y_axis = glm::vec3(0.0f, 1.0f, 0.0f);
+
 	switch (direction) {
 	case Direction::kForward:
-		transform_.position += front_direction_ * distance;
+		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+		transform_.position += front_direction * distance;
 		break;
 	case Direction::kBackward:
-		transform_.position -= front_direction_ * distance;
+		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+		transform_.position -= front_direction * distance;
 		break;
 	case Direction::kRight:
-		glm::vec3 left_direction = glm::normalize(glm::cross(front_direction_, up_direction_));
-		transform_.position += left_direction * distance;
-		break;
-	case Direction::kLeft:
-		glm::vec3 right_direction = glm::normalize(glm::cross(-front_direction_, up_direction_));
+		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+		right_direction = glm::cross(front_direction, up_direction);
 		transform_.position += right_direction * distance;
 		break;
+	case Direction::kLeft:
+		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+		right_direction = glm::cross(front_direction, up_direction);
+		transform_.position -= right_direction * distance;
+		break;
 	case Direction::kUp:
-		transform_.position += up_direction_ * distance;
+		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+		transform_.position += up_direction * distance;
 		break;
 	case Direction::kDown:
-		transform_.position -= up_direction_ * distance;
+		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+		transform_.position -= up_direction * distance;
 		break;
 	};
-	Update();
+	UpdateResult();
 }
 
 void Receiver::Clear()

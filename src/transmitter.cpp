@@ -32,11 +32,16 @@ Transmitter::Transmitter(Transform transform,
 	current_pattern_ = nullptr;
 	display_pattern_ = false;
 	Reset();
-	Update();
+	UpdateResult();
+}
+
+unsigned int Transmitter::GetID() const
+{
+	return id_;
 }
 
 
-void Transmitter::Update()
+void Transmitter::UpdateResult()
 {
 	//if (current_point_ != nullptr) delete current_point_;
 	current_point_ = new Point(transform_.position);
@@ -47,7 +52,7 @@ void Transmitter::Update()
 	float average_path_loss = 0.0f;
 	unsigned int receivers_number = 0;
 	for (auto* receiver : receivers_) {
-		receiver->Update();
+		receiver->UpdateResult();
 		Result result = receiver->GetResult();
 		if (result.is_valid) {
 			average_path_loss += result.total_loss;
@@ -55,7 +60,8 @@ void Transmitter::Update()
 		}
 	}
 	average_path_loss /= receivers_number;
-	std::cout << "Average path loss: " << average_path_loss << std::endl;
+	average_path_loss_ = average_path_loss;
+	//std::cout << "Average path loss: " << average_path_loss << std::endl;
 }
 
 void Transmitter::UpdateRadiationPattern()
@@ -91,8 +97,7 @@ void Transmitter::Reset()
 	rotation_speed_ = .5f;
 	move_speed_ = 10.0f;
 	transform_.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	//front_direction_ = glm::vec3(1.0f, 0.0f, 0.0);
-	//up_direction_ = glm::vec3(0.0f, 1.0f, 0.0);
+	average_path_loss_ = 0.0f;
 }
 
 void Transmitter::Clear()
@@ -114,6 +119,7 @@ void Transmitter::DrawObjects(Camera* camera)
 
 void Transmitter::AddReceiver(Receiver* receiver)
 {
+	receiver->AssignTransmitter(this);
 	receivers_.push_back(receiver);
 }
 
@@ -130,9 +136,19 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 	UpdateRadiationPattern();
 }
 
-float Transmitter::GetFrequency()
+Transform Transmitter::GetTransform() const
+{
+	return Transform(transform_);
+}
+
+float Transmitter::GetFrequency() const
 {
 	return frequency_;
+}
+
+float Transmitter::GetAveragePL() const
+{
+	return average_path_loss_;
 }
 
 float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
@@ -170,11 +186,22 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 	else {
 		theta = angle_on_front;
 	}
-	std::cout << "theta: " << glm::degrees(theta) << ", phi: " << glm::degrees(phi); 
+	// std::cout << "theta: " << glm::degrees(theta) << ", phi: " << glm::degrees(phi); 
 
 	float tx_gain = current_pattern_->GetGain(theta, phi);
-	std::cout << " total gain: " << tx_gain << std::endl;
+	// std::cout << " total gain: " << tx_gain << std::endl;
 	return tx_gain;
+}
+
+std::string Transmitter::GetReceiversIDs()
+{
+	if (receivers_.empty()) return "0";
+	std::string answer = std::to_string(receivers_.size()) + "&";
+	for (Receiver * receiver : receivers_) {
+		answer += std::to_string(receiver->GetID()) + ",";
+	}
+	answer.pop_back();
+	return answer;
 }
 
 Receiver* Transmitter::GetReceiver(unsigned int index)
@@ -233,7 +260,7 @@ void Transmitter::Move(const Direction direction, float delta_time)
 		transform_.position -= up_direction * distance;
 		break;
 	};
-	Update();
+	UpdateResult();
 }
 
 void Transmitter::Rotate(const Direction rotation, float delta_time)
@@ -258,7 +285,7 @@ void Transmitter::Rotate(const Direction rotation, float delta_time)
 		break;
 	}
 	}
-	Update();
+	UpdateResult();
 }
 
 void Transmitter::ToggleDisplay()

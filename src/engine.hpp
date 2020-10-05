@@ -1,6 +1,8 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#include <map>
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -50,11 +52,16 @@ class Engine{
         void RunWithWindow();
 
         // Exernal Actions
-        unsigned int GetTransmittersNumber() const;
-        unsigned int GetReceiversNumber() const;
+    
+        std::string GetTransmittersList() const;
+        std::string GetTransmitterInfo(unsigned int transmitter_id);
+        std::string GetReceiversList() const;
+        std::string GetReceiverInfo(unsigned int receiver_id) const;
+
         bool AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency);
         bool AddReceiver(glm::vec3 position);
-        bool AddTransmitterToReceiver(unsigned int tx_id, unsigned int rx_id);
+        bool ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id);
+
 
         // Visualization
         void InitalizeWithWindow();
@@ -86,8 +93,8 @@ class Engine{
         
         Recorder* recorder_;
 
-        std::vector<Receiver *> receivers_;
-        std::vector<Transmitter *> transmitters_;
+        std::map<unsigned int ,Receiver *> receivers_;
+        std::map<unsigned int, Transmitter *> transmitters_;
         std::vector<RadiationPattern> pattern_;
 
 

@@ -18,8 +18,12 @@ class Receiver {
 
 public:
 
+	Receiver(Transform transform, RayTracer * ray_tracer);
 	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
 
+	unsigned int GetID() const;
+
+	void AssignTransmitter(Transmitter* transmitter);
 	void AddRecorder(Recorder* recorder);
 
 	Result GetResult() const;
@@ -29,23 +33,23 @@ public:
 	void Move(Direction direction, float delta_time);
 
 	// Visualization
-	void Update();
+	void UpdateResult();
 	void Reset();
  
 
 	void Clear();
 
 	void DrawObjects(Camera* main_camera);
-private:
 
+	static unsigned int global_id_;
+private:
+	unsigned int id_;
 	Result result_;
 
 	// Variables
 	Transform transform_;
 	glm::vec3 velocity_;
 	float move_speed_;
-	glm::vec3 front_direction_;
-	glm::vec3 up_direction_;
 
 	// Ray Tracer
 	RayTracer * ray_tracer_;

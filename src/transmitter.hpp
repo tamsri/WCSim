@@ -1,6 +1,7 @@
 #ifndef TRANSMITTER_H
 #define TRANSMITTER_H
 
+#include <string>
 #include <vector>
 #include <map>
 #include "transform.hpp"
@@ -24,15 +25,18 @@ public:
 				float frequency, 
 				RayTracer * ray_tracer);
 
+	unsigned int GetID() const;
 	// Actions
 	void AddReceiver(Receiver* receiver);
 	void DrawRadiationPattern(Camera * camera);
 	void AssignRadiationPattern(RadiationPattern* pattern);
 
-
-	float GetFrequency();
+	Transform GetTransform() const;
+	float GetFrequency() const;
+	float GetAveragePL() const ;
 	float GetTransmitterGain(glm::vec3 near_tx_position);
 	
+	std::string GetReceiversIDs();
 	Receiver* GetReceiver(unsigned int index);
 	glm::vec3 GetPosition();
 	// Movement
@@ -40,7 +44,7 @@ public:
 	void Rotate(const Direction rotation, float delta_time);
 	void ToggleDisplay();
 
-	void Update();
+	void UpdateResult();
 	void UpdateRadiationPattern();
 	void Reset();
 	void Clear();
@@ -58,7 +62,7 @@ private:
 	float frequency_;
 	float move_speed_;
 	float rotation_speed_;
-	//glm::vec3 front_direction_, up_direction_;
+	float average_path_loss_;
 
 	bool display_pattern_;
 	Transform transform_;

@@ -1,5 +1,6 @@
 #include "engine.hpp"
 
+#include <map>
 #include <iostream>
 #include <set>
 
@@ -71,15 +72,19 @@ void Engine::Reset()
 	// Reset the simulation
 
 	// Reset transmitters
+	for (auto [id, tx] : transmitters_) {
+		delete tx;
+	}
 	transmitters_.clear();
 	// Reset Receivers
+	for (auto [id, rx] : receivers_) {
+		delete rx;
+	}
 	receivers_.clear();
 }
 
 void Engine::Run()
 {
-	for (auto & transmitter : transmitters_) {
-	}
 }
 
 void Engine::RunWithWindow()
@@ -91,21 +96,69 @@ void Engine::RunWithWindow()
 	window_->Run();
 }
 
-unsigned int Engine::GetTransmittersNumber() const
+std::string Engine::GetTransmittersList() const
 {
-	return transmitters_.size();
+	if(transmitters_.empty()) return "0";
+	std::string answer = std::to_string(transmitters_.size()) + '&';
+	for (auto & [id, transmitter] : transmitters_) {
+		answer += std::to_string(id) + ',';
+	}
+	answer.pop_back();
+	return answer;
 }
 
-unsigned int Engine::GetReceiversNumber() const
+std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 {
-	return 0;
+	// Get the transmitter 
+	Transmitter * tx = transmitters_[transmitter_id];
+	if (tx == nullptr) return "-1";
+
+	std::string answer = std::to_string(transmitter_id) + ":";
+	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
+	Transform& tx_trans = tx->GetTransform();
+	glm::vec3& tx_pos = tx_trans.position;
+	glm::vec3& tx_rot = tx_trans.rotation;
+	answer +=	std::to_string(tx_pos.x) + "," +
+				std::to_string(tx_pos.y) + "," + 
+				std::to_string(tx_pos.z) + ":" + 
+				std::to_string(tx_rot.x) + "," +
+				std::to_string(tx_rot.y) + "," +
+				std::to_string(tx_rot.z) + ":" +
+				std::to_string(tx->GetFrequency()) + ":" +
+				tx->GetReceiversIDs() + ":" +
+				std::to_string(tx->GetAveragePL()) ;
+	return std::string(answer);
+}
+
+std::string Engine::GetReceiversList() const
+{
+	if (receivers_.empty()) return "0";
+	std::string answer = std::to_string(receivers_.size()) + '&';
+	for (auto & [id, receiver] : receivers_) {
+		answer += std::to_string(id) + ',';
+	}
+	answer.pop_back();
+	return answer;
+}
+
+std::string Engine::GetReceiverInfo(unsigned int receiver_id) const
+{
+	return std::string("11");
 }
 
 bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency)
 {
 	if (ray_tracer_ == nullptr) return false;
-	auto transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation }, frequency, ray_tracer_);
-	transmitters_.push_back(transmitter);
+	Transmitter * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation }, frequency, ray_tracer_);
+	transmitters_[transmitter->GetID()] = transmitter;
+	return true;
+}
+
+bool Engine::AddReceiver(glm::vec3 position)
+{
+	if (ray_tracer_ == nullptr) return false;
+	Receiver * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
+	receivers_[receiver->GetID()] = receiver;
 	return true;
 }
 
@@ -370,7 +423,7 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
-	for (const auto& transmitter : transmitters_) {
+	for (const auto & [id, transmitter] : transmitters_) {
 		transmitter->DrawObjects(main_camera_);
 	}
 
