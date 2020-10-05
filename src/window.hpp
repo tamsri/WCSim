@@ -12,6 +12,7 @@ public:
     ~Window();
     void Run();
     void AssignEngine(Engine * engine);
+    void RemoveEngine();
     static void FrameBufferSizeCallback(GLFWwindow* window, int width, int height);
     
     unsigned int GetWindowWidth() const;

@@ -33,7 +33,7 @@ class PolygonMesh : public Object {
 
 public:
 	PolygonMesh(const RadiationPattern& radiaton_pattern);
-	PolygonMesh(const std::string & path, Shader * shader);
+	PolygonMesh(const std::string & path, Shader * shader, bool is_window_on);
 	bool LoadObj(	const std::string& path);
 	virtual void Draw() const;
 	void UpdateTransform(Transform& transform);

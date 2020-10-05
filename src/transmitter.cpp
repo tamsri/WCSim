@@ -20,10 +20,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+unsigned int Transmitter::global_id_ = 0;
 
 Transmitter::Transmitter(Transform transform,
 						float frequency, 
-						RayTracer * ray_tracer):	transform_(transform), 
+						RayTracer * ray_tracer):	id_(global_id_++),
+													transform_(transform), 
 													frequency_(frequency),
 													ray_tracer_(ray_tracer)
 {

@@ -23,7 +23,8 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 
     glfw_window_ = glfwCreateWindow(
         width_,
-        height_, "WCSim",
+        height_,
+        "WCSim",
         NULL,
         NULL);
 
@@ -40,9 +41,6 @@ Window::Window(int width, int height) : width_(width), height_(height) {
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
     }
-    // Intialize Engine
-    engine_ = new Engine(this);
-
 }
 void Window::FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -63,7 +61,8 @@ GLFWwindow* Window::GetGLFWWindow() const
 ;
 
 Window::~Window() {
-    free(glfw_window_);
+    //delete glfw_window_; // TODO: check if can be released.
+    glfwTerminate();
 }
 
 void Window::Run() {
@@ -74,18 +73,16 @@ void Window::Run() {
         return;
     }
     if (engine_ == nullptr) return;
-    /*----------------------------------------------------------------*/
-
-    /*--------------------------------------------------------------------------*/
 
     glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(glfw_window_))
     {
         /*Render from Engine*/
         glClearColor(0.95f, 0.95f, 0.95f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         engine_->Visualize();
-        engine_->Update();
+        engine_->OnKeys();
 
         /*Swap frames*/
         glfwSwapBuffers(glfw_window_);
@@ -96,4 +93,9 @@ void Window::Run() {
 void Window::AssignEngine(Engine* engine)
 {
     engine_ = engine;
+}
+
+void Window::RemoveEngine()
+{
+    engine_ = nullptr;
 }

@@ -49,9 +49,11 @@ public:
 
 	std::vector<Triangle*> hit_triangles;
 
+	static unsigned int global_id_;
 private:
 	
 	// Variables
+	unsigned int id_;
 	float transmitter_power_output_;
 	float frequency_;
 	float move_speed_;
@@ -68,5 +70,7 @@ private:
 	std::vector<Result> receiver_results;
 	// Visualization
 	std::vector<Object* > objects_;
+
 };
+
 #endif

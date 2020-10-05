@@ -90,9 +90,9 @@ PolygonMesh::PolygonMesh(const RadiationPattern & radiaton_pattern)
     SetupMesh();
 } 
 
-PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullptr),
+PolygonMesh::PolygonMesh(const std::string& path, Shader * shader, bool is_window_on) : tree_(nullptr),
                                                                      vao_(0),
-                                                                      vbo_(0)
+                                                                     vbo_(0)
 {
     transform_ = { glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(0.0f) };
     shader_ = shader;
@@ -100,7 +100,7 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader) : tree_(nullp
 
     LoadObj(path); // Create vertices, uv, normal
     tree_ = new KDTree(objects_);
-    SetupMesh();
+    if(is_window_on) SetupMesh();
 }
 
 bool PolygonMesh::LoadObj(const std::string& path)

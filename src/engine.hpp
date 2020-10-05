@@ -25,7 +25,8 @@ class Recorder;
 enum EngineMode : int {
     kView = 0,
     kMoveObjects,
-    kSimulation
+    kSimulation,
+    kServer
 };
 
 enum MouseBottons : int {
@@ -41,22 +42,32 @@ class Engine{
         Engine(Window* window);
         ~Engine();
         void AssignWindow(Window * window);
+
+        // Main Process
+        void InitializeWithoutWindow();
         void Reset();
+        void Run();
+        void RunWithWindow();
+
+        // Exernal Actions
+        unsigned int GetTransmittersNumber() const;
+        unsigned int GetReceiversNumber() const;
+        bool AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency);
+        bool AddReceiver(glm::vec3 position);
+        bool AddTransmitterToReceiver(unsigned int tx_id, unsigned int rx_id);
+
         // Visualization
-        void InitalizeWindowController();
+        void InitalizeWithWindow();
         void LoadComponents();
         void LoadMap();
         void LoadObjects();
         void LoadShaders();
         void LoadTexture();
         void Visualize();
+        void OnKeys();
 
         // Ray Tracer
         void LoadRayTracer();
-        void Trace();
-        void InitializeRays();
-        void InitializeVoxels();
-        void TracePathFrom(glm::vec3 position);
         void Update();
         void PrintMap();
 
@@ -71,22 +82,19 @@ class Engine{
         RayTracer* ray_tracer_;
         Shader * default_shader_;
         PolygonMesh * map_;
-        Cube * test_cube_;
-        Ray * test_ray_;
-        std::vector<Ray*> rays_;
+
+        
         Recorder* recorder_;
 
-        Transmitter* transmitter_;
-        //std::vector<Receiver*> receivers_;
-        Receiver * test_receiver_;
-        RadiationPattern * pattern_;
+        std::vector<Receiver *> receivers_;
+        std::vector<Transmitter *> transmitters_;
+        std::vector<RadiationPattern> pattern_;
 
-        std::vector<Object*> render_objects_;
-        //unsigned int test_vao, test_vbo, test_ebo;
 
         float last_time_;
-        void KeyActions();
 
+
+        void KeyActions();
         void KeyViewMode(float delta_time);
         void KeyMoveMode(float delta_time);
         void MousePosition(double xpos, double ypos);

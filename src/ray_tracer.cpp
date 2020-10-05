@@ -727,11 +727,13 @@ float RayTracer::CalculateReflectionCofficient(glm::vec3 start_position, glm::ve
 	switch (polar) {
 	case TE: {
 		if (sqrt(abs(n1 / n2)) * sin(angle_1) >= 1) return 1.0f;
-		return (sqrt(n1)*cos(angle_1)  - sqrt(n2)*cos(angle_2)) / (sqrt(n1)*cos(angle_1) + sqrt(n2)*cos(angle_2));
+		return (sqrt(n1)*cos(angle_1)  - sqrt(n2)*cos(angle_2)) /
+				(sqrt(n1)*cos(angle_1) + sqrt(n2)*cos(angle_2));
 	}
 	case TM: {
 		if (sqrt(abs(n1 / n2)) * sin(angle_1) >= 1) return 1.0f;
-		return (sqrt(n2) * cos(angle_1) - sqrt(n1) * cos(angle_2)) / (sqrt(n2) * cos(angle_1) + sqrt(n1) * cos(angle_2));
+		return (sqrt(n2) * cos(angle_1) - sqrt(n1) * cos(angle_2)) /
+				(sqrt(n2) * cos(angle_1) + sqrt(n1) * cos(angle_2));
 	}
 	}
 }
