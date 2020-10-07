@@ -107,12 +107,24 @@ std::string Engine::GetTransmittersList() const
 	return answer;
 }
 
+
+std::string Engine::GetReceiversList() const
+{
+	if (receivers_.empty()) return "0";
+	std::string answer = std::to_string(receivers_.size()) + '&';
+	for (auto& [id, receiver] : receivers_) {
+		answer += std::to_string(id) + ',';
+	}
+	answer.pop_back();
+	return answer;
+}
+
 std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 {
 	// Get the transmitter 
 	Transmitter * tx = transmitters_[transmitter_id];
 	if (tx == nullptr) return "-1";
-
+	tx->UpdateResult(); // Update the result
 	std::string answer = std::to_string(transmitter_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
 	Transform& tx_trans = tx->GetTransform();
@@ -130,20 +142,30 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 	return std::string(answer);
 }
 
-std::string Engine::GetReceiversList() const
-{
-	if (receivers_.empty()) return "0";
-	std::string answer = std::to_string(receivers_.size()) + '&';
-	for (auto & [id, receiver] : receivers_) {
-		answer += std::to_string(id) + ',';
-	}
-	answer.pop_back();
-	return answer;
-}
 
-std::string Engine::GetReceiverInfo(unsigned int receiver_id) const
+std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 {
-	return std::string("11");
+	// Get the transmitter 
+	Receiver* rx = receivers_[receiver_id];
+	if (rx == nullptr) return "-1";
+
+	std::string answer = std::to_string(receiver_id) + ":";
+	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
+	Transform& tx_trans = rx->GetTransform();
+	glm::vec3& tx_pos = tx_trans.position;
+	glm::vec3& tx_rot = tx_trans.rotation;
+	answer +=	 std::to_string(tx_pos.x) + "," +
+				std::to_string(tx_pos.y) + "," +
+				std::to_string(tx_pos.z);
+	// Check the transmitter
+	Transmitter* received_from = rx->GetTransmitter();
+	if (received_from != nullptr) {
+		answer += ":" + std::to_string(received_from->GetID());
+		rx->UpdateResult();
+		if (rx->GetResult().is_valid)
+			answer += ":" + std::to_string(rx->GetResult().total_loss);
+	}
+	return std::string(answer);
 }
 
 bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency)
@@ -159,6 +181,26 @@ bool Engine::AddReceiver(glm::vec3 position)
 	if (ray_tracer_ == nullptr) return false;
 	Receiver * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
 	receivers_[receiver->GetID()] = receiver;
+	return true;
+}
+
+bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id)
+{
+	Transmitter* tx = transmitters_[tx_id];
+	if (tx == nullptr) return false;
+	Receiver* rx = receivers_[rx_id];
+	if (rx == nullptr) return false;
+	tx->AddReceiver(rx);
+	return true;
+}
+
+bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 rotation)
+{
+	Transmitter* tx = transmitters_[id];
+	if (tx == nullptr) return false;
+	tx->MoveTo(position);
+	tx->RotateTo(rotation);
+	tx->UpdateResult();
 	return true;
 }
 

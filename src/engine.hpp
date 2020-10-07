@@ -56,12 +56,12 @@ class Engine{
         std::string GetTransmittersList() const;
         std::string GetTransmitterInfo(unsigned int transmitter_id);
         std::string GetReceiversList() const;
-        std::string GetReceiverInfo(unsigned int receiver_id) const;
+        std::string GetReceiverInfo(unsigned int receiver_id);
 
         bool AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency);
         bool AddReceiver(glm::vec3 position);
         bool ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id);
-
+        bool MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 rotation);
 
         // Visualization
         void InitalizeWithWindow();

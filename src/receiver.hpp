@@ -24,6 +24,9 @@ public:
 	unsigned int GetID() const;
 
 	void AssignTransmitter(Transmitter* transmitter);
+	Transmitter* GetTransmitter() const;
+	Transform GetTransform()const;
+
 	void AddRecorder(Recorder* recorder);
 
 	Result GetResult() const;
@@ -34,6 +37,7 @@ public:
 
 	// Visualization
 	void UpdateResult();
+	void UpdateAndVisualize();
 	void Reset();
  
 
@@ -45,6 +49,8 @@ public:
 private:
 	unsigned int id_;
 	Result result_;
+
+	std::vector<Record> records_;
 
 	// Variables
 	Transform transform_;

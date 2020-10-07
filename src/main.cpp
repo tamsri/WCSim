@@ -69,13 +69,13 @@ int main(){
                 boost::array<char, 1024> data_buffer;
                 acceptor.accept(socket); // if not accepted, continue the loop 
                 
-                boost::system::error_code ignored_error; // param for ignoring the error.
+                boost::system::error_code ign_err; // param for ignoring the error.
 
                 // After the connection, the server says hello for testing the connection
                 std::cout << "The client has connected" << std::endl;
-                boost::asio::write(socket, boost::asio::buffer("Server: Hello Client~"), ignored_error);
+                boost::asio::write(socket, boost::asio::buffer("Server: Hello Client~"), ign_err);
                 // Then, the server waits for client to reply 
-                size_t len = socket.read_some(boost::asio::buffer(data_buffer), ignored_error);
+                size_t len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
                 std::string rec_data = std::string(data_buffer.begin(), data_buffer.begin()+len);
                 std::cout << rec_data << std::endl; 
                 std::cout << "Starting Engine & Communication" << std::endl;
@@ -94,14 +94,14 @@ int main(){
                 // Communications
                 while (true) {
                     //if (is_window_on) engine->Visualize();
-                    len = socket.read_some(boost::asio::buffer(data_buffer), ignored_error);
+                    len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
                     rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-                    std::cout << rec_data << std::endl;
+                    //std::cout << rec_data << std::endl;
                     
                     if (rec_data == "e") {
-                        std::cout << "Server: the client commands to end the server.\n";
+                        std::cout << "Server: the client disconnected to the server.\n";
                         delete engine; // Engine automaitcally delete the window if window exists.
-                        boost::asio::write(socket, boost::asio::buffer("eok"), ignored_error);
+                        boost::asio::write(socket, boost::asio::buffer("eok"), ign_err);
                         socket.close();
                         break;
                     }
@@ -111,36 +111,37 @@ int main(){
                         switch (rec_data[1]) {
                         case '1': {
                             // How many stations are in the environment, who are they?
-                            std::cout << "Server: The Client asks How many transmitter?\n";
-                            boost::asio::write(socket, boost::asio::buffer("qok"), ignored_error);
+                            std::cout << "Server: The Client asks How many transmitter?.\n";
+                            boost::asio::write(socket, boost::asio::buffer("qok"), ign_err);
                             std::string answer = "a:" + engine->GetTransmittersList();
-                            boost::asio::write(socket, boost::asio::buffer(answer), ignored_error);
+                            boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
                             break;
                         }
                         case '2': {
                             // How many users are in the environment, who are they?
-                            std::cout << "Server: The client ask How many receivers?\n";
-                            boost::asio::write(socket, boost::asio::buffer("qok"), ignored_error);
+                            std::cout << "Server: The client ask How many receivers?.\n";
+                            boost::asio::write(socket, boost::asio::buffer("qok"), ign_err);
                             std::string answer = "a:" + engine->GetReceiversList();
-                            boost::asio::write(socket, boost::asio::buffer(answer), ignored_error);
+                            boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
                             break;
                         }
                         case '3': {
                             // Give me info of the station id #..
-                            std::cout << "Server: The client ask about a transmitter\n";
-                            boost::asio::write(socket, boost::asio::buffer("qok"), ignored_error);
+                            std::cout << "Server: The client ask about a transmitter.\n";
+                            boost::asio::write(socket, boost::asio::buffer("qok"), ign_err);
                             unsigned int id = std::stoi(rec_data.substr(2));
                             std::string answer = "a:" + engine->GetTransmitterInfo(id);
-                            boost::asio::write(socket, boost::asio::buffer(answer), ignored_error);
+                            boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 
                             break;
                         }
                         case '4': {
                             // Give me info mation of the user number #..
-                            std::cout << "Server: The client ask about a user\n";
-                            boost::asio::write(socket, boost::asio::buffer("qok"), ignored_error);
-                            std::string answer = "a:";
-                            boost::asio::write(socket, boost::asio::buffer(answer), ignored_error);
+                            std::cout << "Server: The client asks about a user.\n";
+                            boost::asio::write(socket, boost::asio::buffer("qok"), ign_err);
+                            unsigned int id = std::stoi(rec_data.substr(2));
+                            std::string answer = "a:" + engine->GetReceiverInfo(id);
+                            boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
                             break;
                         }
                         }
@@ -150,8 +151,8 @@ int main(){
                         switch (rec_data[1]) {
                         case '1': {
                             // Add a station to the environment
-                            std::cout << "Server: The client wants to add a transmitter\n";
-                            boost::asio::write(socket, boost::asio::buffer("cok"), ignored_error);
+                            std::cout << "Server: The client wants to add a transmitter.\n";
+                            boost::asio::write(socket, boost::asio::buffer("cok"), ign_err);
                             
                             std::string input_data = rec_data.substr(3);
                             std::vector<std::string> splitted_inputs;
@@ -174,40 +175,75 @@ int main(){
                             // Get frequency
                             float frequency = std::stof(splitted_inputs[2]);
                             
-                            engine->AddTransmitter(position, rotation, frequency);
-
-                            boost::asio::write(socket, boost::asio::buffer("suc"), ignored_error);
+                            if (engine->AddTransmitter(position, rotation, frequency))
+                                boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
+                            else
+                                boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
                             break;
                         }
                         case '2': {
                             // Add a user to the environment
-                            boost::asio::write(socket, boost::asio::buffer("cok"), ignored_error);
+                            std::cout << "Server: The client wants to add a receiver.\n";
+                            boost::asio::write(socket, boost::asio::buffer("cok"), ign_err);
 
                             // Get location from input string
-                            std::vector<std::string> splitted_data;
                             std::string location_string = rec_data.substr(3);
+
+                            std::vector<std::string> splitted_data;
                             boost::split(splitted_data, location_string, boost::is_any_of(","));
+
                             glm::vec3 position = glm::vec3( std::stof(splitted_data[0]),
                                                             std::stof(splitted_data[1]),
                                                             std::stof(splitted_data[2]));
-                            engine->AddReceiver(position);
-                            boost::asio::write(socket, boost::asio::buffer("suc"), ignored_error);
+                            if (engine->AddReceiver(position))
+                                boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
+                            else
+                                boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
                             break;
                         }
                         case '3': {
                             // Add a user to a station 
-                            boost::asio::write(socket, boost::asio::buffer("cok"), ignored_error);
-                            /* TODO */
+                            std::cout << "Server: The client wants to connect a receiver to a station.\n";
+                            boost::asio::write(socket, boost::asio::buffer("cok"), ign_err);
+                            std::string input_data = rec_data.substr(3);
 
-                            boost::asio::write(socket, boost::asio::buffer("suc"), ignored_error);
+                            std::vector<std::string> splitted_data;
+                            boost::split(splitted_data, input_data, boost::is_any_of(","));
+
+                            if(engine->ConnectReceiverToTransmitter(  std::stoul(splitted_data[0]),
+                                                                      std::stoul(splitted_data[1])))
+                                boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
+                            else
+                                boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
                             break;
                         }
                         case '4':
                             // Move a station
-                            boost::asio::write(socket, boost::asio::buffer("cok"), ignored_error);
-                            /* TODO */
+                            std::cout << "Server: The client wants to move a station.\n";
+                            boost::asio::write(socket, boost::asio::buffer("cok"), ign_err);
 
-                            boost::asio::write(socket, boost::asio::buffer("suc"), ignored_error);
+                            std::string input_data = rec_data.substr(3);
+                            std::vector<std::string> splitted_inputs;
+                            boost::split(splitted_inputs, input_data, boost::is_any_of(":"));
+
+                            unsigned int transmitter_id = std::stoul(splitted_inputs[0]);
+
+                            std::vector<std::string> splitted_data;
+                            // Get location from input string
+                            std::string location_string = splitted_inputs[1];
+                            boost::split(splitted_data, location_string, boost::is_any_of(","));
+                            glm::vec3 position = glm::vec3( std::stof(splitted_data[0]),
+                                                            std::stof(splitted_data[1]),
+                                                            std::stof(splitted_data[2]));
+                            splitted_data.clear();
+                            // Get rotation from input string
+                            std::string rotation_string = splitted_inputs[2];
+                            boost::split(splitted_data, rotation_string, boost::is_any_of(","));
+                            glm::vec3 rotation = glm::vec3( std::stof(splitted_data[0]),
+                                                            std::stof(splitted_data[1]),
+                                                            std::stof(splitted_data[2]));
+                            engine->MoveTransmitterTo(transmitter_id, position, rotation);
+                            boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
                             break;
                         }
                         break;
@@ -216,7 +252,7 @@ int main(){
                     case 'r': {
                         std::cout << "Server: the client commands to reset the environment.\n";
                         engine->Reset();
-                        boost::asio::write(socket, boost::asio::buffer("rok"), ignored_error);
+                        boost::asio::write(socket, boost::asio::buffer("rok"), ign_err);
                         break;
                     }
                     default:

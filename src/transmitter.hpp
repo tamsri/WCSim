@@ -30,7 +30,8 @@ public:
 	void AddReceiver(Receiver* receiver);
 	void DrawRadiationPattern(Camera * camera);
 	void AssignRadiationPattern(RadiationPattern* pattern);
-
+	void MoveTo(glm::vec3 position);
+	void RotateTo(glm::vec3 rotation);
 	Transform GetTransform() const;
 	float GetFrequency() const;
 	float GetAveragePL() const ;
@@ -70,7 +71,7 @@ private:
 	RayTracer* ray_tracer_;
 	Point* current_point_;
 	
-	std::vector<Receiver* > receivers_;
+	std::map<unsigned int, Receiver* > receivers_;
 	std::vector<Result> receiver_results;
 	// Visualization
 	std::vector<Object* > objects_;

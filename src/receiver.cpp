@@ -38,6 +38,16 @@ void Receiver::AssignTransmitter(Transmitter* transmitter)
 	transmitter_ = transmitter;
 }
 
+Transmitter* Receiver::GetTransmitter() const
+{
+	return transmitter_;
+}
+
+Transform Receiver::GetTransform() const
+{
+	return transform_;
+}
+
 void Receiver::AddRecorder(Recorder* recorder)
 {
 	recorder_ = recorder;
@@ -61,10 +71,12 @@ void Receiver::UpdateResult()
 	float transmitter_frequency = transmitter_->GetFrequency();
 
 
-	std::vector<Record> records;
-	ray_tracer_->Trace(transmitter_positon, receiver_position, records);
+	records_.clear();
+	ray_tracer_->Trace(transmitter_positon, receiver_position, records_);
 	
-	if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records, result_, recorder_)) {
+	ray_tracer_->CalculatePathLoss(transmitter_positon, receiver_position, transmitter_frequency, records_, result_, recorder_ );
+
+	/*if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records_, result_, recorder_)) {
 		std::cout << " ------------------------------- \n";
 		std::cout << "Receiver Position: " << glm::to_string(receiver_position) << std::endl;
 		std::cout << "Transmitter Position: " << glm::to_string(transmitter_positon) << std::endl;
@@ -74,14 +86,19 @@ void Receiver::UpdateResult()
 		std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
 		std::cout << "Total Loss: " << result_.total_loss << " dB\n";
 		std::cout << " ------------------------------- \n";
-	}
-
-	//Clear Visualisation
+	}*/
+}
+void Receiver::UpdateAndVisualize()
+{
+	const glm::vec3 receiver_position = transform_.position;
+	const glm::vec3 transmitter_positon = transmitter_->GetPosition();
+	UpdateResult();
 	Clear();
-	ray_tracer_->GetDrawComponents(transmitter_positon, receiver_position, records ,objects_);
+	ray_tracer_->GetDrawComponents(transmitter_positon, receiver_position, records_, objects_);
 }
 void Receiver::Reset()
 {
+	result_.is_valid = false;
 	move_speed_ = 10.0f;
 }
 

@@ -51,7 +51,8 @@ void Transmitter::UpdateResult()
 	if (receivers_.empty()) return;
 	float average_path_loss = 0.0f;
 	unsigned int receivers_number = 0;
-	for (auto* receiver : receivers_) {
+	for (auto [id, receiver] : receivers_) {
+		if (receiver == nullptr) continue;
 		receiver->UpdateResult();
 		Result result = receiver->GetResult();
 		if (result.is_valid) {
@@ -110,7 +111,8 @@ void Transmitter::Clear()
 void Transmitter::DrawObjects(Camera* camera)
 {
 	DrawRadiationPattern(camera);
-	for (auto receiver : receivers_) {
+	for (auto [id, receiver] : receivers_) {
+		if (receiver == nullptr) continue;
 		receiver->DrawObjects(camera);
 	}
 	if (current_pattern_ != nullptr)
@@ -119,8 +121,11 @@ void Transmitter::DrawObjects(Camera* camera)
 
 void Transmitter::AddReceiver(Receiver* receiver)
 {
+	if (receiver == nullptr) return;
+	unsigned int id = receiver->GetID();
+	if (receivers_[id] != nullptr) return;
 	receiver->AssignTransmitter(this);
-	receivers_.push_back(receiver);
+	receivers_[id] = receiver;
 }
 
 void Transmitter::DrawRadiationPattern(Camera * camera)
@@ -134,6 +139,16 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 {
 	current_pattern_ = pattern;
 	UpdateRadiationPattern();
+}
+
+void Transmitter::MoveTo(glm::vec3 position)
+{
+	transform_.position = position;
+}
+
+void Transmitter::RotateTo(glm::vec3 rotation)
+{
+	transform_.rotation = rotation;
 }
 
 Transform Transmitter::GetTransform() const
@@ -197,7 +212,8 @@ std::string Transmitter::GetReceiversIDs()
 {
 	if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + "&";
-	for (Receiver * receiver : receivers_) {
+	for (auto [key, receiver] : receivers_) {
+		if (receiver == nullptr) continue;
 		answer += std::to_string(receiver->GetID()) + ",";
 	}
 	answer.pop_back();
