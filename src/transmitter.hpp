@@ -24,10 +24,11 @@ public:
 	Transmitter(Transform transform, 
 				float frequency, 
 				RayTracer * ray_tracer);
-
+	~Transmitter();
 	unsigned int GetID() const;
 	// Actions
-	void AddReceiver(Receiver* receiver);
+	void ConnectAReceiver(Receiver* receiver);
+	void DisconnectAReceiver(unsigned int receiver_id);
 	void DrawRadiationPattern(Camera * camera);
 	void AssignRadiationPattern(RadiationPattern* pattern);
 	void MoveTo(glm::vec3 position);
@@ -36,7 +37,8 @@ public:
 	float GetFrequency() const;
 	float GetAveragePL() const ;
 	float GetTransmitterGain(glm::vec3 near_tx_position);
-	
+	std::map<unsigned int, Receiver* >& GetReceivers();
+
 	std::string GetReceiversIDs();
 	Receiver* GetReceiver(unsigned int index);
 	glm::vec3 GetPosition();
@@ -53,7 +55,6 @@ public:
 	void DrawObjects(Camera * camera);
 
 	std::vector<Triangle*> hit_triangles;
-
 	static unsigned int global_id_;
 private:
 	

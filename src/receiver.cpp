@@ -33,9 +33,14 @@ unsigned int Receiver::GetID() const
 	return id_;
 }
 
-void Receiver::AssignTransmitter(Transmitter* transmitter)
+void Receiver::ConnectATransmitter(Transmitter* transmitter)
 {
 	transmitter_ = transmitter;
+}
+
+void Receiver::DisconnectATransmitter()
+{
+	transmitter_ = nullptr;
 }
 
 Transmitter* Receiver::GetTransmitter() const
@@ -65,7 +70,7 @@ glm::vec3 Receiver::GetPosition() const
 
 void Receiver::UpdateResult()
 {
-
+	if (transmitter_ == nullptr) return;
 	const glm::vec3 receiver_position = transform_.position;
 	const glm::vec3 transmitter_positon = transmitter_->GetPosition();
 	float transmitter_frequency = transmitter_->GetFrequency();

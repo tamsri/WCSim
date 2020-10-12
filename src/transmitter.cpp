@@ -35,6 +35,11 @@ Transmitter::Transmitter(Transform transform,
 	UpdateResult();
 }
 
+Transmitter::~Transmitter()
+{
+	// TODO: check later
+}
+
 unsigned int Transmitter::GetID() const
 {
 	return id_;
@@ -43,7 +48,6 @@ unsigned int Transmitter::GetID() const
 
 void Transmitter::UpdateResult()
 {
-	//if (current_point_ != nullptr) delete current_point_;
 	current_point_ = new Point(transform_.position);
 
 	if(current_pattern_ != nullptr) UpdateRadiationPattern();
@@ -62,7 +66,6 @@ void Transmitter::UpdateResult()
 	}
 	average_path_loss /= receivers_number;
 	average_path_loss_ = average_path_loss;
-	//std::cout << "Average path loss: " << average_path_loss << std::endl;
 }
 
 void Transmitter::UpdateRadiationPattern()
@@ -119,13 +122,18 @@ void Transmitter::DrawObjects(Camera* camera)
 		current_pattern_->DrawPattern(camera, transform_);
 }
 
-void Transmitter::AddReceiver(Receiver* receiver)
+void Transmitter::ConnectAReceiver(Receiver* receiver)
 {
 	if (receiver == nullptr) return;
 	unsigned int id = receiver->GetID();
 	if (receivers_[id] != nullptr) return;
-	receiver->AssignTransmitter(this);
+	receiver->ConnectATransmitter(this);
 	receivers_[id] = receiver;
+}
+
+void Transmitter::DisconnectAReceiver(unsigned int receiver_id)
+{
+	receivers_.erase(receiver_id);
 }
 
 void Transmitter::DrawRadiationPattern(Camera * camera)
@@ -206,6 +214,11 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 	float tx_gain = current_pattern_->GetGain(theta, phi);
 	// std::cout << " total gain: " << tx_gain << std::endl;
 	return tx_gain;
+}
+
+std::map<unsigned int, Receiver*>& Transmitter::GetReceivers()
+{
+	return receivers_;
 }
 
 std::string Transmitter::GetReceiversIDs()

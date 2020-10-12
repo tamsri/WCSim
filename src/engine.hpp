@@ -52,16 +52,20 @@ class Engine{
         void RunWithWindow();
 
         // Exernal Actions
-    
         std::string GetTransmittersList() const;
         std::string GetTransmitterInfo(unsigned int transmitter_id);
         std::string GetReceiversList() const;
         std::string GetReceiverInfo(unsigned int receiver_id);
 
+        // Commands for TCP 
         bool AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency);
         bool AddReceiver(glm::vec3 position);
+        bool RemoveTransmitter(unsigned int transmitter_id);
+        bool RemoveReceiver(unsigned int receiver_id);
         bool ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id);
-        bool MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 rotation);
+        bool DisconenctReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id);
+        bool MoveTransmitterTo(unsigned int rx_id, glm::vec3 position, glm::vec3 rotation);
+        bool MoveReceiverTo(unsigned int rx_id, glm::vec3 position);
 
         // Visualization
         void InitalizeWithWindow();

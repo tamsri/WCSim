@@ -101,7 +101,8 @@ std::string Engine::GetTransmittersList() const
 	if(transmitters_.empty()) return "0";
 	std::string answer = std::to_string(transmitters_.size()) + '&';
 	for (auto & [id, transmitter] : transmitters_) {
-		answer += std::to_string(id) + ',';
+		if (transmitter != nullptr)
+			answer += std::to_string(id) + ',';
 	}
 	answer.pop_back();
 	return answer;
@@ -113,7 +114,8 @@ std::string Engine::GetReceiversList() const
 	if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + '&';
 	for (auto& [id, receiver] : receivers_) {
-		answer += std::to_string(id) + ',';
+		if(receiver != nullptr)
+			answer += std::to_string(id) + ',';
 	}
 	answer.pop_back();
 	return answer;
@@ -184,13 +186,52 @@ bool Engine::AddReceiver(glm::vec3 position)
 	return true;
 }
 
+bool Engine::RemoveTransmitter(unsigned int transmitter_id)
+{
+	Transmitter* tx = transmitters_[transmitter_id];
+	if (tx == nullptr) return false;
+	// Disconnect all receivers in the transmitter
+	for (auto& [id, rx] : tx->GetReceivers()) {
+		rx->DisconnectATransmitter();
+	}
+	transmitters_.erase(transmitter_id);
+	// delete the transmitter
+	delete tx;
+	return true;
+}
+
+bool Engine::RemoveReceiver(unsigned int receiver_id)
+{
+	Receiver* rx = receivers_[receiver_id];
+	if (rx == nullptr) return false;
+	Transmitter* tx = rx->GetTransmitter();
+	// Disconenct from transmitter
+	if (tx != nullptr) {
+		DisconenctReceiverFromTransmitter(tx->GetID(), rx->GetID());
+	}
+	// Remove from the engine list
+	receivers_.erase(receiver_id);
+	delete rx;
+	return true;
+}
+
 bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id)
 {
 	Transmitter* tx = transmitters_[tx_id];
 	if (tx == nullptr) return false;
 	Receiver* rx = receivers_[rx_id];
 	if (rx == nullptr) return false;
-	tx->AddReceiver(rx);
+	tx->ConnectAReceiver(rx);
+	return true;
+}
+
+bool Engine::DisconenctReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id)
+{
+	Transmitter * tx = transmitters_[tx_id];
+	Receiver* rx = receivers_[rx_id];
+	if (rx == nullptr || tx == nullptr) return false;
+	tx->DisconnectAReceiver(rx_id);
+	rx->DisconnectATransmitter();
 	return true;
 }
 
@@ -201,6 +242,16 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
 	tx->UpdateResult();
+	return true;
+}
+
+bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
+{
+	Receiver* rx = receivers_[rx_id];
+	if (rx == nullptr) return false;
+	rx->MoveTo(position);
+	if (rx->GetTransmitter() != nullptr)
+		rx->UpdateResult();
 	return true;
 }
 

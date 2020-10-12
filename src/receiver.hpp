@@ -23,7 +23,8 @@ public:
 
 	unsigned int GetID() const;
 
-	void AssignTransmitter(Transmitter* transmitter);
+	void ConnectATransmitter(Transmitter* transmitter);
+	void DisconnectATransmitter();
 	Transmitter* GetTransmitter() const;
 	Transform GetTransform()const;
 
