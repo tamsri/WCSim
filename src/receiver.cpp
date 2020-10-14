@@ -127,31 +127,31 @@ void Receiver::Move(Direction direction,float delta_time) {
 	constexpr glm::vec3 y_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	switch (direction) {
-	case Direction::kForward:
+	case (Direction::kForward):
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		transform_.position += front_direction * distance;
 		break;
-	case Direction::kBackward:
+	case (Direction::kBackward):
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		transform_.position -= front_direction * distance;
 		break;
-	case Direction::kRight:
+	case (Direction::kRight):
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		right_direction = glm::cross(front_direction, up_direction);
 		transform_.position += right_direction * distance;
 		break;
-	case Direction::kLeft:
+	case (Direction::kLeft):
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		right_direction = glm::cross(front_direction, up_direction);
 		transform_.position -= right_direction * distance;
 		break;
-	case Direction::kUp:
+	case (Direction::kUp):
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		transform_.position += up_direction * distance;
 		break;
-	case Direction::kDown:
+	case (Direction::kDown):
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		transform_.position -= up_direction * distance;
 		break;

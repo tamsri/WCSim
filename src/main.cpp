@@ -73,7 +73,7 @@ int main(){
 
                 // After the connection, the server says hello for testing the connection
                 std::cout << "The client has connected" << std::endl;
-                boost::asio::write(socket, boost::asio::buffer("Server: Hello Client~"), ign_err);
+                boost::asio::write(socket, boost::asio::buffer("Server: Hello Client"), ign_err);
                 // Then, the server waits for client to reply 
                 size_t len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
                 std::string rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);

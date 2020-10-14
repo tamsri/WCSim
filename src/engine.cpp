@@ -241,7 +241,6 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
 	if (tx == nullptr) return false;
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
-	tx->UpdateResult();
 	return true;
 }
 
@@ -250,8 +249,6 @@ bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
 	Receiver* rx = receivers_[rx_id];
 	if (rx == nullptr) return false;
 	rx->MoveTo(position);
-	if (rx->GetTransmitter() != nullptr)
-		rx->UpdateResult();
 	return true;
 }
 
