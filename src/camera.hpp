@@ -11,11 +11,11 @@ class GLFWwindow;
 
 enum class Direction : unsigned int {
 	kForward = 0,
-	kBackward,
-	kLeft,
-	kRight,
-	kUp,
-	kDown
+	kBackward = 1,
+	kLeft = 2,
+	kRight = 3,
+	kUp = 4,
+	kDown = 5
 };
 enum class Rotation : unsigned  int {
 	kYaw = 0,

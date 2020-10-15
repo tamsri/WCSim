@@ -260,35 +260,35 @@ void Transmitter::Move(const Direction direction, float delta_time)
 	constexpr glm::vec3 y_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	switch (direction) {
-	case (Direction::kForward):
+	case (Direction::kForward):{
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		transform_.position += front_direction * distance;
-		break;
-	case (Direction::kBackward):
+	}	break;
+	case (Direction::kBackward):{
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		transform_.position -= front_direction * distance;
-		break;
-	case (Direction::kRight):
+	}	break;
+	case (Direction::kRight):{
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		right_direction = glm::cross(front_direction, up_direction);
 		transform_.position += right_direction * distance;
-		break;
-	case (Direction::kLeft):
+	}	break;
+	case (Direction::kLeft): {
 		front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		right_direction = glm::cross(front_direction, up_direction);
 		transform_.position -= right_direction * distance;
-		break;
-	case (Direction::kUp):
+	}	break;
+	case (Direction::kUp): {
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		transform_.position += up_direction * distance;
-		break;
-	case (Direction::kDown):
+	}	break;
+	case (Direction::kDown): {
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		transform_.position -= up_direction * distance;
-		break;
-	};
+	}	break;
+	}
 	UpdateResult();
 }
 
@@ -298,21 +298,16 @@ void Transmitter::Rotate(const Direction rotation, float delta_time)
 	switch(rotation) {
 	case (Direction::kLeft): {
 		transform_.rotation.x += angular;
-		break;
-	}
+	}break;
 	case (Direction::kRight): {
 		transform_.rotation.x -= angular;
-		break;
-	}
+	}break;
 	case (Direction::kUp): {
 		transform_.rotation.y -= angular;
-
-		break;
-	}
+	}break;
 	case (Direction:: kDown): {
 		transform_.rotation.y += angular;
-		break;
-	}
+	}break;
 	}
 	UpdateResult();
 }

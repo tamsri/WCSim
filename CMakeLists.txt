@@ -48,7 +48,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${GLM_INCLUDEDIR})
 # #OOST
 set(Boost_USE_STATIC_LIBS        ON)  
 set(BOOST_ROOT "C:\\Boost\\boost_1_74_0")
-find_package(Boost 1.74.0 REQUIRED COMPONENTS system thread regex)
+find_package(Boost REQUIRED COMPONENTS system thread regex)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 

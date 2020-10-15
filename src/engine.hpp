@@ -24,6 +24,12 @@ class RadiationPattern;
 class Communicator;
 class Recorder;
 
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
+namespace ip = boost::asio::ip;
+
+
 enum EngineMode : int {
     kView = 0,
     kMoveObjects,
@@ -56,6 +62,10 @@ class Engine{
         std::string GetTransmitterInfo(unsigned int transmitter_id);
         std::string GetReceiversList() const;
         std::string GetReceiverInfo(unsigned int receiver_id);
+
+        // Main orders
+        void ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& command);
+        void ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& question);
 
         // Commands for TCP 
         bool AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency);

@@ -17,27 +17,26 @@ void Camera::Move(const Direction camera_direction, float delta_time)
 {
 	float distance = delta_time * camera_move_speed_;
 	switch (camera_direction) {
-	case (Direction::kForward):
+	case (Direction::kForward):{
 		position_ += front_direction_ * distance;
-		break;
-	case (Direction::kBackward):
+	}	break;
+	case (Direction::kBackward):{
 		position_ -= front_direction_ * distance;
-		break;
-	case (Direction::kRight):
+	}	break;
+	case (Direction::kRight):{
 		glm::vec3 left_direction = glm::normalize(glm::cross(front_direction_, up_direction_));
 		position_ += left_direction * distance;
-		break;
-
-	case (Direction::kLeft):
+	}	break;
+	case (Direction::kLeft): {
 		glm::vec3 right_direction = glm::normalize(glm::cross(-front_direction_, up_direction_));
 		position_ += right_direction * distance;
-		break;
-	case (Direction::kUp):
+	}	break;
+	case (Direction::kUp):{
 		position_ += up_direction_ * distance;
-		break;
-	case (Direction::kDown):
+	}	break;
+	case (Direction::kDown): {
 		position_ -= up_direction_ * distance;
-		break;
+	}	break;
 	};
 
 	UpdateView();
@@ -47,15 +46,15 @@ void Camera::Rotate(const Rotation camera_rotation, float delta_time)
 {
 	float angle = camera_rotate_speed_ * delta_time;
 	switch (camera_rotation) {
-	case (Rotation::kYaw):
+	case (Rotation::kYaw): {
 		yaw_ += angle;
-		break;
-	case (Rotation::kRoll):
+	}	break;
+	case (Rotation::kRoll): {
 		/// TODO: to be implemented (maybe)
-		break;
-	case (Rotation::kPitch):
+	}	break;
+	case (Rotation::kPitch): {
 		pitch_ += angle;
-		break;
+	}	break;
 	}
 	UpdateRotation();
 	UpdateView();
