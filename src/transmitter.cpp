@@ -197,7 +197,7 @@ std::string Transmitter::GetReceiversIDs()
 {
 	if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + "&";
-	for (auto [key, receiver] : receivers_) {
+	for (auto & [key, receiver] : receivers_) {
 		if (receiver == nullptr) continue;
 		answer += std::to_string(receiver->GetID()) + ",";
 	}

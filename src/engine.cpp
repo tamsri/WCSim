@@ -2,7 +2,7 @@
 
 #include <map>
 #include <iostream>
-
+#include <utility>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -122,8 +122,10 @@ std::string Engine::GetReceiversList() const
 std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 {
 	// Get the transmitter 
-	Transmitter * tx = transmitters_[transmitter_id];
-	if (tx == nullptr) return "-1";
+	Transmitter * tx;
+	if (transmitters_.find(transmitter_id) != transmitters_.end()){
+        tx = transmitters_.find(transmitter_id)->second;
+	}else return "-1";
 	tx->UpdateResult(); // Update the result
 	std::string answer = std::to_string(transmitter_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
@@ -146,8 +148,10 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 {
 	// Get the transmitter 
-	Receiver* rx = receivers_[receiver_id];
-	if (rx == nullptr) return "-1";
+	Receiver* rx;
+    if (receivers_.find(receiver_id) != receivers_.end()){
+        rx = receivers_.find(receiver_id)->second;
+    }else return "-1";
 
 	std::string answer = std::to_string(receiver_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
@@ -365,7 +369,7 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 	} break;
 	case '4': {
-		// Give me info mation of the user number #..
+		// Give me information of the user number #..
 		std::cout << "Server: The client asks about a user.\n";
 		boost::asio::write(socket, boost::asio::buffer("qok"), ign_err);
 		unsigned int id = std::stoi(question.substr(2));
@@ -386,6 +390,7 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
 	transmitters_[transmitter->GetID()] = transmitter;
+	transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
 	return true;
 }
 
@@ -393,16 +398,17 @@ bool Engine::AddReceiver(glm::vec3 position)
 {
 	if (ray_tracer_ == nullptr) return false;
 	auto * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
-	receivers_[receiver->GetID()] = receiver;
+	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
 	return true;
 }
 
 bool Engine::RemoveTransmitter(unsigned int transmitter_id)
 {
-	Transmitter* tx = transmitters_[transmitter_id];
-	if (tx == nullptr) return false;
+    if(transmitters_.find(transmitter_id) == transmitters_.end()) return false;
+	Transmitter* tx =  transmitters_.find(transmitter_id)->second;
 	// Disconnect all receivers in the transmitter
 	for (auto& [id, rx] : tx->GetReceivers()) {
+	    if(rx == nullptr) continue;
 		rx->DisconnectATransmitter();
 	}
 	transmitters_.erase(transmitter_id);
@@ -413,10 +419,10 @@ bool Engine::RemoveTransmitter(unsigned int transmitter_id)
 
 bool Engine::RemoveReceiver(unsigned int receiver_id)
 {
-	Receiver* rx = receivers_[receiver_id];
-	if (rx == nullptr) return false;
+    if(receivers_.find(receiver_id) == receivers_.end())return false;
+	Receiver* rx = receivers_.find(receiver_id)->second;
 	Transmitter* tx = rx->GetTransmitter();
-	// Disconnenct from transmitter
+	// Disconnect from the transmitter
 	if (tx != nullptr) {
         DisconnectReceiverFromTransmitter(tx->GetID(), rx->GetID());
 	}
@@ -428,19 +434,20 @@ bool Engine::RemoveReceiver(unsigned int receiver_id)
 
 bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id)
 {
-	Transmitter* tx = transmitters_[tx_id];
-	if (tx == nullptr) return false;
-	Receiver* rx = receivers_[rx_id];
-	if (rx == nullptr) return false;
+    if( transmitters_.find(tx_id) == transmitters_.end() ||
+        receivers_.find(rx_id) == receivers_.end())  return false;
+    Transmitter * tx = transmitters_.find(tx_id)->second;
+    Receiver* rx = receivers_.find(rx_id)->second;
 	tx->ConnectAReceiver(rx);
 	return true;
 }
 
 bool Engine::DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id)
 {
-	Transmitter * tx = transmitters_[tx_id];
-	Receiver* rx = receivers_[rx_id];
-	if (rx == nullptr || tx == nullptr) return false;
+    if( transmitters_.find(tx_id) == transmitters_.end() ||
+        receivers_.find(rx_id) == receivers_.end())  return false;
+	Transmitter * tx = transmitters_.find(tx_id)->second;
+	Receiver* rx = receivers_.find(rx_id)->second;
 	tx->DisconnectAReceiver(rx_id);
 	rx->DisconnectATransmitter();
 	return true;
@@ -448,8 +455,8 @@ bool Engine::DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int 
 
 bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 rotation)
 {
-	Transmitter* tx = transmitters_[id];
-	if (tx == nullptr) return false;
+	if(transmitters_.find(id) == transmitters_.end()) return false;
+    Transmitter* tx = transmitters_.find(id)->second;
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
 	return true;
@@ -457,8 +464,8 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
 
 bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
 {
-	Receiver* rx = receivers_[rx_id];
-	if (rx == nullptr) return false;
+    if(receivers_.find(rx_id) == receivers_.end()) return false;
+	Receiver* rx = receivers_.find(rx_id)->second;
 	rx->MoveTo(position);
 	return true;
 }
