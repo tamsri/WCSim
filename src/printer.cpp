@@ -102,7 +102,7 @@ void Printer::ScanMap(glm::vec3 transmitter_position, float frequency, float sca
 
 				std::thread trace_thread(  &RayTracer::Trace, ray_tracer_,
                                             transmitter_position, receiver_position,
-                                            records);
+                                            std::ref(records));
                 threads.push_back(std::move(trace_thread));
                 recordss.emplace_back(receiver_position, records);
 			}
