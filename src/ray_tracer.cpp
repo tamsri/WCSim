@@ -1,47 +1,44 @@
 #include "ray_tracer.hpp"
 
-#include <iostream>
+
 #include <set>
 #include <utility>
-#include <chrono>
+
 #include <algorithm>
 #include <cmath>
 #include <stack>
 #include <queue>
+#include <thread>
 
-#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
 #include "object.hpp"
 #include "cube.hpp"
 #include "ray.hpp"
-#include "line.hpp"
 #include "triangle.hpp"
 #include "polygon_mesh.hpp"
-#include "shader.hpp"
 
 #include "transmitter.hpp"
 #include "receiver.hpp"
 
-#include "transform.hpp"
 #include "recorder.hpp"
 
 RayTracer::RayTracer(PolygonMesh* map) :map_(map)
 {
 }
 
-std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 position) const
+std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 & position) const
 {
 	std::map<Triangle*, bool> hit_triangles;
 	// Approach I: when the triangles are more than the generated scanning rays
 	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
 	float scan_precision = 1.0f;
-	for (float i = 0; i < 360; i += scan_precision)
-		for (float j = 0; j < 360; j += scan_precision) {
+	for (float i = 0; i < 360; i = i + scan_precision)
+		for (float j = 0; j < 360; j = + scan_precision) {
 			auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
 			trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
 			auto new_direction = trans_direction * direction;
-			glm::vec3 i_direction = glm::vec3(new_direction);
+			auto i_direction = glm::vec3(new_direction);
 
 			Ray ray{ position, i_direction };
 			Triangle* hit_triangle = nullptr;
@@ -53,18 +50,18 @@ std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 position) const
 	return hit_triangles;
 }
 
-std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 position) const
+std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 & position) const
 {
 	std::vector <Triangle*> hit_triangles;
 	// Approach I: when the triangles are more than the generated scanning rays
 	glm::vec4 direction = { 1.0f , 0.0f, 0.0f, 1.0f }; // initial scan direction
 	float scan_precision = 2.0f;
-	for (float i = 0; i < 360; i += scan_precision)
-		for (float j = 0; j < 360; j += scan_precision) {
+	for (float i = 0; i < 360; i = i + scan_precision)
+		for (float j = 0; j < 360; j = i +scan_precision) {
 			auto trans_direction = glm::rotate(glm::mat4(1.0f), glm::radians(i), glm::vec3(0.0f, 1.0f, 0.0f));
 			trans_direction = glm::rotate(trans_direction, glm::radians(j), glm::vec3(0.0f, 0.0f, 1.0f));
 			auto new_direction = trans_direction * direction;
-			glm::vec3 i_direction = glm::vec3(new_direction);
+			auto i_direction = glm::vec3(new_direction);
 
 			Ray ray{ position, i_direction };
 			Triangle* hit_triangle = nullptr;
@@ -75,86 +72,42 @@ std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 position) const
 		}
 	return hit_triangles;
 }
-void RayTracer::Trace(const glm::vec3 start_position,const glm::vec3 end_position, std::vector<Record> & records) const
-{
-	// Trace Line of Sight
-	using namespace std::chrono;
-	auto direct_start = high_resolution_clock::now();
-	bool is_direct = IsDirectHit(start_position, end_position);
-	auto direct_end = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(direct_end - direct_start);
-	//std::cout << "Direct Hit Tracer takes: " << duration.count()/1000.0f << " ms\n";
 
-	if (IsDirectHit(start_position, end_position)) {
-		records.push_back(Record{ RecordType::kDirect });
-	}
-	else {
-		// Implement multiple knife-edge diffraction
-		std::vector<glm::vec3> edges_points;
-		auto diff_start = high_resolution_clock::now();
-		if (IsKnifeEdgeDiffraction(start_position, end_position, edges_points)) {
-			Record saving_record{ RecordType::kEdgeDiffraction, edges_points };
-			records.push_back(saving_record);
-		}
-		auto diff_end = high_resolution_clock::now();
-		auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
-		//std::cout << "Diffraction Tracer takes " << diff_duration.count()/1000.0f << " ms\n";
-	}
-
-	// find possible reflections
-	std::vector <glm::vec3> reflected_points;
-	auto ref_start = high_resolution_clock::now();
-	if (IsReflected(start_position, end_position, reflected_points)) {
-		//std::cout << "Reflected!!" << std::endl;
-		Record saving_record{ RecordType::kReflect, reflected_points };
-		records.push_back(saving_record);
-	}
-	auto ref_end = high_resolution_clock::now();
-	auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
-	//std::cout << "Reflection Tracer takes " << ref_duration.count()/1000.0f << " ms\n";
+void RayTracer::LineTrace(const glm::vec3 & start_position,
+                          const glm::vec3 & end_position,
+                          std::vector<Record> & records) const {
+    if(IsDirectHit(start_position, end_position)){
+            records.emplace_back(RecordType::kDirect);
+    }else{
+        std::vector<glm::vec3> edges_points;
+        if(IsKnifeEdgeDiffraction(start_position, end_position, edges_points))
+            records.emplace_back(RecordType::kEdgeDiffraction, edges_points);
+    }
 }
 
-void RayTracer::Trace(Transmitter * transmitter, const glm::vec3 end_position, std::vector<Record>& records) const
-{
-	// Trace Line of Sight
-	glm::vec3 start_position = transmitter->GetPosition();
-	using namespace std::chrono;
-	auto direct_start = high_resolution_clock::now();
-	bool is_direct = IsDirectHit(start_position, end_position);
-	auto direct_end = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(direct_end - direct_start);
-	//std::cout << "Direct Hit Tracer takes: " << duration.count() / 1000.0f << " ms\n";
-
-	if (IsDirectHit(start_position, end_position)) {
-		records.push_back(Record{ RecordType::kDirect });
-	}
-	else {
-		// Implement multiple knife-edge diffraction
-		std::vector<glm::vec3> edges_points;
-		auto diff_start = high_resolution_clock::now();
-		if (IsKnifeEdgeDiffraction(start_position, end_position, edges_points)) {
-			Record saving_record{ RecordType::kEdgeDiffraction, edges_points };
-			records.push_back(saving_record);
-		}
-		auto diff_end = high_resolution_clock::now();
-		auto diff_duration = duration_cast<microseconds>(diff_end - diff_start);
-		std::cout << "Diffraction Tracer takes " << diff_duration.count() / 1000.0f << " ms\n";
-	}
-
-	// find possible reflections
-	std::vector <glm::vec3> reflected_points;
-	auto ref_start = high_resolution_clock::now();
-	if (IsReflected(transmitter, end_position, reflected_points)) {
-		//std::cout << "Reflected!!" << std::endl;
-		Record saving_record{ RecordType::kReflect, reflected_points };
-		records.push_back(saving_record);
-	}
-	auto ref_end = high_resolution_clock::now();
-	auto ref_duration = duration_cast<microseconds>(ref_end - ref_start);
-	std::cout << "Reflection Tracer takes " << ref_duration.count() / 1000.0f << " ms\n";
+void RayTracer::ReflectTrace(const glm::vec3 & start_position,
+                             const glm::vec3 & end_position,
+                             std::vector<Record> & records) const {
+    std::vector<glm::vec3> reflected_points;
+    if (IsReflected(start_position, end_position, reflected_points)) {
+        records.emplace_back( RecordType::kReflect, reflected_points );
+    }
 }
 
-void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<Record>& records, std::vector<Object*>& objects) const
+void RayTracer::Trace(const glm::vec3 & start_position,
+                      const glm::vec3 & end_position,
+                      std::vector<Record> & records) const
+{
+	// Multithreading (speed up 30%)
+    std::thread line_tracer (&RayTracer::LineTrace, this, start_position, end_position, std::ref(records));
+    std::thread reflect_tracer (&RayTracer::ReflectTrace, this, start_position, end_position, std::ref(records));
+
+    line_tracer.join();
+    reflect_tracer.join();
+}
+
+void RayTracer::GetDrawComponents(const glm::vec3 & start_position, const glm::vec3 & end_position,
+                                  std::vector<Record>& records, std::vector<Object*>& objects) const
 {
 	
 	for (auto record : records) {
@@ -255,361 +208,64 @@ void RayTracer::GetDrawComponents(const glm::vec3 start_position, const glm::vec
 
 }
 
-bool RayTracer::CalculatePathLoss(const glm::vec3 transmitter_position, const glm::vec3 receiver_position, const float frequency, const std::vector<Record>& records, Result& result, Recorder * recorder) const
+bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
+                                  const std::vector<Record>& records,
+                                  Result& result, Recorder* recorder) const
 {
-	if (records.size() == 0) {
-		result.is_valid = false;
-		return false;
-	}
-	result.is_valid = true;
-
-	constexpr float c = 3e8f;
-	const float wave_length = c / frequency;
-
-	const float pi = atan(1.0f) * 4;
-
-	result.direct_path_loss_in_linear = 0.0f;
-	result.reflection_loss_in_linear = 0.0f;
-	result.diffraction_loss_in_linear = 0.0f;
-
-	for (auto record : records) {
-		switch (record.type) {
-		case RecordType::kDirect: {
-
-			const float distance = glm::distance(transmitter_position, receiver_position);
-			float path_loss_linear = 1.0f / pow(4 * pi * distance / wave_length, 2);
-			if (recorder != nullptr) recorder->RecordDirectPath(transmitter_position, frequency, receiver_position, distance, -10 * log10(path_loss_linear));
-			result.direct_path_loss_in_linear = path_loss_linear;
-			break;
-		}
-		case RecordType::kReflect: {
-
-			for (auto reflect_position : record.data) {
-
-				float d1 = glm::distance(reflect_position, transmitter_position);
-				float d2 = glm::distance(reflect_position, receiver_position);
-				Polarization polar = Polarization::TE;
-				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position, polar);
-				float reflection_loss_linear = 1.0f / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
-				if (recorder != nullptr) recorder->RecordRefection(transmitter_position, frequency, receiver_position, reflect_position, polar, ref_coe, -10 * log10(reflection_loss_linear));
-
-				result.reflection_loss_in_linear += 0.8  * reflection_loss_linear;
-			}
-
-			break;
-		}
-		case RecordType::kEdgeDiffraction: {
-			const float distance = glm::distance(transmitter_position, receiver_position);
-			float free_path_loss_in_dB = 10.0f * log10(pow(4.0f * pi * distance * frequency / c, 2));
-			if (record.data.size() == 1) {
-				const glm::vec3 edge_position = record.data[0];
-				// Single Edge Diffraction Calculation
-				float v = CalculateVOfEdge(transmitter_position, edge_position, receiver_position, frequency);
-				float diffraction_loss_in_dB = CalculateDiffractionByV(v);
-
-				float total_loss_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-				if (recorder != nullptr)
-					recorder->RecordSigleEdge(transmitter_position, frequency, receiver_position, edge_position, v, diffraction_loss_in_dB, total_loss_dB);
-				result.diffraction_loss_in_linear = pow(10, -total_loss_dB / 10.0f);
-			}
-			else if (record.data.size() == 2) {
-				// Double Edge Diffraction Calculation
-				const glm::vec3 edge_1_position = record.data[0];
-				const glm::vec3 edge_2_position = record.data[1];
-				std::vector<glm::vec3> edges = record.data;
-				const glm::vec3 nearest_tx_edge = NearestEdgeFromPoint(transmitter_position, edges);
-
-				// Find the max V as single edge V
-				float max_v;
-				glm::vec3 edge_posiiton;
-				const float v1 = CalculateVOfEdge(transmitter_position, edge_1_position, receiver_position, frequency);
-				const float v2 = CalculateVOfEdge(transmitter_position, edge_2_position, receiver_position, frequency);
-				if (v1 > v2) {
-					edge_posiiton = edge_1_position;
-					max_v = v1;
-				}
-				else {
-					edge_posiiton = edge_2_position;
-					max_v = v2;
-				}
-				float diffraction_loss_in_dB = CalculateDiffractionByV(max_v);
-				float total_loss_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-				if (recorder != nullptr)
-					recorder->RecordSigleEdge(transmitter_position, frequency, receiver_position, edge_posiiton, max_v, diffraction_loss_in_dB, total_loss_dB);
-
-				result.diffraction_loss_in_linear = pow(10, -total_loss_dB / 10.0f);
-			}
-			else if (record.data.size() == 3) {
-				std::vector<glm::vec3> edges = record.data;
-				glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
-				glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
-				glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
-
-
-				float v1 = CalculateVOfEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float v2 = CalculateVOfEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float v3 = CalculateVOfEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-				float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float c3 = CalculateSingleKnifeEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-				std::pair<float, float> correction_cosines;
-				CalculateCorrectionCosines(transmitter_position, record.data, receiver_position, correction_cosines);
-				float c_1_cap = (6.0f - c2 + c1) * correction_cosines.first;
-				float c_2_cap = (6.0f - c2 + c3) * correction_cosines.second;
-
-				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
-
-				float total_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-				if (recorder != nullptr)
-					recorder->RecordMultipleEdges(transmitter_position, frequency, receiver_position,
-						near_tramsitter_edge_position, center_edge_position, near_receiver_edge_position,
-						v1, v2, v3, c1, c2, c3, c_1_cap, c_2_cap, diffraction_loss_in_dB, total_loss_in_dB);
-
-				result.diffraction_loss_in_linear = pow(10, -total_loss_in_dB / 10.0f);
-			}
-			else {
-				std::set<float> highest_v;
-				std::map<float, glm::vec3> edges_dict;
-				for (auto edge : record.data) {
-					float temp_v = CalculateVOfEdge(transmitter_position, edge, receiver_position, frequency);
-					edges_dict[temp_v] = edge;
-					highest_v.insert(temp_v);
-				}
-				std::vector<glm::vec3> edges; int i = 0;
-				// choose the highest v from the highest_v
-				for (auto ritr = highest_v.rbegin(); ritr != highest_v.rend(); ++ritr) {
-					edges.push_back(edges_dict[*ritr]);
-					if (i++ == 2) break;
-				}
-
-				glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
-				glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
-				glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
-
-				float v1 = CalculateVOfEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float v2 = CalculateVOfEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float v3 = CalculateVOfEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-				float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float c3 = CalculateSingleKnifeEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-
-				std::pair<float, float> correction_cosines;
-				CalculateCorrectionCosines(transmitter_position, record.data, receiver_position, correction_cosines);
-				float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
-				float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
-				float total_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-
-				if (recorder != nullptr)
-					recorder->RecordMultipleEdges(transmitter_position, frequency, receiver_position,
-						near_tramsitter_edge_position, center_edge_position, near_receiver_edge_position,
-						v1, v2, v3, c1, c2, c3, c_1_cap, c_2_cap, diffraction_loss_in_dB, total_loss_in_dB);
-
-				result.diffraction_loss_in_linear = pow(10, -total_loss_in_dB / 10.0f);
-
-			}
-			break;
-
-		}
-		}
-	}
-
-	// Summarize Calculation
-	result.total_loss = 10.0f * log10(result.direct_path_loss_in_linear + result.diffraction_loss_in_linear + result.reflection_loss_in_linear);
-	return true;
-}
-
-bool RayTracer::CalculatePathLossWithGain(Transmitter* transmitter, const glm::vec3 receiver_position, const std::vector<Record>& records, Result& result, Recorder* recorder) const
-{
-	if (records.size() == 0) { 
+    // Validation of Result
+	if (records.empty()) {
 		result.is_valid = false;
 		return false; 
 	}
 	result.is_valid = true;
-	const glm::vec3 transmitter_position = transmitter->GetPosition();
-	const float frequency = transmitter->GetFrequency();
+    // Initialize the result
+    result.total_received_power = 0.0f;
+    result.direct.receive_power = 0.0f;
+    result.reflection.receive_powers = {};
+    result.diffraction.receive_power = 0.0f;
 
-	constexpr float c = 3e8f;
-	const float wave_length = c / frequency;
+	// Prepare Threads
+	std::vector<std::thread> threads;
+    for (auto & record: records){
+        switch (record.type){
+            case RecordType::kDirect:{
+                std::thread direct_thread(&RayTracer::CalculateDirectPath, this,
+                                          record, std::ref(result),
+                                          transmitter, receiver);
+                threads.push_back(std::move(direct_thread));
+            }break;
+            case RecordType::kReflect:{
+                std::thread reflect_thread(&RayTracer::CalculateReflections, this,
+                                           record, std::ref(result),
+                                           transmitter, receiver);
+                threads.push_back(std::move(reflect_thread));
+            }break;
+            case RecordType::kEdgeDiffraction:{
+                std::thread diffract_thread(&RayTracer::CalculateDiffraction, this,
+                                            record, std::ref(result),
+                                            transmitter, receiver);
+                threads.push_back(std::move(diffract_thread));
+            }
+        }
 
-	const float pi = atan(1.0f) * 4;
+    }
 
-	result.direct_path_loss_in_linear = 0.0f;
-	result.reflection_loss_in_linear = 0.0f;
-	result.diffraction_loss_in_linear = 0.0f;
+    // Calculate Each Record.
+    for (std::thread & thread: threads){
+        if(thread.joinable()) thread.join();
+    }
 
-	for (auto record : records) {
-		switch (record.type) {
-		case RecordType::kDirect: {
-
-			const float tx_gain_in_dB = transmitter->GetTransmitterGain(receiver_position);
-			const float tx_gain_in_linear = pow(10, tx_gain_in_dB / 10.0f);
-
-			const float distance = glm::distance(transmitter_position, receiver_position);
-			float path_loss_linear = 1.0f / pow(4 * pi * distance / wave_length, 2);
-			if (recorder != nullptr) recorder->RecordDirectPath(transmitter_position, frequency, receiver_position, distance, -10*log10(path_loss_linear));
-			result.direct_path_loss_in_linear = tx_gain_in_linear * path_loss_linear;
-			break;
-		}
-		case RecordType::kReflect: {
-
-			for (auto reflect_position : record.data) {
-
-				const float tx_gain_in_dB = transmitter->GetTransmitterGain(reflect_position);
-				const float tx_gain_in_linear = pow(10, tx_gain_in_dB / 10.0f);
-				float d1 = glm::distance(reflect_position, transmitter_position);
-				float d2 = glm::distance(reflect_position, receiver_position);
-				Polarization polar = TE;
-				const float ref_coe = CalculateReflectionCofficient(transmitter_position, receiver_position, reflect_position, polar);
-				float reflection_loss_linear = 1.0f / (pow(4 * pi * (d1 + d2) / (wave_length * ref_coe), 2));
-				if (recorder != nullptr) 
-					recorder->RecordRefection(transmitter_position, frequency, receiver_position, reflect_position, polar, ref_coe, -10*log10(reflection_loss_linear));
-				result.reflection_loss_in_linear += 0.8 * tx_gain_in_linear * reflection_loss_linear;
-			}
-
-			break;
-		}
-		case RecordType::kEdgeDiffraction: {
-			const float distance = glm::distance(transmitter_position, receiver_position);
-			float free_path_loss_in_dB = 10.0f * log10(pow(4.0f * pi * distance * frequency / c, 2));
-			if (record.data.size() == 1) {
-				const glm::vec3 edge_position = record.data[0];
-				// Single Edge Diffraction Calculation
-				const float tx_gain_in_dB = transmitter->GetTransmitterGain(edge_position);
-				float v = CalculateVOfEdge(transmitter_position, edge_position, receiver_position, frequency);
-				float diffraction_loss_in_dB = CalculateDiffractionByV(v);
-
-				float total_loss_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-				if (recorder != nullptr)
-					recorder->RecordSigleEdge(transmitter_position, frequency, receiver_position, edge_position, v, diffraction_loss_in_dB, total_loss_dB);
-
-				total_loss_dB -= tx_gain_in_dB;
-				result.diffraction_loss_in_linear = pow(10, -total_loss_dB / 10.0f);
-			}
-			else if (record.data.size() == 2) {
-				// Double Edge Diffraction Calculation
-				const glm::vec3 edge_1_position = record.data[0];
-				const glm::vec3 edge_2_position = record.data[1];
-				std::vector<glm::vec3> edges = record.data;
-				const glm::vec3 nearest_tx_edge = NearestEdgeFromPoint(transmitter_position, edges);
-				const float tx_gain_in_dB = transmitter->GetTransmitterGain(nearest_tx_edge);
-
-				// Find the max V as single edge V
-				float max_v;
-				glm::vec3 edge_posiiton;
-				const float v1 = CalculateVOfEdge(transmitter_position, edge_1_position, receiver_position, frequency);
-				const float v2 = CalculateVOfEdge(transmitter_position, edge_2_position, receiver_position, frequency);
-				if ( v1 > v2 ) {
-					edge_posiiton = edge_1_position;
-					max_v = v1;
-				}
-				else {
-					edge_posiiton = edge_2_position;
-					max_v = v2;
-				}
-				float diffraction_loss_in_dB = CalculateDiffractionByV(max_v);
-				float total_loss_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-				if (recorder != nullptr)
-					recorder->RecordSigleEdge(transmitter_position, frequency, receiver_position, edge_posiiton, max_v, diffraction_loss_in_dB, total_loss_dB);
-
-				total_loss_dB -= tx_gain_in_dB;
-				result.diffraction_loss_in_linear = pow(10, -total_loss_dB / 10.0f);
-			}
-			else if (record.data.size() == 3) {
-				std::vector<glm::vec3> edges = record.data;
-				glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
-				glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
-				glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
-
-				const float tx_gain_in_dB = transmitter->GetTransmitterGain(near_tramsitter_edge_position);
-
-				float v1 = CalculateVOfEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float v2 = CalculateVOfEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float v3 = CalculateVOfEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-				float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float c3 = CalculateSingleKnifeEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-				std::pair<float, float> correction_cosines;
-				CalculateCorrectionCosines(transmitter_position, record.data, receiver_position, correction_cosines);
-				float c_1_cap = (6.0f - c2 + c1) * correction_cosines.first;
-				float c_2_cap = (6.0f - c2 + c3) * correction_cosines.second;
-
- 				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
-	
-				float total_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-				if (recorder != nullptr)
-					recorder->RecordMultipleEdges(transmitter_position, frequency, receiver_position,
-						near_tramsitter_edge_position, center_edge_position, near_receiver_edge_position,
-						v1, v2, v3, c1, c2, c3, c_1_cap, c_2_cap, diffraction_loss_in_dB, total_loss_in_dB);
-
-				total_loss_in_dB -= tx_gain_in_dB;
-				result.diffraction_loss_in_linear = pow(10, -total_loss_in_dB / 10.0f);
-			}
-			else {
-				std::set<float> highest_v;
-				std::map<float, glm::vec3> edges_dict;
-				for (auto edge : record.data) {
-					float temp_v = CalculateVOfEdge(transmitter_position, edge, receiver_position, frequency);
-					edges_dict[temp_v] = edge;
-					highest_v.insert(temp_v);
-				}
-				std::vector<glm::vec3> edges; int i = 0;
-				// choose the highest v from the highest_v
-				for (auto ritr = highest_v.rbegin(); ritr != highest_v.rend(); ++ritr) {
-					edges.push_back(edges_dict[*ritr]);
-					if (i++ == 2) break;
-				}
-
-				glm::vec3 near_tramsitter_edge_position = NearestEdgeFromPoint(transmitter_position, edges);
-				glm::vec3 center_edge_position = NearestEdgeFromPoint(near_tramsitter_edge_position, edges);
-				glm::vec3 near_receiver_edge_position = NearestEdgeFromPoint(receiver_position, edges);
-
-				const float tx_gain_in_dB = transmitter->GetTransmitterGain(near_tramsitter_edge_position);
-
-				float v1 = CalculateVOfEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float v2 = CalculateVOfEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float v3 = CalculateVOfEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-				float c1 = CalculateSingleKnifeEdge(transmitter_position, near_tramsitter_edge_position, center_edge_position, frequency);
-				float c2 = CalculateSingleKnifeEdge(transmitter_position, center_edge_position, receiver_position, frequency);
-				float c3 = CalculateSingleKnifeEdge(center_edge_position, near_receiver_edge_position, receiver_position, frequency);
-
-
-				std::pair<float, float> correction_cosines;
-				CalculateCorrectionCosines(transmitter_position, record.data, receiver_position, correction_cosines);
-				float c_1_cap = (6 - c2 + c1) * correction_cosines.first;
-				float c_2_cap = (6 - c2 + c3) * correction_cosines.second;
-				float diffraction_loss_in_dB = (c2 + c1 + c3 - c_1_cap - c_2_cap);
-				float total_loss_in_dB = diffraction_loss_in_dB + free_path_loss_in_dB;
-
-				if (recorder != nullptr)
-					recorder->RecordMultipleEdges(transmitter_position, frequency, receiver_position,
-						near_tramsitter_edge_position, center_edge_position, near_receiver_edge_position,
-						v1, v2, v3, c1, c2, c3, c_1_cap, c_2_cap, diffraction_loss_in_dB, total_loss_in_dB);
-
-				total_loss_in_dB -= tx_gain_in_dB;
-				result.diffraction_loss_in_linear = pow(10, -total_loss_in_dB / 10.0f);
-
-			}
-			break;
-
-		}
-		}
-	}
-
-	// Summarize Calculation
-	result.total_loss = 10.0f * log10(result.direct_path_loss_in_linear + result.diffraction_loss_in_linear + result.reflection_loss_in_linear);
+    // Summary All Results.
+    result.total_received_power =   result.direct.receive_power + result.diffraction.receive_power;
+    for(float rec_pow: result.reflection.receive_powers){
+        result.total_received_power += rec_pow;
+    }
+    std::cout << std::endl;
 	return true;
 }
 
 
-bool RayTracer::IsDirectHit(const glm::vec3 start_position,const glm::vec3 end_position) const
+bool RayTracer::IsDirectHit(const glm::vec3 & start_position,const glm::vec3 & end_position) const
 {
 	// get direction from start point to end point
 	glm::vec3 direction = glm::normalize(end_position - start_position);
@@ -624,9 +280,9 @@ bool RayTracer::IsDirectHit(const glm::vec3 start_position,const glm::vec3 end_p
 	return true;
 }
 
-bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const
+bool RayTracer::IsReflected(const glm::vec3 & start_position, const glm::vec3 & end_position, std::vector<glm::vec3>& reflected_points) const
 {
-	// match the co-exist triangles between two points
+	// Match the co-exist triangles between two points
 	std::vector<const Triangle*> check_triangles;
 
 	// Searching for check triangles
@@ -635,7 +291,7 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 		std::map<Triangle *, bool> start_hits = ScanHit(start_position); // it won't scan if the point is already checked
 		std::map<Triangle*, bool> end_hits = ScanHit(end_position);
 		for (auto const& [triangle, exist_value] : start_hits)
-			if (end_hits[triangle] == true) check_triangles.push_back(triangle);
+			if (end_hits[triangle]) check_triangles.push_back(triangle);
 	}
 	else {
 		check_triangles = map_->GetObjects();
@@ -646,7 +302,8 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 	for (const Triangle* matched_triangle : check_triangles) {
 		// reflect one of the point on the triangle plane
 		glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
-		// trace from the reflected point 
+
+		// Trace from the reflected point
 		glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
 
 		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
@@ -654,7 +311,6 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 
 		glm::vec3 reflection_point_position;
 		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
-
 			for (auto const [distance, triangle] : hit_triangles) {
 				if (triangle == matched_triangle) {
 					reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
@@ -670,60 +326,27 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 	return true;
 }
 
-bool RayTracer::IsReflected( Transmitter * transmitter, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const
+float RayTracer::CalculateReflectionCoefficient(glm::vec3 start_position, glm::vec3 end_position,
+                                                glm::vec3 reflection_position, Polarization polar)
 {
-	// match the co-exist triangles between two points
-
-	glm::vec3 start_position = transmitter->GetPosition();
-	if (transmitter->hit_triangles.empty()) transmitter->hit_triangles = ScanHitVec(start_position);
-	
-	//std::vector<Triangle*> & check_triangles = transmitter->hit_triangles;
-
-	// check the reflection points on matches triangles
-
-	for (const Triangle* matched_triangle : transmitter->hit_triangles) { // why with scan triangle is much slower???
-		// reflect one of the point on the triangle plane
-		glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
-		// trace from the reflected point 
-		glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
-
-		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
-		std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
-
-
-		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
-
-			for (auto const [distance, triangle] : hit_triangles) {
-				if (triangle == matched_triangle) {
-					glm::vec3 reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
-					if (IsDirectHit(reflection_point_position, end_position) &&
-						IsDirectHit(reflection_point_position, start_position))
-						reflected_points.push_back(reflection_point_position);
-
-					break;
-				}
-			}
-
-		}
-	}
-	if (reflected_points.empty()) return false;
-	return true;
-}
-
-float RayTracer::CalculateReflectionCofficient(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 reflection_position, Polarization polar) const
-{
+    // Directions.
 	glm::vec3 ref_to_start_direction = glm::normalize(start_position - reflection_position);
 	glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflection_position);
-	float angle_1 = glm::angle(ref_to_start_direction, ref_to_end_direction)/2.0f; //Angle between the reflection direction to the normal of surface
+
+    //Angle between the reflection direction to the normal of surface
+    float angle_1 = glm::angle(ref_to_start_direction, ref_to_end_direction)/2.0f;
 
 	// Calculate the angle_2
-	constexpr float n1 = 1.0003f; // air
-	constexpr float n2 = 5.31f; // concrete's relative permittivity according to ITU-R, P.2040-1. (for 1-100 GHz)
-	constexpr float c = 3e8;
+	constexpr float n1 = AIR_IOR; // air
+	constexpr float n2 = CONCRETE_IOR; // concrete
+	constexpr float c = LIGHT_SPEED;
 	float c1 = c / sqrt(n1);
 	float c2 = c / sqrt(n2);
-	float angle_2 = asin(c2*sin(angle_1)/c1); // Refraction angle according to Snell's law
 
+    // Refraction angle according to Snell's law.
+	float angle_2 = asin(c2*sin(angle_1)/c1);
+
+	// Calculate depends on Polarization.
 	switch (polar) {
 	case TE: {
 		if (sqrt(abs(n1 / n2)) * sin(angle_1) >= 1) return 1.0f;
@@ -739,7 +362,7 @@ float RayTracer::CalculateReflectionCofficient(glm::vec3 start_position, glm::ve
 }
 
 
-glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec3 points) const
+glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec3 points)
 {
 	/// The reflection point on the triangle plane can be calculated as following:
 
@@ -849,7 +472,7 @@ bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_posi
 	return true;
 }
 
-glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3>& edges_points) const
+glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3>& edges_points)
 {
 	std::map<float, glm::vec3> distance_from_point;
 	for (auto edge_point : edges_points) { // implemenet to function
@@ -934,11 +557,12 @@ float RayTracer::CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 ed
 	return CalculateDiffractionByV(v);
 }
 
-float RayTracer::CalculateDiffractionByV(float v) const {
+float RayTracer::CalculateDiffractionByV(float v) {
 	return 6.9f + 20.0 * log10(sqrt(pow(v - 0.1, 2) + 1) + v - 0.1);
 }
 
-float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) const {
+float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position,
+                                  glm::vec3 end_position, float frequency) {
 	
 	float wave_length = 3e8 / (frequency);
 	glm::vec3 start_to_end_direction = glm::normalize(end_position - start_position);
@@ -959,7 +583,7 @@ float RayTracer::CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_posit
 }
 
 void RayTracer::CalculateCorrectionCosines(	glm::vec3 start_position, std::vector<glm::vec3> edges,
-											glm::vec3 end_position, std::pair<float, float>& calculated_cosines) const
+											glm::vec3 end_position, std::pair<float, float>& calculated_cosines)
 {
 	glm::vec3 p1 = start_position;
 	glm::vec3 p2 = NearestEdgeFromPoint(p1, edges);
@@ -975,4 +599,233 @@ void RayTracer::CalculateCorrectionCosines(	glm::vec3 start_position, std::vecto
 	calculated_cosines.first = sqrt((d1 * (d3 + d4)) / ((d1 + d2) * (d2 + d3 + d4)));
 	calculated_cosines.second = sqrt((d4 * (d1 + d2)) / ((d3 + d4) * (d1 + d2 + d3)));
 	return;
+}
+
+void RayTracer::CalculateDirectPath(const Record &record, Result &result, Transmitter *transmitter, Receiver *receiver) const {
+    auto tx_pos = transmitter->GetPosition();
+    auto tx_freq = transmitter->GetFrequency();
+    auto tx_power = transmitter->GetTransmitPower();
+    auto rx_pos = receiver->GetPosition();
+    auto & tx_gain = transmitter->GetTransmitterGain(rx_pos);
+    auto & rx_gain = receiver->GetReceiverGain(tx_pos);
+    result.direct.tx_gain = tx_gain;
+    result.direct.rx_gain = rx_gain;
+    auto distance = glm::distance(tx_pos, rx_pos);
+
+    // Friis's Equation
+    float free_space_loss = 20*log10(distance) + 20*log10(tx_freq) - 147.55f;
+    result.direct.receive_power = tx_power + tx_gain + rx_gain - free_space_loss;
+
+    // Calculate delay
+    result.direct.delay = distance/LIGHT_SPEED;
+}
+
+void RayTracer::CalculateReflections(const Record &record, Result &result, Transmitter *transmitter, Receiver *receiver) const {
+    // Get Transmitter's Info.
+    const auto & tx_pos = transmitter->GetPosition();
+    const auto & tx_freq = transmitter->GetFrequency();
+    const auto & tx_power = transmitter->GetTransmitPower();
+
+    // Get Receiver's Info
+    const auto & rx_pos = receiver->GetPosition();
+
+    // Prepare Threads
+    std::vector<std::thread> threads;
+    for (auto & reflect_position : record.data) {
+        // Get gains before compute.
+        const float & tx_gain = transmitter->GetTransmitterGain(reflect_position);
+        const float & rx_gain = receiver->GetReceiverGain(reflect_position);
+        // construct a thread.
+        std::thread reflection_thread(&RayTracer::CalculateReflection, this,
+                                      tx_pos, rx_pos, tx_freq, tx_gain,
+                                      rx_gain, tx_power, reflect_position, std::ref(result));
+        threads.push_back(std::move(reflection_thread));
+    }
+
+    // Run Threads
+    for (std::thread & thread: threads)
+        if (thread.joinable()) thread.join();
+}
+
+void RayTracer::CalculateDiffraction(const Record &record, Result &result, Transmitter *transmitter, Receiver *receiver) const {
+    // Get Transmitter's Info
+    const auto &tx_pos = transmitter->GetPosition();
+    const auto &tx_freq = transmitter->GetFrequency();
+    const auto &tx_power = transmitter->GetTransmitPower();
+    // Get Receiver's Info
+    const auto &rx_pos = receiver->GetPosition();
+
+    // Calculate Free Space Path Loss
+    const float distance = glm::distance(tx_pos, rx_pos);
+    float free_space_loss = 20 * log10(distance) + 20 * log10(tx_freq) - 147.55f;
+
+    if (record.data.size() == 1) {
+        // Get Edge Position from Record.
+        const glm::vec3 edge_position = record.data[0];
+
+        // Calculate the gain.
+        const auto &tx_gain = transmitter->GetTransmitterGain(edge_position);
+        const auto &rx_gain = receiver->GetReceiverGain(edge_position);
+        result.diffraction.tx_gain = tx_gain;
+        result.diffraction.rx_gain = rx_gain;
+
+        // Calculate V
+        float v = CalculateVOfEdge(tx_pos, edge_position, rx_pos, tx_freq);
+
+        // Calculate Diffraction Loss from V and FSPL.
+        float diff_loss = free_space_loss + CalculateDiffractionByV(v);
+
+        // Calculate the receive power
+        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diff_loss;
+
+        // Calculate Delay
+        float distance = glm::distance(edge_position, tx_pos) +
+                         glm::distance(edge_position, rx_pos);
+
+        result.diffraction.delay = distance / LIGHT_SPEED;
+    } 
+    else if (record.data.size() == 2) {
+        // Copy Edges to stack.
+        std::vector<glm::vec3> edges = record.data;
+        const glm::vec3 nearest_tx_edge = NearestEdgeFromPoint(tx_pos, edges);
+        const glm::vec3 nearest_rx_edge = edges.front();
+        // Calculate tx, rx gains
+        const float &tx_gain = transmitter->GetTransmitterGain(nearest_tx_edge);
+        const float &rx_gain = receiver->GetReceiverGain(nearest_rx_edge);
+
+        // Find the max V as single edge V
+        glm::vec3 edge_posiiton;
+        const float v1 = CalculateVOfEdge(tx_pos, nearest_tx_edge, rx_pos, tx_freq);
+        const float v2 = CalculateVOfEdge(tx_pos, nearest_rx_edge, rx_pos, tx_freq);
+        const float max_v = std::max({v1, v2});
+        float diff_loss = free_space_loss + CalculateDiffractionByV(max_v);
+
+        // Calculate Receive Power
+        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diff_loss;
+
+        // Calculate Delay
+        float distance = glm::distance(tx_pos, nearest_tx_edge) + glm::distance(nearest_tx_edge, nearest_rx_edge)
+                         + glm::distance(nearest_rx_edge, rx_pos);
+        result.diffraction.delay = distance / LIGHT_SPEED;
+    } 
+    else if (record.data.size() == 3) {
+        // Copy Edges to find edge positions.
+        std::vector<glm::vec3> edges = record.data;
+        glm::vec3 near_tx_pos = NearestEdgeFromPoint(tx_pos, edges);
+        glm::vec3 center_pos = NearestEdgeFromPoint(near_tx_pos, edges);
+        glm::vec3 near_rx_pos = NearestEdgeFromPoint(rx_pos, edges);
+
+        // Calculate tx and rx gain.
+        const float &tx_gain = transmitter->GetTransmitterGain(near_tx_pos);
+        const float &rx_gain = receiver->GetReceiverGain(near_rx_pos);
+
+        // Calculate V1, V2, and V2.
+        float v1 = CalculateVOfEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
+        float v2 = CalculateVOfEdge(tx_pos, center_pos, rx_pos, tx_freq);
+        float v3 = CalculateVOfEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
+
+        // Calculate C1, C2, and C3.
+        float c1 = CalculateSingleKnifeEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
+        float c2 = CalculateSingleKnifeEdge(tx_pos, center_pos, rx_pos, tx_freq);
+        float c3 = CalculateSingleKnifeEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
+
+        // Calculate Corrections.
+        std::pair<float, float> correction_cosines;
+        CalculateCorrectionCosines(tx_pos, record.data, rx_pos, correction_cosines);
+        float c_1_cap = (6.0f - c2 + c1) * correction_cosines.first;
+        float c_2_cap = (6.0f - c2 + c3) * correction_cosines.second;
+
+        // Calculate Diffraction Loss
+        float diffraction_loss = free_space_loss + (c2 + c1 + c3 - c_1_cap - c_2_cap);
+
+        // Calculate Received Power
+        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diffraction_loss;
+
+        // Calculate Delay
+        float d1 = glm::distance(tx_pos, near_tx_pos);
+        float d2 = glm::distance(near_tx_pos, center_pos);
+        float d3 = glm::distance(center_pos, near_rx_pos);
+        float d4 = glm::distance(near_rx_pos, rx_pos);
+        float total_distance = d1 + d2 + d3 + d4;
+        result.diffraction.delay = total_distance / LIGHT_SPEED;
+    } 
+    else {
+        // Find highest Vs in the edges
+        std::set<float> highest_v;
+        std::map<float, glm::vec3> edges_dict;
+        for (auto edge : record.data) {
+            float temp_v = CalculateVOfEdge(tx_pos, edge, rx_pos, tx_freq);
+            edges_dict[temp_v] = edge;
+            highest_v.insert(temp_v);
+        }
+        std::vector<glm::vec3> edges;
+        int i = 0;
+        // choose the highest v from the highest_v
+        for (auto ritr = highest_v.rbegin(); ritr != highest_v.rend(); ++ritr) {
+            edges.push_back(edges_dict[*ritr]);
+            if (i++ == 2) break;
+        }
+        glm::vec3 near_tx_pos = NearestEdgeFromPoint(tx_pos, edges);
+        glm::vec3 center_pos = NearestEdgeFromPoint(near_tx_pos, edges);
+        glm::vec3 near_rx_pos = NearestEdgeFromPoint(rx_pos, edges);
+
+        // Calculate tx and rx gain.
+        const float &tx_gain = transmitter->GetTransmitterGain(near_tx_pos);
+        const float &rx_gain = receiver->GetReceiverGain(near_rx_pos);
+
+        // Calculate V1, V2, and V2.
+        float v1 = CalculateVOfEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
+        float v2 = CalculateVOfEdge(tx_pos, center_pos, rx_pos, tx_freq);
+        float v3 = CalculateVOfEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
+
+        // Calculate C1, C2, and C3.
+        float c1 = CalculateSingleKnifeEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
+        float c2 = CalculateSingleKnifeEdge(tx_pos, center_pos, rx_pos, tx_freq);
+        float c3 = CalculateSingleKnifeEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
+
+        // Calculate Corrections.
+        std::pair<float, float> correction_cosines;
+        CalculateCorrectionCosines(tx_pos, record.data, rx_pos, correction_cosines);
+        float c_1_cap = (6.0f - c2 + c1) * correction_cosines.first;
+        float c_2_cap = (6.0f - c2 + c3) * correction_cosines.second;
+
+        // Calculate Diffraction Loss
+        float diffraction_loss = free_space_loss + (c2 + c1 + c3 - c_1_cap - c_2_cap);
+
+        // Calculate Received Power
+        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diffraction_loss;
+
+        // Calculate Delay
+        float d1 = glm::distance(tx_pos, near_tx_pos);
+        float d2 = glm::distance(near_tx_pos, center_pos);
+        float d3 = glm::distance(center_pos, near_rx_pos);
+        float d4 = glm::distance(near_rx_pos, rx_pos);
+        float total_distance = d1 + d2 + d3 + d4;
+        result.diffraction.delay = total_distance / LIGHT_SPEED;
+    }
+}
+
+void RayTracer::CalculateReflection( const glm::vec3 & tx_position, const glm::vec3 & rx_position,
+                                     const float & tx_freq, const float & tx_gain,
+                                     const float & rx_gain, const float & tx_power,
+                                     const glm::vec3 & ref_position, Result & result) const {
+
+    // Get distances
+    float d1 = glm::distance(tx_position, ref_position);
+    float d2 = glm::distance(rx_position, ref_position);
+    float total_distance = d1+d2; // total distance
+
+    constexpr Polarization polar = TE;
+    // Store tx, rx gains
+    result.reflection.tx_gains.push_back(tx_gain);
+    result.reflection.rx_gains.push_back(rx_gain);
+    // Calculate Reflection Coefficient.
+    const float ref_coe = CalculateReflectionCoefficient(tx_position, rx_position,
+                                                        ref_position, polar);
+    // Calculate Receive Power
+    float reflection_loss = 20*log10(total_distance) + 20*log10(tx_freq) - 20*log10(abs(ref_coe)) - 147.55f;
+    result.reflection.receive_powers.push_back(tx_power + tx_gain + rx_gain - reflection_loss);
+
+    // Calculate delay
+    result.reflection.delays.push_back(total_distance/LIGHT_SPEED);
 }

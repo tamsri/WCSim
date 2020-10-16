@@ -16,7 +16,7 @@ public:
 	Cube(Transform transform, Shader * shader);
 	Cube(Transform transform);
 
-	virtual void Draw() const;
+	void Draw() const override;
 private:
 	unsigned int vao_, vbo_, ebo_;
 

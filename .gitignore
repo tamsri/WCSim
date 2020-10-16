@@ -4,3 +4,4 @@ out/
 .vs/
 build/
 vs19/
+cmake-build-debug/

@@ -17,18 +17,38 @@ enum class RecordType : int {
 	kEdgeDiffraction
 };
 
+struct DirectResult{
+    float receive_power;
+    float delay;
+    float tx_gain;
+    float rx_gain;
+};
+
+struct ReflectionResult{
+    std::vector<float> receive_powers;
+    std::vector<float> delays;
+    std::vector<float> tx_gains;
+    std::vector<float> rx_gains;
+};
+
+struct DiffractionResult{
+    float receive_power;
+    float delay;
+    float tx_gain;
+    float rx_gain;
+};
 struct Result {
-	bool is_valid; // in the case where point is not receivable, the result is invalid
+	// Validation of Result.
+    bool is_valid;
+	// Direct Path Result.
+	DirectResult direct;
+    // Reflection Results
+	ReflectionResult reflection;
+    // Diffraction Result
+	DiffractionResult diffraction;
+    // Total Loss
+	float total_received_power;
 
-	float direct_path_loss_in_linear;
-	float reflection_loss_in_linear;
-	float diffraction_loss_in_linear;
-
-	float direct_path_tx_gain;
-	std::vector<std::pair<glm::vec3, float>> reflection_loss_gain;
-	float diffraction_loss_gain;
-	
-	float total_loss;
 };
 
 struct Record {
@@ -43,10 +63,6 @@ struct Point {
 	glm::vec3 position;
 
 	std::map<const Triangle*, bool> hit_triangles;
-
-	//std::unordered_map <Point*, std::vector<const Record *>> neighbour_record;
-
 };
-//typedef std::unordered_map<glm::vec3, Point*> point_map;
 
 #endif // !RECORD_H_

@@ -1,20 +1,18 @@
 #include "receiver.hpp"
 
-#include <iostream>
-
 #include "object.hpp"
 #include "ray_tracer.hpp"
 #include "transmitter.hpp"
 #include "recorder.hpp"
-
-#include <glm/gtx/string_cast.hpp>
 
 unsigned int Receiver::global_id_ = 0;
 Receiver::Receiver(Transform transform, RayTracer* ray_tracer):	id_(global_id_++),
 														transform_(transform),
 														ray_tracer_(ray_tracer),
 														transmitter_(nullptr),
-														recorder_(nullptr){
+														recorder_(nullptr),
+														velocity_(0),
+														move_speed_(0){
 	Reset();
 }
 
@@ -23,7 +21,9 @@ Receiver::Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * tr
 	transform_(transform),	
 	ray_tracer_(ray_tracer),
 	transmitter_(transmitter),
-	recorder_(nullptr)
+	recorder_(nullptr),
+    velocity_(0),
+    move_speed_(0)
 {
 	Reset();
 }
@@ -58,40 +58,26 @@ void Receiver::AddRecorder(Recorder* recorder)
 	recorder_ = recorder;
 }
 
-Result Receiver::GetResult() const
+const Result & Receiver::GetResult() const
 {
 	return result_;
 }
 
-glm::vec3 Receiver::GetPosition() const
+const glm::vec3 & Receiver::GetPosition() const
 {
-	return glm::vec3(transform_.position);
+	return transform_.position;
 }
 
 void Receiver::UpdateResult()
 {
 	if (transmitter_ == nullptr) return;
 	const glm::vec3 receiver_position = transform_.position;
-	const glm::vec3 transmitter_positon = transmitter_->GetPosition();
-	float transmitter_frequency = transmitter_->GetFrequency();
-
+	const glm::vec3 transmitter_position = transmitter_->GetPosition();
 
 	records_.clear();
-	ray_tracer_->Trace(transmitter_positon, receiver_position, records_);
-	
-	ray_tracer_->CalculatePathLoss(transmitter_positon, receiver_position, transmitter_frequency, records_, result_, recorder_ );
+	ray_tracer_->Trace(transmitter_position, receiver_position, records_);
+	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_, recorder_);
 
-	/*if (ray_tracer_->CalculatePathLossWithGain(transmitter_, receiver_position, records_, result_, recorder_)) {
-		std::cout << " ------------------------------- \n";
-		std::cout << "Receiver Position: " << glm::to_string(receiver_position) << std::endl;
-		std::cout << "Transmitter Position: " << glm::to_string(transmitter_positon) << std::endl;
-		std::cout << "Direct Distance: " << glm::distance(transmitter_positon, receiver_position) << std::endl;
-		std::cout << "Direct Path Loss: " << result_.direct_path_loss_in_linear << ", dB: " << 10.0 * log10(result_.direct_path_loss_in_linear) << std::endl;
-		std::cout << "Reflect Path Loss: " << result_.reflection_loss_in_linear << ", dB: " << 10.0 * log10(result_.reflection_loss_in_linear) << std::endl;
-		std::cout << "Diffraction Loss: " << result_.diffraction_loss_in_linear << ", dB: " << 10.0 * log10(result_.diffraction_loss_in_linear) << std::endl;
-		std::cout << "Total Loss: " << result_.total_loss << " dB\n";
-		std::cout << " ------------------------------- \n";
-	}*/
 }
 void Receiver::UpdateAndVisualize()
 {
@@ -155,7 +141,7 @@ void Receiver::Move(Direction direction,float delta_time) {
 		up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		transform_.position -= up_direction * distance;
 		break;
-	};
+	}
 	UpdateResult();
 }
 
@@ -170,4 +156,9 @@ void Receiver::DrawObjects(Camera * main_camera)
 {
 	for (auto object : objects_)
 		object->DrawObject(main_camera);
+}
+
+const float & Receiver::GetReceiverGain(const glm::vec3 & near_rx_position) const {
+    // TODO: Implement Receiver Gain.
+    return 0.0f;
 }

@@ -30,10 +30,13 @@ public:
 
 	void AddRecorder(Recorder* recorder);
 
-	Result GetResult() const;
-	glm::vec3 GetPosition() const;
+	const float & GetReceiverGain(const glm::vec3 & position) const;
+
+	const Result & GetResult() const;
+	const glm::vec3 & GetPosition() const;
+
 	// Actions
-	void MoveTo(const glm::vec3 position);
+	void MoveTo(const glm::vec3 near_rx_position);
 	void Move(Direction direction, float delta_time);
 
 	// Visualization

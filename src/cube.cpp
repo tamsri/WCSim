@@ -1,12 +1,10 @@
 #include "cube.hpp"
 
 #include "glad/glad.h"
-#include "glfw/glfw3.h"
-
-#include "transform.hpp"
+#include "GLFW/glfw3.h"
 
 
-Cube::Cube(Transform transform, Shader* shader)
+Cube::Cube(Transform transform, Shader* shader) : vao_(0), vbo_(0), ebo_(0)
 {
 
 	transform_.position = transform.position;
@@ -79,7 +77,7 @@ Cube::Cube(Transform transform, Shader* shader)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
 
 	// safe end
 	glEnableVertexAttribArray(0);
@@ -87,7 +85,7 @@ Cube::Cube(Transform transform, Shader* shader)
 	glBindVertexArray(0);
 }
 
-Cube::Cube(Transform transform)
+Cube::Cube(Transform transform): vao_(0), vbo_(0), ebo_(0)
 {
 
 	transform_.position = transform.position;
@@ -160,7 +158,7 @@ Cube::Cube(Transform transform)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
 
 	// safe end
 	glEnableVertexAttribArray(0);

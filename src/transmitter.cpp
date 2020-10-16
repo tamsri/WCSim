@@ -23,10 +23,12 @@
 unsigned int Transmitter::global_id_ = 0;
 
 Transmitter::Transmitter(Transform transform,
-						float frequency, 
+						float frequency,
+						float transmit_power,
 						RayTracer * ray_tracer):	id_(global_id_++),
 													transform_(transform), 
 													frequency_(frequency),
+													transmit_power_(transmit_power),
 													ray_tracer_(ray_tracer)
 {
 	current_pattern_ = nullptr;
@@ -50,7 +52,6 @@ void Transmitter::UpdateResult()
 {
 	current_point_ = new Point(transform_.position);
 
-	if(current_pattern_ != nullptr) UpdateRadiationPattern();
 
 	if (receivers_.empty()) return;
 	float average_path_loss = 0.0f;
@@ -60,40 +61,12 @@ void Transmitter::UpdateResult()
 		receiver->UpdateResult();
 		Result result = receiver->GetResult();
 		if (result.is_valid) {
-			average_path_loss += result.total_loss;
+			average_path_loss += result.total_received_power;
 			++receivers_number;
 		}
 	}
 	average_path_loss /= receivers_number;
 	average_path_loss_ = average_path_loss;
-}
-
-void Transmitter::UpdateRadiationPattern()
-{
-	return;
-	Clear();
-	float tx_theta = transform_.rotation.x;
-	float tx_phi = transform_.rotation.y;
-
-	glm::mat4 trans = glm::rotate(glm::mat4(1.0f), -tx_theta, glm::vec3(0.0f, 1.0f, 0.0f));
-	trans = glm::rotate(trans, -tx_phi, glm::vec3(0.0f, 0.0f, 1.0f));
-	glm::vec3 front_direction = glm::vec3(trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	glm::vec3 up_direction = glm::vec3(trans * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-
-	glm::vec3 right_direction = glm::cross(front_direction, up_direction);
-
-	glm::vec3 position = current_point_->position;
-
-	Line* front_ray = new Line(position, position + front_direction * 20.0f);
-	front_ray->SetColor(glm::vec4(.7f, .0f, .7f, 1.0f));
-	Line* up_ray = new Line(position, position + up_direction * 20.0f);
-	up_ray->SetColor(glm::vec4(0.0f, .7f, .7f, 1.0f));
-	Line* right_ray = new Line(position, position + right_direction * 20.0f);
-	right_ray->SetColor(glm::vec4(.7f, .7f, .0f, 1.0f));
-
-	objects_.push_back(front_ray);
-	objects_.push_back(up_ray);
-	objects_.push_back(right_ray);
 }
 
 void Transmitter::Reset()
@@ -146,7 +119,6 @@ void Transmitter::DrawRadiationPattern(Camera * camera)
 void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 {
 	current_pattern_ = pattern;
-	UpdateRadiationPattern();
 }
 
 void Transmitter::MoveTo(glm::vec3 position)
@@ -159,26 +131,26 @@ void Transmitter::RotateTo(glm::vec3 rotation)
 	transform_.rotation = rotation;
 }
 
-Transform Transmitter::GetTransform() const
+const Transform & Transmitter::GetTransform() const
 {
-	return Transform(transform_);
+	return transform_;
 }
 
-float Transmitter::GetFrequency() const
+const float & Transmitter::GetFrequency() const
 {
 	return frequency_;
 }
 
-float Transmitter::GetAveragePL() const
+const float & Transmitter::GetAveragePL() const
 {
 	return average_path_loss_;
 }
 
-float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
+const float & Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 {
-	
+	if (current_pattern_== nullptr) return 0.0f;
+
 	glm::vec3 tx_position = current_point_->position;
-	
 	float tx_theta = transform_.rotation.x;
 	float tx_phi = transform_.rotation.y;
 
@@ -209,8 +181,8 @@ float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 	else {
 		theta = angle_on_front;
 	}
-	// std::cout << "theta: " << glm::degrees(theta) << ", phi: " << glm::degrees(phi); 
 
+	// std::cout << "theta: " << glm::degrees(theta) << ", phi: " << glm::degrees(phi);
 	float tx_gain = current_pattern_->GetGain(theta, phi);
 	// std::cout << " total gain: " << tx_gain << std::endl;
 	return tx_gain;
@@ -312,8 +284,8 @@ void Transmitter::Rotate(const Direction rotation, float delta_time)
 	UpdateResult();
 }
 
-void Transmitter::ToggleDisplay()
-{
-	display_pattern_ = !display_pattern_;
-	UpdateRadiationPattern();
+const float &Transmitter::GetTransmitPower() const {
+    return transmit_power_;
 }
+
+

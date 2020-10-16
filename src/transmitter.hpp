@@ -22,7 +22,8 @@ struct Result;
 class Transmitter {
 public:
 	Transmitter(Transform transform, 
-				float frequency, 
+				float frequency,
+				float transmit_power,
 				RayTracer * ray_tracer);
 	~Transmitter();
 	unsigned int GetID() const;
@@ -33,10 +34,11 @@ public:
 	void AssignRadiationPattern(RadiationPattern* pattern);
 	void MoveTo(glm::vec3 position);
 	void RotateTo(glm::vec3 rotation);
-	Transform GetTransform() const;
-	float GetFrequency() const;
-	float GetAveragePL() const ;
-	float GetTransmitterGain(glm::vec3 near_tx_position);
+	const Transform & GetTransform() const;
+	const float & GetFrequency() const;
+	const float & GetAveragePL() const ;
+	const float & GetTransmitPower() const;
+	const float & GetTransmitterGain(glm::vec3 near_tx_position);
 	std::map<unsigned int, Receiver* >& GetReceivers();
 
 	std::string GetReceiversIDs();
@@ -45,10 +47,8 @@ public:
 	// Movement
 	void Move(const Direction direction, float delta_time);
 	void Rotate(const Direction rotation, float delta_time);
-	void ToggleDisplay();
 
 	void UpdateResult();
-	void UpdateRadiationPattern();
 	void Reset();
 	void Clear();
 	// Visualisation
@@ -60,7 +60,7 @@ private:
 	
 	// Variables
 	unsigned int id_;
-	float transmitter_power_output_;
+	float transmit_power_;
 	float frequency_;
 	float move_speed_;
 	float rotation_speed_;
@@ -76,7 +76,6 @@ private:
 	std::vector<Result> receiver_results;
 	// Visualization
 	std::vector<Object* > objects_;
-
 };
 
 #endif

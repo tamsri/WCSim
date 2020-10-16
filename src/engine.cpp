@@ -2,7 +2,7 @@
 
 #include <map>
 #include <iostream>
-#include <set>
+
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -14,7 +14,6 @@
 #include "object.hpp"
 
 #include "polygon_mesh.hpp"
-#include "cube.hpp"
 #include "ray.hpp"
 
 #include "ray_tracer.hpp"
@@ -22,7 +21,6 @@
 #include "receiver.hpp"
 
 #include "radiation_pattern.hpp"
-#include "transform.hpp"
 
 #include "printer.hpp"
 #include "communicator.hpp"
@@ -55,7 +53,7 @@ Engine::Engine(Window* window) :
 
 Engine::~Engine()
 {
-	if (window_ != nullptr) delete window_;
+	delete window_;
 	delete main_camera_;
 	delete map_;
 }
@@ -129,9 +127,9 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 	tx->UpdateResult(); // Update the result
 	std::string answer = std::to_string(transmitter_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
-	Transform& tx_trans = tx->GetTransform();
-	glm::vec3& tx_pos = tx_trans.position;
-	glm::vec3& tx_rot = tx_trans.rotation;
+	const Transform& tx_trans = tx->GetTransform();
+	const glm::vec3& tx_pos = tx_trans.position;
+	const glm::vec3& tx_rot = tx_trans.rotation;
 	answer +=	std::to_string(tx_pos.x) + "," +
 				std::to_string(tx_pos.y) + "," + 
 				std::to_string(tx_pos.z) + ":" + 
@@ -153,9 +151,9 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 
 	std::string answer = std::to_string(receiver_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
-	Transform& tx_trans = rx->GetTransform();
-	glm::vec3& tx_pos = tx_trans.position;
-	glm::vec3& tx_rot = tx_trans.rotation;
+	const Transform& tx_trans = rx->GetTransform();
+	const glm::vec3& tx_pos = tx_trans.position;
+	const glm::vec3& tx_rot = tx_trans.rotation;
 	answer +=	 std::to_string(tx_pos.x) + "," +
 				std::to_string(tx_pos.y) + "," +
 				std::to_string(tx_pos.z);
@@ -165,7 +163,7 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 		answer += ":" + std::to_string(received_from->GetID());
 		rx->UpdateResult();
 		if (rx->GetResult().is_valid)
-			answer += ":" + std::to_string(rx->GetResult().total_loss);
+			answer += ":" + std::to_string(rx->GetResult().total_received_power);
 	}
 	return std::string(answer);
 }
@@ -387,7 +385,8 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency)
 {
 	if (ray_tracer_ == nullptr) return false;
-	Transmitter * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation }, frequency, ray_tracer_);
+	Transmitter * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
+                                                frequency, 0 ,ray_tracer_);
 	transmitters_[transmitter->GetID()] = transmitter;
 	return true;
 }
