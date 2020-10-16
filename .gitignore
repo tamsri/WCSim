@@ -5,3 +5,4 @@ out/
 build/
 vs19/
 cmake-build-debug/
+.idea/
