@@ -1,9 +1,6 @@
 #include "line.hpp"
 
 #include "glad/glad.h"
-#include "glfw/glfw3.h"
-
-#include "glm/gtc/matrix_transform.hpp"
 
 
 Line::Line(glm::vec3 start_position, glm::vec3 end_position)
