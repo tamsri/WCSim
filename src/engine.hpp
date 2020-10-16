@@ -73,12 +73,12 @@ class Engine{
         bool RemoveTransmitter(unsigned int transmitter_id);
         bool RemoveReceiver(unsigned int receiver_id);
         bool ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id);
-        bool DisconenctReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id);
+        bool DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id);
         bool MoveTransmitterTo(unsigned int rx_id, glm::vec3 position, glm::vec3 rotation);
         bool MoveReceiverTo(unsigned int rx_id, glm::vec3 position);
 
         // Visualization
-        void InitalizeWithWindow();
+        void InitializeWithWindow();
         void LoadComponents();
         void LoadMap();
         void LoadObjects();
@@ -100,9 +100,9 @@ class Engine{
         static unsigned int global_engine_id_;
         
         // Engine Simulation
-        RayTracer* ray_tracer_{}{};
+        RayTracer* ray_tracer_;
         Shader * default_shader_;
-        PolygonMesh * map_{}{};
+        PolygonMesh * map_;
 
         
         Recorder* recorder_;
@@ -112,7 +112,7 @@ class Engine{
         std::vector<RadiationPattern> pattern_;
 
 
-        float last_time_{}{};
+        float last_time_;
 
 
         void KeyActions();
@@ -120,16 +120,16 @@ class Engine{
         void KeyMoveMode(float delta_time);
         void MousePosition(double xpos, double ypos);
         void MouseScroll(double xoffset, double yoffset);
-        void MouseBottonToggler(MouseBottons action);
+        void MouseButtonToggle(MouseBottons action);
 
-        bool on_first_right_click_{}{};
-        bool on_first_left_click_{}{};
+        bool on_first_right_click_;
+        bool on_first_left_click_;
 
-        bool on_right_click_{}{};
-        bool on_left_click_{}{};
+        bool on_right_click_;
+        bool on_left_click_;
 
-        double last_mouse_x_pos_{}{};
-        double last_mouse_y_pos_{}{};
+        double last_mouse_x_pos_;
+        double last_mouse_y_pos_;
         static void MousePositionCallback(GLFWwindow* window, double xpos, double ypos);
         static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
         static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

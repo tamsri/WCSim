@@ -304,7 +304,7 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 		boost::split(splitted_inputs, input_data, boost::is_any_of(":"));
 		unsigned int station_id = std::stoul(splitted_inputs[0]);
 		unsigned int user_id = std::stoul(splitted_inputs[1]);
-		if (this->DisconenctReceiverFromTransmitter(station_id, user_id))
+		if (this->DisconnectReceiverFromTransmitter(station_id, user_id))
 			boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
 		else
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
@@ -418,7 +418,7 @@ bool Engine::RemoveReceiver(unsigned int receiver_id)
 	Transmitter* tx = rx->GetTransmitter();
 	// Disconnenct from transmitter
 	if (tx != nullptr) {
-		DisconenctReceiverFromTransmitter(tx->GetID(), rx->GetID());
+        DisconnectReceiverFromTransmitter(tx->GetID(), rx->GetID());
 	}
 	// Remove from the engine list
 	receivers_.erase(receiver_id);
@@ -436,7 +436,7 @@ bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id
 	return true;
 }
 
-bool Engine::DisconenctReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id)
+bool Engine::DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id)
 {
 	Transmitter * tx = transmitters_[tx_id];
 	Receiver* rx = receivers_[rx_id];
@@ -469,7 +469,7 @@ void Engine::InitializeWithoutWindow()
 	LoadRayTracer();
 }
 
-void Engine::InitalizeWithWindow()
+void Engine::InitializeWithWindow()
 {
 	engine_mode_ = EngineMode::kView;
 	on_first_right_click_ = true;
@@ -673,7 +673,7 @@ void Engine::MouseScroll(double xoffset, double yoffset)
 	main_camera_->camera_move_speed_ += yoffset;
 }
 
-void Engine::MouseBottonToggler(MouseBottons action)
+void Engine::MouseButtonToggle(MouseBottons action)
 {
 	switch (action) {
 	case kRightPress:
@@ -707,16 +707,16 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 {
 	Engine* my_engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS) {
-		my_engine->MouseBottonToggler(kRightPress);
+        my_engine->MouseButtonToggle(kRightPress);
 	}
 	if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE) {
-		my_engine->MouseBottonToggler(kRightRelease);
+        my_engine->MouseButtonToggle(kRightRelease);
 	}
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
-		my_engine->MouseBottonToggler(kLeftPress);
+        my_engine->MouseButtonToggle(kLeftPress);
 	}
 	if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
-		my_engine->MouseBottonToggler(kLeftRelease);
+        my_engine->MouseButtonToggle(kLeftRelease);
 	}
 }
 

@@ -82,7 +82,7 @@ int main(){
                 if (is_window_on) {
                     window = new Window(800, 600);
                     engine = new Engine(window);
-                    engine->InitalizeWithWindow();
+                    engine->InitializeWithWindow();
                 }
                 else {
                     engine = new Engine();
@@ -140,7 +140,7 @@ int main(){
         window = new Window(800, 600);
         engine = new Engine(window);
         engine->AssignWindow(window);
-        engine->InitalizeWithWindow();
+        engine->InitializeWithWindow();
         engine->RunWithWindow();
     }
 
