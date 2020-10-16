@@ -22,21 +22,21 @@
 #include "radiation_pattern.hpp"
 
 
-PolygonMesh::PolygonMesh(const RadiationPattern & radiaton_pattern)
+PolygonMesh::PolygonMesh(const RadiationPattern & radiation_pattern)
 {
     shader_ = Object::default_shader_;
     model_ = glm::mat4(1.0f);
 
     /// Adding pattern to vertices
-    auto pattern = radiaton_pattern.pattern_;
+    auto pattern = radiation_pattern.pattern_;
 
     // For Normalization of Pattern
     bool is_dB = false;
-    const float min_linear = pow(10, radiaton_pattern.min_gain_ / 10);
-    const float max_linear = pow(10, radiaton_pattern.max_gain_ / 10);
+    const float min_linear = pow(10, radiation_pattern.min_gain_ / 10);
+    const float max_linear = pow(10, radiation_pattern.max_gain_ / 10);
     const float min_max_linear = max_linear - min_linear;
-    const float min_dB = radiaton_pattern.min_gain_;
-    const float max_dB = radiaton_pattern.max_gain_;
+    const float min_dB = radiation_pattern.min_gain_;
+    const float max_dB = radiation_pattern.max_gain_;
     const float range = (max_dB - 2 * min_dB);
     
     unsigned int step = 10;

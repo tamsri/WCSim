@@ -99,7 +99,7 @@ void Transmitter::ConnectAReceiver(Receiver* receiver)
 {
 	if (receiver == nullptr) return;
 	unsigned int id = receiver->GetID();
-	if (receivers_[id] != nullptr) return;
+	if (receivers_[id] == nullptr) return;
 	receiver->ConnectATransmitter(this);
 	receivers_[id] = receiver;
 }

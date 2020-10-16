@@ -32,7 +32,7 @@ struct Texture{
 class PolygonMesh : public Object {
 
 public:
-	PolygonMesh(const RadiationPattern& radiaton_pattern);
+	PolygonMesh(const RadiationPattern& radiation_pattern);
 	PolygonMesh(const std::string & path, Shader * shader, bool is_window_on);
 	bool LoadObj(	const std::string& path);
 	virtual void Draw() const;

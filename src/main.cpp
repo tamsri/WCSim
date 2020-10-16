@@ -11,7 +11,7 @@
 #include <boost/algorithm/string.hpp>
 namespace ip = boost::asio::ip;
 
-int main(){
+int main(int argc, char *argv[]){
 
     std::cout 
         << "            ___           ___           ___                       ___     \n"
