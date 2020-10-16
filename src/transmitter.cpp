@@ -99,8 +99,9 @@ void Transmitter::ConnectAReceiver(Receiver* receiver)
 {
 	if (receiver == nullptr) return;
 	unsigned int id = receiver->GetID();
+	if (receivers_.find(id) != receivers_.end()) return;
 	receiver->ConnectATransmitter(this);
-	receivers_[id] = receiver;
+	receivers_.insert(std::make_pair(id, receiver));
 }
 
 void Transmitter::DisconnectAReceiver(unsigned int receiver_id)
@@ -187,7 +188,7 @@ const float & Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 	return tx_gain;
 }
 
-std::map<unsigned int, Receiver*>& Transmitter::GetReceivers()
+std::unordered_map<unsigned int, Receiver*>& Transmitter::GetReceivers()
 {
 	return receivers_;
 }

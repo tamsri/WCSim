@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "transform.hpp"
 #include <glm/matrix.hpp>
 #include "camera.hpp"
@@ -39,7 +39,7 @@ public:
 	const float & GetAveragePL() const ;
 	const float & GetTransmitPower() const;
 	const float & GetTransmitterGain(glm::vec3 near_tx_position);
-	std::map<unsigned int, Receiver* >& GetReceivers();
+	std::unordered_map<unsigned int, Receiver* >& GetReceivers();
 
 	std::string GetReceiversIDs();
 	Receiver* GetReceiver(unsigned int index);
@@ -72,7 +72,7 @@ private:
 	RayTracer* ray_tracer_;
 	Point* current_point_;
 	
-	std::map<unsigned int, Receiver* > receivers_;
+	std::unordered_map<unsigned int, Receiver* > receivers_;
 	std::vector<Result> receiver_results;
 	// Visualization
 	std::vector<Object* > objects_;
