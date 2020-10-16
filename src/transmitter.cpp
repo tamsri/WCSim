@@ -197,9 +197,8 @@ std::string Transmitter::GetReceiversIDs()
 {
 	if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + "&";
-	for (auto & [key, receiver] : receivers_) {
-		if (receiver == nullptr) continue;
-		answer += std::to_string(receiver->GetID()) + ",";
+	for(auto itr = receivers_.begin(); itr != receivers_.end(); ++itr){
+	    answer += std::to_string(itr->first) + ",";
 	}
 	answer.pop_back();
 	return answer;
@@ -207,6 +206,7 @@ std::string Transmitter::GetReceiversIDs()
 
 Receiver* Transmitter::GetReceiver(unsigned int index)
 {
+    /// TODO: Delete this.
 	if (index >= receivers_.size()) return nullptr;
 	return receivers_[index];
 }

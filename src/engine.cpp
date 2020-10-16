@@ -67,16 +67,14 @@ void Engine::AssignWindow(Window* window)
 
 void Engine::Reset()
 {
-	// Reset the simulation
-
 	// Reset transmitters
-	for (auto [id, tx] : transmitters_) {
-		delete tx;
+	for (auto itr = transmitters_.begin(); itr != transmitters_.end(); ++itr){
+	    delete itr->second;
 	}
 	transmitters_.clear();
 	// Reset Receivers
-	for (auto [id, rx] : receivers_) {
-		delete rx;
+	for (auto itr = receivers_.begin(); itr != receivers_.end(); ++itr) {
+		delete itr->second;
 	}
 	receivers_.clear();
 }
@@ -98,10 +96,13 @@ std::string Engine::GetTransmittersList() const
 {
 	if(transmitters_.empty()) return "0";
 	std::string answer = std::to_string(transmitters_.size()) + '&';
-	for (auto & [id, transmitter] : transmitters_) {
+	/*for (auto & [id, transmitter] : transmitters_) {
 		if (transmitter != nullptr)
 			answer += std::to_string(id) + ',';
-	}
+	}*/
+    for(auto itr = transmitters_.begin();itr != transmitters_.end(); ++itr){
+        answer += std::to_string(itr->first) + ',';
+    }
 	answer.pop_back();
 	return answer;
 }
@@ -111,9 +112,11 @@ std::string Engine::GetReceiversList() const
 {
 	if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + '&';
-	for (auto& [id, receiver] : receivers_) {
-		if(receiver != nullptr)
+	/*for (auto & [id, receiver] : receivers_) {
 			answer += std::to_string(id) + ',';
+	}*/
+	for(auto itr = receivers_.begin();itr != receivers_.end(); ++itr){
+	    answer += std::to_string(itr->first) + ',';
 	}
 	answer.pop_back();
 	return answer;
