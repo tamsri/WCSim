@@ -100,9 +100,9 @@ class Engine{
         static unsigned int global_engine_id_;
         
         // Engine Simulation
-        RayTracer* ray_tracer_;
+        RayTracer* ray_tracer_{}{};
         Shader * default_shader_;
-        PolygonMesh * map_;
+        PolygonMesh * map_{}{};
 
         
         Recorder* recorder_;
@@ -112,7 +112,7 @@ class Engine{
         std::vector<RadiationPattern> pattern_;
 
 
-        float last_time_;
+        float last_time_{}{};
 
 
         void KeyActions();
@@ -122,14 +122,14 @@ class Engine{
         void MouseScroll(double xoffset, double yoffset);
         void MouseBottonToggler(MouseBottons action);
 
-        bool on_first_right_click_;
-        bool on_first_left_click_;
+        bool on_first_right_click_{}{};
+        bool on_first_left_click_{}{};
 
-        bool on_right_click_;
-        bool on_left_click_;
+        bool on_right_click_{}{};
+        bool on_left_click_{}{};
 
-        double last_mouse_x_pos_;
-        double last_mouse_y_pos_;
+        double last_mouse_x_pos_{}{};
+        double last_mouse_y_pos_{}{};
         static void MousePositionCallback(GLFWwindow* window, double xpos, double ypos);
         static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
         static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

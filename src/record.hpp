@@ -18,21 +18,21 @@ enum class RecordType : int {
 };
 
 struct DirectResult{
-    float receive_power;
+    float direct_loss;
     float delay;
     float tx_gain;
     float rx_gain;
 };
 
 struct ReflectionResult{
-    std::vector<float> receive_powers;
+    std::vector<float> relection_losses;
     std::vector<float> delays;
     std::vector<float> tx_gains;
     std::vector<float> rx_gains;
 };
 
 struct DiffractionResult{
-    float receive_power;
+    float diffraction_loss;
     float delay;
     float tx_gain;
     float rx_gain;
@@ -40,15 +40,20 @@ struct DiffractionResult{
 struct Result {
 	// Validation of Result.
     bool is_valid;
+    // Is line-of-sight?
+    bool is_los;
 	// Direct Path Result.
 	DirectResult direct;
     // Reflection Results
 	ReflectionResult reflection;
     // Diffraction Result
 	DiffractionResult diffraction;
+	// Transmitting Power
+	float transmit_power; // Unit: dBm
     // Total Loss
-	float total_received_power;
-
+    float total_attenuation; // Unit: dB
+    // Total Received Power
+	float total_received_power; // Unit: dBm
 };
 
 struct Record {

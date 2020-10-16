@@ -210,37 +210,51 @@ void RayTracer::GetDrawComponents(const glm::vec3 & start_position, const glm::v
 
 bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                                   const std::vector<Record>& records,
-                                  Result& result, Recorder* recorder) const
-{
+                                  Result& result, Recorder* recorder) const {
     // Validation of Result
-	if (records.empty()) {
-		result.is_valid = false;
-		return false; 
-	}
-	result.is_valid = true;
+    if (records.empty()) {
+        result.is_valid = false;
+        return false;
+    }
+    result.is_valid = true;
     // Initialize the result
     result.total_received_power = 0.0f;
-    result.direct.receive_power = 0.0f;
-    result.reflection.receive_powers = {};
-    result.diffraction.receive_power = 0.0f;
+    result.transmit_power = transmitter->GetTransmitPower();
 
-	// Prepare Threads
-	std::vector<std::thread> threads;
-    for (auto & record: records){
-        switch (record.type){
-            case RecordType::kDirect:{
+    result.direct.rx_gain = 0.0f;
+    result.direct.tx_gain = 0.0f;
+    result.direct.direct_loss = 0.0f;
+    result.direct.delay = 0.0f;
+
+    result.reflection.relection_losses = {};
+    result.reflection.tx_gains = {};
+    result.reflection.rx_gains = {};
+    result.reflection.delays = {};
+
+    result.diffraction.rx_gain = 0.0f;
+    result.diffraction.tx_gain = 0.0f;
+    result.diffraction.diffraction_loss = 0.0f;
+    result.diffraction.delay = 0.0f;
+
+    // Prepare Threads
+    std::vector<std::thread> threads;
+    for (auto &record: records) {
+        switch (record.type) {
+            case RecordType::kDirect: {
                 std::thread direct_thread(&RayTracer::CalculateDirectPath, this,
                                           record, std::ref(result),
                                           transmitter, receiver);
                 threads.push_back(std::move(direct_thread));
-            }break;
-            case RecordType::kReflect:{
+            }
+                break;
+            case RecordType::kReflect: {
                 std::thread reflect_thread(&RayTracer::CalculateReflections, this,
                                            record, std::ref(result),
                                            transmitter, receiver);
                 threads.push_back(std::move(reflect_thread));
-            }break;
-            case RecordType::kEdgeDiffraction:{
+            }
+                break;
+            case RecordType::kEdgeDiffraction: {
                 std::thread diffract_thread(&RayTracer::CalculateDiffraction, this,
                                             record, std::ref(result),
                                             transmitter, receiver);
@@ -250,17 +264,30 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
 
     }
 
-    // Calculate Each Record.
-    for (std::thread & thread: threads){
-        if(thread.joinable()) thread.join();
+    // Join all threads.
+    for (std::thread &thread: threads) {
+        if (thread.joinable()) thread.join();
     }
 
     // Summary All Results.
-    result.total_received_power =   result.direct.receive_power + result.diffraction.receive_power;
-    for(float rec_pow: result.reflection.receive_powers){
-        result.total_received_power += rec_pow;
+    float total_Pr_over_Pt;
+    if (result.is_los){
+        float direct_attenuation = result.direct.tx_gain + result.direct.rx_gain - result.direct.direct_loss;
+        total_Pr_over_Pt = pow(10, direct_attenuation / 10.0f);
+    } else {
+        float diffract_attenuation =
+                result.diffraction.tx_gain + result.diffraction.rx_gain - result.diffraction.diffraction_loss;
+        total_Pr_over_Pt = pow(10, diffract_attenuation / 10.0f);
     }
-    std::cout << std::endl;
+    for(int itr = 0; itr < result.reflection.relection_losses.size(); ++itr){
+        const float & tx_gain = result.reflection.tx_gains[itr];
+        const float & rx_gain = result.reflection.rx_gains[itr];
+        const float & ref_loss = result.reflection.relection_losses[itr];
+        float reflect_attenuation = tx_gain + rx_gain - ref_loss;
+        total_Pr_over_Pt += pow(10, reflect_attenuation / 10.0f);
+    }
+    result.total_attenuation = 10*log10(total_Pr_over_Pt);
+    result.total_received_power = result.total_attenuation + result.transmit_power;
 	return true;
 }
 
@@ -367,9 +394,10 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec
 	/// The reflection point on the triangle plane can be calculated as following:
 
 	// 1. construct the plane from 3 points (non-collinear points)
-	glm::vec3 p_0 = triangle->GetPoints()[0];
-	glm::vec3 p_1 = triangle->GetPoints()[1];
-	glm::vec3 p_2 = triangle->GetPoints()[2];
+	auto triangle_points = triangle->GetPoints();
+	const glm::vec3 & p_0 = triangle_points[0];
+    const glm::vec3 & p_1 = triangle_points[1];
+    const glm::vec3 & p_2 = triangle_points[2];
 
 	glm::vec3 n = triangle->GetNormal();
 
@@ -377,8 +405,8 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec
 	// 2. mirror the point from the plane
 	float t = (b - (points.x * n.x + points.y * n.y + points.z * n.z)) / (n.x * n.x + n.y * n.y + n.z * n.z); //distance from point to plane
 	
-	// 
-	glm::vec3 m = glm::vec3(points.x + t * n.x, points.y + t * n.y, points.z + t * n.z); // points on mirror
+	// (Optional) Point on surface
+	// glm::vec3 m = glm::vec3(points.x + t * n.x, points.y + t * n.y, points.z + t * n.z); // points on mirror
 
 	return  points + 2 * t * n; // reverse average point from average point 
 }
@@ -602,19 +630,23 @@ void RayTracer::CalculateCorrectionCosines(	glm::vec3 start_position, std::vecto
 }
 
 void RayTracer::CalculateDirectPath(const Record &record, Result &result, Transmitter *transmitter, Receiver *receiver) const {
+    result.is_los = true;
+    // Get Transmitter's Info
     auto tx_pos = transmitter->GetPosition();
     auto tx_freq = transmitter->GetFrequency();
-    auto tx_power = transmitter->GetTransmitPower();
+    // Get Receiver's Info
     auto rx_pos = receiver->GetPosition();
+    // Calculate tx and rx gain.
     auto & tx_gain = transmitter->GetTransmitterGain(rx_pos);
     auto & rx_gain = receiver->GetReceiverGain(tx_pos);
     result.direct.tx_gain = tx_gain;
     result.direct.rx_gain = rx_gain;
+    // Calculate Distance
     auto distance = glm::distance(tx_pos, rx_pos);
 
     // Friis's Equation
     float free_space_loss = 20*log10(distance) + 20*log10(tx_freq) - 147.55f;
-    result.direct.receive_power = tx_power + tx_gain + rx_gain - free_space_loss;
+    result.direct.direct_loss = free_space_loss;
 
     // Calculate delay
     result.direct.delay = distance/LIGHT_SPEED;
@@ -648,6 +680,7 @@ void RayTracer::CalculateReflections(const Record &record, Result &result, Trans
 }
 
 void RayTracer::CalculateDiffraction(const Record &record, Result &result, Transmitter *transmitter, Receiver *receiver) const {
+    result.is_los = false;
     // Get Transmitter's Info
     const auto &tx_pos = transmitter->GetPosition();
     const auto &tx_freq = transmitter->GetFrequency();
@@ -676,7 +709,7 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         float diff_loss = free_space_loss + CalculateDiffractionByV(v);
 
         // Calculate the receive power
-        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diff_loss;
+        result.diffraction.diffraction_loss = diff_loss;
 
         // Calculate Delay
         float distance = glm::distance(edge_position, tx_pos) +
@@ -692,7 +725,8 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         // Calculate tx, rx gains
         const float &tx_gain = transmitter->GetTransmitterGain(nearest_tx_edge);
         const float &rx_gain = receiver->GetReceiverGain(nearest_rx_edge);
-
+        result.diffraction.tx_gain = tx_gain;
+        result.diffraction.rx_gain = rx_gain;
         // Find the max V as single edge V
         glm::vec3 edge_posiiton;
         const float v1 = CalculateVOfEdge(tx_pos, nearest_tx_edge, rx_pos, tx_freq);
@@ -701,7 +735,7 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         float diff_loss = free_space_loss + CalculateDiffractionByV(max_v);
 
         // Calculate Receive Power
-        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diff_loss;
+        result.diffraction.diffraction_loss = diff_loss;
 
         // Calculate Delay
         float distance = glm::distance(tx_pos, nearest_tx_edge) + glm::distance(nearest_tx_edge, nearest_rx_edge)
@@ -718,6 +752,8 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         // Calculate tx and rx gain.
         const float &tx_gain = transmitter->GetTransmitterGain(near_tx_pos);
         const float &rx_gain = receiver->GetReceiverGain(near_rx_pos);
+        result.diffraction.tx_gain = tx_gain;
+        result.diffraction.rx_gain = rx_gain;
 
         // Calculate V1, V2, and V2.
         float v1 = CalculateVOfEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
@@ -739,7 +775,7 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         float diffraction_loss = free_space_loss + (c2 + c1 + c3 - c_1_cap - c_2_cap);
 
         // Calculate Received Power
-        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diffraction_loss;
+        result.diffraction.diffraction_loss = diffraction_loss;
 
         // Calculate Delay
         float d1 = glm::distance(tx_pos, near_tx_pos);
@@ -772,6 +808,8 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         // Calculate tx and rx gain.
         const float &tx_gain = transmitter->GetTransmitterGain(near_tx_pos);
         const float &rx_gain = receiver->GetReceiverGain(near_rx_pos);
+        result.diffraction.tx_gain = tx_gain;
+        result.diffraction.rx_gain = rx_gain;
 
         // Calculate V1, V2, and V2.
         float v1 = CalculateVOfEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
@@ -793,7 +831,7 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         float diffraction_loss = free_space_loss + (c2 + c1 + c3 - c_1_cap - c_2_cap);
 
         // Calculate Received Power
-        result.diffraction.receive_power = tx_power + tx_gain + rx_gain - diffraction_loss;
+        result.diffraction.diffraction_loss = diffraction_loss;
 
         // Calculate Delay
         float d1 = glm::distance(tx_pos, near_tx_pos);
@@ -824,7 +862,7 @@ void RayTracer::CalculateReflection( const glm::vec3 & tx_position, const glm::v
                                                         ref_position, polar);
     // Calculate Receive Power
     float reflection_loss = 20*log10(total_distance) + 20*log10(tx_freq) - 20*log10(abs(ref_coe)) - 147.55f;
-    result.reflection.receive_powers.push_back(tx_power + tx_gain + rx_gain - reflection_loss);
+    result.reflection.relection_losses.push_back(reflection_loss);
 
     // Calculate delay
     result.reflection.delays.push_back(total_distance/LIGHT_SPEED);

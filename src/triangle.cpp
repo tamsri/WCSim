@@ -76,6 +76,5 @@ glm::vec3 Triangle::GetNormal() const
 
 std::vector<glm::vec3> Triangle::GetPoints() const
 {
-	/// check if this will waste memory
 	return points_;
 }

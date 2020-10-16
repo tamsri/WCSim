@@ -163,7 +163,7 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 		answer += ":" + std::to_string(received_from->GetID());
 		rx->UpdateResult();
 		if (rx->GetResult().is_valid)
-			answer += ":" + std::to_string(rx->GetResult().total_received_power);
+			answer += ":" + std::to_string(rx->GetResult().total_attenuation);
 	}
 	return std::string(answer);
 }
@@ -332,12 +332,10 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
 	default: {
-		std::cout << "Server: Unknown Command\n";
-		boost::asio::write(socket, boost::asio::buffer("cnok"), ign_err);
-		boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
-		
-	}
-	break;
+        std::cout << "Server: Unknown Command\n";
+        boost::asio::write(socket, boost::asio::buffer("cnok"), ign_err);
+        boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
+    } break;
 	}
 }
 
@@ -385,7 +383,7 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency)
 {
 	if (ray_tracer_ == nullptr) return false;
-	Transmitter * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
+	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
 	transmitters_[transmitter->GetID()] = transmitter;
 	return true;
@@ -394,7 +392,7 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 bool Engine::AddReceiver(glm::vec3 position)
 {
 	if (ray_tracer_ == nullptr) return false;
-	Receiver * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
+	auto * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
 	receivers_[receiver->GetID()] = receiver;
 	return true;
 }
@@ -418,7 +416,7 @@ bool Engine::RemoveReceiver(unsigned int receiver_id)
 	Receiver* rx = receivers_[receiver_id];
 	if (rx == nullptr) return false;
 	Transmitter* tx = rx->GetTransmitter();
-	// Disconenct from transmitter
+	// Disconnenct from transmitter
 	if (tx != nullptr) {
 		DisconenctReceiverFromTransmitter(tx->GetID(), rx->GetID());
 	}
@@ -494,7 +492,7 @@ void Engine::LoadRayTracer()
 {
 	std::cout << "Loading Ray Tracer" << std::endl;
 	ray_tracer_ = new RayTracer(map_);
-	pattern_.push_back(RadiationPattern{ "../assets/patterns/pattern-1.txt" });
+	pattern_.emplace_back( "../assets/patterns/pattern-1.txt" );
 	//recorder_ = new Recorder("../assets/records/");
 }
 
