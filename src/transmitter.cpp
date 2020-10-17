@@ -32,17 +32,16 @@ Transmitter::Transmitter(Transform transform,
 													ray_tracer_(ray_tracer)
 {
 	current_pattern_ = nullptr;
-	display_pattern_ = false;
 	Reset();
-	UpdateResult();
 }
 
 Transmitter::~Transmitter()
 {
-	// TODO: check later
+	// TODO: implement de-constructor.
+	receivers_.clear();
 }
 
-unsigned int Transmitter::GetID() const
+const unsigned int & Transmitter::GetID() const
 {
 	return id_;
 }
@@ -52,19 +51,9 @@ void Transmitter::UpdateResult()
 {
 
 	if (receivers_.empty()) return;
-	float average_path_loss = 0.0f;
-	unsigned int receivers_number = 0;
-	for (auto [id, receiver] : receivers_) {
-		if (receiver == nullptr) continue;
-		receiver->UpdateResult();
-		Result result = receiver->GetResult();
-		if (result.is_valid) {
-			average_path_loss += result.total_received_power;
-			++receivers_number;
-		}
+	for (auto itr = receivers_.begin(); itr != receivers_.end(); ++itr) {
+		itr->second->UpdateResult();
 	}
-	average_path_loss /= receivers_number;
-	average_path_loss_ = average_path_loss;
 }
 
 void Transmitter::Reset()
@@ -72,7 +61,6 @@ void Transmitter::Reset()
 	rotation_speed_ = .5f;
 	move_speed_ = 10.0f;
 	transform_.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-	average_path_loss_ = 0.0f;
 }
 
 void Transmitter::Clear()
@@ -85,8 +73,8 @@ void Transmitter::Clear()
 void Transmitter::DrawObjects(Camera* camera)
 {
 	DrawRadiationPattern(camera);
-	for (auto [id, receiver] : receivers_) {
-		if (receiver == nullptr) continue;
+	for (auto itr = receivers_.begin(); itr != receivers_.end(); ++itr) {
+		auto * receiver = itr->second;
 		receiver->DrawObjects(camera);
 	}
 	if (current_pattern_ != nullptr)
@@ -122,11 +110,13 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 void Transmitter::MoveTo(glm::vec3 position)
 {
 	transform_.position = position;
+	UpdateResult();
 }
 
 void Transmitter::RotateTo(glm::vec3 rotation)
 {
 	transform_.rotation = rotation;
+    UpdateResult();
 }
 
 const Transform & Transmitter::GetTransform() const
@@ -137,11 +127,6 @@ const Transform & Transmitter::GetTransform() const
 const float & Transmitter::GetFrequency() const
 {
 	return frequency_;
-}
-
-const float & Transmitter::GetAveragePL() const
-{
-	return average_path_loss_;
 }
 
 const float & Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
@@ -195,12 +180,14 @@ std::string Transmitter::GetReceiversIDs()
 {
     std::cout << "getting ID" << std::endl;
     if (receivers_.empty()) return "0";
+
 	std::string answer = std::to_string(receivers_.size()) + "&";
 	for(auto itr = receivers_.begin(); itr != receivers_.end(); ++itr){
         std::cout << "getting ID" <<  itr->first <<std::endl;
         answer += std::to_string(itr->first) + ",";
 	}
 	answer.pop_back();
+
 	return answer;
 }
 

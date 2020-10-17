@@ -131,8 +131,6 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 	else
 	    return "-1";
 
-	std::cout << "Updating result" << std::endl;
-	tx->UpdateResult(); // Update the result
 	std::string answer = std::to_string(transmitter_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
 	const Transform& tx_trans = tx->GetTransform();
@@ -145,8 +143,7 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 				std::to_string(tx_rot.y) + "," +
 				std::to_string(tx_rot.z) + ":" +
 				std::to_string(tx->GetFrequency()) + ":" +
-				tx->GetReceiversIDs() + ":" +
-				std::to_string(tx->GetAveragePL()) ;
+				tx->GetReceiversIDs();
 	return std::string(answer);
 }
 
@@ -740,11 +737,6 @@ void Engine::Visualize()
 	for (const auto & [id, transmitter] : transmitters_) {
 		transmitter->DrawObjects(main_camera_);
 	}
-
-	//test_transmitter_->DrawRadiationPattern(main_camera_);
-	//transmitter_->DrawRadiationPattern(main_camera_);
-	//transmitter_->DrawObjects(main_camera_);
-	//test_receiver_->DrawObjects(main_camera_);
 }
 
 void Engine::OnKeys()
