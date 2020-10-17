@@ -60,12 +60,12 @@ void Receiver::AddRecorder(Recorder* recorder)
 	recorder_ = recorder;
 }
 
-const Result & Receiver::GetResult() const
+Result Receiver::GetResult() const
 {
 	return result_;
 }
 
-const glm::vec3 & Receiver::GetPosition() const
+glm::vec3 Receiver::GetPosition() const
 {
 	return transform_.position;
 }
@@ -75,7 +75,6 @@ void Receiver::UpdateResult()
 	if (transmitter_ == nullptr) return;
 	const glm::vec3 rx_pos = transform_.position;
 	const glm::vec3 tx_pos = transmitter_->GetPosition();
-    std::cout << "tracing from rec\n";
 	records_.clear();
 	ray_tracer_->Trace(tx_pos, rx_pos, records_);
 	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_, recorder_);
@@ -160,7 +159,7 @@ void Receiver::DrawObjects(Camera * main_camera)
 		object->DrawObject(main_camera);
 }
 
-const float & Receiver::GetReceiverGain(const glm::vec3 & near_rx_position) const {
+float Receiver::GetReceiverGain(const glm::vec3 & near_rx_position) const {
     // TODO: Implement Receiver Gain.
     return 0.0f;
 }

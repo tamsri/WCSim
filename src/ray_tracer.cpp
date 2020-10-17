@@ -475,7 +475,7 @@ bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_posi
 
 		if (map_->IsHit(scan_ray, scan_hit_distance)) {
 			latest_hit_position = start_position + scan_direction * scan_hit_distance;
-			//lastest_hit_position should be in between start_positon and end_position in xz plane
+			// latest_hit_position should be in between start_positon and end_position in xz plane
 			if (latest_hit_position.x < min_x || latest_hit_position.x > max_x ||
 				latest_hit_position.z < min_z || latest_hit_position.z > max_z) {
 				break;
@@ -490,12 +490,12 @@ bool RayTracer::FindEdge(const glm::vec3 start_position,const glm::vec3 end_posi
 	}
 
 	glm::vec3 start_end_on_xz_direction = glm::normalize(glm::vec3(start_end_direction.x, 0.0f, start_end_direction.z));
-	double start_end_to_on_xz_angle = glm::angle(latest_hit_direction, start_end_on_xz_direction);
+	float start_end_to_on_xz_angle = glm::angle(latest_hit_direction, start_end_on_xz_direction);
 	float distance_on_xz = latest_hit_distance * cos(start_end_to_on_xz_angle);
-	double start_edge_angle = glm::angle(start_end_on_xz_direction, scan_direction);
+	float start_edge_angle = glm::angle(start_end_on_xz_direction, scan_direction);
 	float distance_to_edge = distance_on_xz / cos(start_edge_angle);
 
-	// calculate the start_edge_point after exit the obstables
+	// calculate the start_edge_point after exit the obstacles
 	edge_position = start_position + scan_direction * distance_to_edge;
 	return true;
 }
@@ -504,9 +504,9 @@ glm::vec3 RayTracer::NearestEdgeFromPoint(glm::vec3 point_position, std::vector<
 {
 	std::map<float, glm::vec3> distance_from_point;
 	for (auto edge_point : edges_points) { // implemenet to function
-		glm::vec3 point_positon_on_xz = glm::vec3(point_position.x, 0.0f, point_position.z);
+		glm::vec3 point_position_on_xz = glm::vec3(point_position.x, 0.0f, point_position.z);
 		glm::vec3 edge_point_on_xz = glm::vec3(edge_point.x, 0.0f, edge_point.z);
-		distance_from_point[glm::distance(edge_point_on_xz, point_positon_on_xz)] = edge_point;
+		distance_from_point[glm::distance(edge_point_on_xz, point_position_on_xz)] = edge_point;
 	}
 	edges_points.erase(std::remove(edges_points.begin(), edges_points.end(), distance_from_point.begin()->second), edges_points.end());
 	return glm::vec3(distance_from_point.begin()->second);
@@ -637,8 +637,8 @@ void RayTracer::CalculateDirectPath(const Record &record, Result &result, Transm
     // Get Receiver's Info
     auto rx_pos = receiver->GetPosition();
     // Calculate tx and rx gain.
-    auto & tx_gain = transmitter->GetTransmitterGain(rx_pos);
-    auto & rx_gain = receiver->GetReceiverGain(tx_pos);
+    auto tx_gain = transmitter->GetTransmitterGain(rx_pos);
+    auto rx_gain = receiver->GetReceiverGain(tx_pos);
     result.direct.tx_gain = tx_gain;
     result.direct.rx_gain = rx_gain;
     // Calculate Distance
@@ -665,8 +665,8 @@ void RayTracer::CalculateReflections(const Record &record, Result &result, Trans
     std::vector<std::thread> threads;
     for (auto & reflect_position : record.data) {
         // Get gains before compute.
-        const float & tx_gain = transmitter->GetTransmitterGain(reflect_position);
-        const float & rx_gain = receiver->GetReceiverGain(reflect_position);
+        float tx_gain = transmitter->GetTransmitterGain(reflect_position);
+        float rx_gain = receiver->GetReceiverGain(reflect_position);
         // construct a thread.
         std::thread reflection_thread(&RayTracer::CalculateReflection, this,
                                       tx_pos, rx_pos, tx_freq, tx_gain,

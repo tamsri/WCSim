@@ -30,10 +30,10 @@ public:
 
 	void AddRecorder(Recorder* recorder);
 
-	const float & GetReceiverGain(const glm::vec3 & position) const;
+	float GetReceiverGain(const glm::vec3 & position) const;
 
-	const Result & GetResult() const;
-	const glm::vec3 & GetPosition() const;
+	Result GetResult() const;
+	glm::vec3 GetPosition() const;
 
 	// Actions
 	void MoveTo(const glm::vec3 near_rx_position);
