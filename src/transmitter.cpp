@@ -148,7 +148,7 @@ const float & Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 {
 	if (current_pattern_== nullptr) return 0.0f;
 
-	glm::vec3 tx_position = current_point_->position;
+	glm::vec3 tx_position = transform_.position;
 	float tx_theta = transform_.rotation.x;
 	float tx_phi = transform_.rotation.y;
 
