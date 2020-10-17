@@ -129,6 +129,7 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
 	if (transmitters_.find(transmitter_id) != transmitters_.end()){
         tx = transmitters_.find(transmitter_id)->second;
 	}else return "-1";
+	std::cout << "Updating result" << std::endl;
 	tx->UpdateResult(); // Update the result
 	std::string answer = std::to_string(transmitter_id) + ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss

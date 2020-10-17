@@ -50,8 +50,6 @@ unsigned int Transmitter::GetID() const
 
 void Transmitter::UpdateResult()
 {
-	current_point_ = new Point(transform_.position);
-
 
 	if (receivers_.empty()) return;
 	float average_path_loss = 0.0f;
@@ -195,20 +193,15 @@ std::unordered_map<unsigned int, Receiver*>& Transmitter::GetReceivers()
 
 std::string Transmitter::GetReceiversIDs()
 {
-	if (receivers_.empty()) return "0";
+    std::cout << "getting ID" << std::endl;
+    if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + "&";
 	for(auto itr = receivers_.begin(); itr != receivers_.end(); ++itr){
-	    answer += std::to_string(itr->first) + ",";
+        std::cout << "getting ID" <<  itr->first <<std::endl;
+        answer += std::to_string(itr->first) + ",";
 	}
 	answer.pop_back();
 	return answer;
-}
-
-Receiver* Transmitter::GetReceiver(unsigned int index)
-{
-    /// TODO: Delete this.
-	if (index >= receivers_.size()) return nullptr;
-	return receivers_[index];
 }
 
 glm::vec3 Transmitter::GetPosition()

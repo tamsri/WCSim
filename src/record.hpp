@@ -63,11 +63,5 @@ struct Record {
 	std::vector<glm::vec3> data;
 };
 
-struct Point {
-	Point(glm::vec3 point_position);
-	glm::vec3 position;
-
-	std::map<const Triangle*, bool> hit_triangles;
-};
 
 #endif // !RECORD_H_

@@ -10,7 +10,7 @@
 
 class Camera;
 class Ray;
-class Point;
+
 class RadiationPattern;
 class RayTracer;
 class Object;
@@ -42,7 +42,6 @@ public:
 	std::unordered_map<unsigned int, Receiver* >& GetReceivers();
 
 	std::string GetReceiversIDs();
-	Receiver* GetReceiver(unsigned int index);
 	glm::vec3 GetPosition();
 	// Movement
 	void Move(const Direction direction, float delta_time);
@@ -54,7 +53,6 @@ public:
 	// Visualisation
 	void DrawObjects(Camera * camera);
 
-	std::vector<Triangle*> hit_triangles;
 	static unsigned int global_id_;
 private:
 	
@@ -70,8 +68,7 @@ private:
 	Transform transform_;
 	RadiationPattern * current_pattern_;
 	RayTracer* ray_tracer_;
-	Point* current_point_;
-	
+
 	std::unordered_map<unsigned int, Receiver* > receivers_;
 	std::vector<Result> receiver_results;
 	// Visualization
