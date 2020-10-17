@@ -1,5 +1,7 @@
 #include "receiver.hpp"
 
+#include <iostream>
+
 #include "object.hpp"
 #include "ray_tracer.hpp"
 #include "transmitter.hpp"
@@ -71,21 +73,21 @@ const glm::vec3 & Receiver::GetPosition() const
 void Receiver::UpdateResult()
 {
 	if (transmitter_ == nullptr) return;
-	const glm::vec3 receiver_position = transform_.position;
-	const glm::vec3 transmitter_position = transmitter_->GetPosition();
-
+	const glm::vec3 rx_pos = transform_.position;
+	const glm::vec3 tx_pos = transmitter_->GetPosition();
+    std::cout << "tracing from rec\n";
 	records_.clear();
-	ray_tracer_->Trace(transmitter_position, receiver_position, records_);
+	ray_tracer_->Trace(tx_pos, rx_pos, records_);
 	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_, recorder_);
-
 }
 void Receiver::UpdateAndVisualize()
 {
-	const glm::vec3 receiver_position = transform_.position;
-	const glm::vec3 transmitter_positon = transmitter_->GetPosition();
+	const glm::vec3 rx_pos = transform_.position;
+	const glm::vec3 tx_pos = transmitter_->GetPosition();
+
 	UpdateResult();
 	Clear();
-	ray_tracer_->GetDrawComponents(transmitter_positon, receiver_position, records_, objects_);
+	ray_tracer_->GetDrawComponents(tx_pos, rx_pos, records_, objects_);
 }
 void Receiver::Reset()
 {

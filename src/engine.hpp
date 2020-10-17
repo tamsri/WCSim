@@ -118,7 +118,7 @@ class Engine{
         void KeyActions();
         void KeyViewMode(float delta_time);
         void KeyMoveMode(float delta_time);
-        void MousePosition(double xpos, double ypos);
+        void MousePosition(double x_pos, double ypos);
         void MouseScroll(double xoffset, double yoffset);
         void MouseButtonToggle(MouseBottons action);
 

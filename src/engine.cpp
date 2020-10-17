@@ -68,13 +68,13 @@ void Engine::AssignWindow(Window* window)
 void Engine::Reset()
 {
 	// Reset transmitters
-	for (auto itr = transmitters_.begin(); itr != transmitters_.end(); ++itr){
-	    delete itr->second;
+	for (auto & transmitter : transmitters_){
+	    delete transmitter.second;
 	}
 	transmitters_.clear();
 	// Reset Receivers
-	for (auto itr = receivers_.begin(); itr != receivers_.end(); ++itr) {
-		delete itr->second;
+	for (auto & receiver : receivers_) {
+		delete receiver.second;
 	}
 	receivers_.clear();
 }
@@ -157,21 +157,26 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
     }else return "-1";
 
 	std::string answer = std::to_string(receiver_id) + ":";
+
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
-	const Transform& tx_trans = rx->GetTransform();
-	const glm::vec3& tx_pos = tx_trans.position;
-	const glm::vec3& tx_rot = tx_trans.rotation;
-	answer +=	 std::to_string(tx_pos.x) + "," +
-				std::to_string(tx_pos.y) + "," +
-				std::to_string(tx_pos.z);
+	auto rx_trans = rx->GetTransform();
+	auto rx_pos = rx_trans.position;
+	auto rx_rot = rx_trans.rotation;
+	answer +=	 std::to_string(rx_pos.x) + "," +
+				std::to_string(rx_pos.y) + "," +
+				std::to_string(rx_pos.z);
+
 	// Check the transmitter
-	Transmitter* received_from = rx->GetTransmitter();
-	if (received_from != nullptr) {
-		answer += ":" + std::to_string(received_from->GetID());
-		rx->UpdateResult();
-		if (rx->GetResult().is_valid)
-			answer += ":" + std::to_string(rx->GetResult().total_attenuation);
-	}
+	auto connected_tx = rx->GetTransmitter();
+	if (connected_tx == nullptr) return std::string(answer);
+
+    answer += ":" + std::to_string(connected_tx->GetID());
+    rx->UpdateResult();
+    // Giving out result
+    std::cout << "giving result.\n";
+    if (rx->GetResult().is_valid)
+        answer += ":" + std::to_string(rx->GetResult().total_attenuation);
+
 	return std::string(answer);
 }
 
@@ -655,21 +660,21 @@ void Engine::KeyMoveMode(float delta_time)
 	//	ray_tracer_->print_each_ = false;
 }
 
-void Engine::MousePosition(double xpos, double ypos)
+void Engine::MousePosition(double x_pos, double y_pos)
 {
 	if (on_right_click_) {
 
 		if (on_first_right_click_) {
-			last_mouse_x_pos_ = xpos;
-			last_mouse_y_pos_ = ypos;
+			last_mouse_x_pos_ = x_pos;
+			last_mouse_y_pos_ = y_pos;
 			on_first_right_click_ = false;
 		}
 
-		float xoffset = (xpos - last_mouse_x_pos_) / 50000.0f;
-		float yoffset = (last_mouse_y_pos_ - ypos) / 50000.0f;
+		float x_offset = (x_pos - last_mouse_x_pos_) / 50000.0f;
+		float y_offset = (last_mouse_y_pos_ - y_pos) / 50000.0f;
 
-		main_camera_->Rotate(Rotation::kYaw, xoffset);
-		main_camera_->Rotate(Rotation::kPitch, yoffset);
+		main_camera_->Rotate(Rotation::kYaw, x_offset);
+		main_camera_->Rotate(Rotation::kPitch, y_offset);
 	}
 	else {
 		on_first_right_click_ = true;
@@ -678,8 +683,7 @@ void Engine::MousePosition(double xpos, double ypos)
 
 void Engine::MouseScroll(double xoffset, double yoffset)
 {
-	/// Implement later
-	//std::cout << "scroll : (" <<xoffset << ", " << yoffset << ")." << std::endl;
+	///  Todo: Implement later
 	main_camera_->camera_move_speed_ += yoffset;
 }
 
