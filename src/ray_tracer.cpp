@@ -226,10 +226,7 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
     result.direct.direct_loss = 0.0f;
     result.direct.delay = 0.0f;
 
-    result.reflection.relection_losses = {};
-    result.reflection.tx_gains = {};
-    result.reflection.rx_gains = {};
-    result.reflection.delays = {};
+    result.reflections = {};
 
     result.diffraction.rx_gain = 0.0f;
     result.diffraction.tx_gain = 0.0f;
@@ -259,7 +256,7 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                                             record, std::ref(result),
                                             transmitter, receiver);
                 threads.push_back(std::move(diffract_thread));
-            }
+            } break;
         }
 
     }
@@ -279,10 +276,10 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                 result.diffraction.tx_gain + result.diffraction.rx_gain - result.diffraction.diffraction_loss;
         total_Pr_over_Pt = pow(10, diffract_attenuation / 10.0f);
     }
-    for(int itr = 0; itr < result.reflection.relection_losses.size(); ++itr){
-        const float & tx_gain = result.reflection.tx_gains[itr];
-        const float & rx_gain = result.reflection.rx_gains[itr];
-        const float & ref_loss = result.reflection.relection_losses[itr];
+    for(const auto & reflection : result.reflections){
+        const float & tx_gain = reflection.tx_gain;
+        const float & rx_gain = reflection.rx_gain;
+        const float & ref_loss = reflection.reflection_loss;
         float reflect_attenuation = tx_gain + rx_gain - ref_loss;
         total_Pr_over_Pt += pow(10, reflect_attenuation / 10.0f);
     }
@@ -298,12 +295,12 @@ bool RayTracer::IsDirectHit(const glm::vec3 & start_position,const glm::vec3 & e
 	glm::vec3 direction = glm::normalize(end_position - start_position);
 	float start_to_end_distance = glm::distance(start_position, end_position);
 	Ray ray{ start_position, direction };
-	float distance = -1;
+	float distance = FLT_MAX;
 	// trace the ray on this direction 
-	// check if the direction hit something and the t is not betwen start_point to end_point length
-	if (map_->IsHit(ray, distance) && distance < start_to_end_distance) {
+	// check if the direction hit something and the t is not between start_point to end_point length
+	if (map_->IsHit(ray, distance) && distance < start_to_end_distance)
 		return false;
-	}
+
 	return true;
 }
 
@@ -324,7 +321,7 @@ bool RayTracer::IsReflected(const glm::vec3 & start_position, const glm::vec3 & 
 		check_triangles = map_->GetObjects();
 	}
 
-	// check the reflection points on matches triangles
+	// check the reflections points on matches triangles
 
 	for (const Triangle* matched_triangle : check_triangles) {
 		// reflect one of the point on the triangle plane
@@ -360,7 +357,7 @@ float RayTracer::CalculateReflectionCoefficient(glm::vec3 start_position, glm::v
 	glm::vec3 ref_to_start_direction = glm::normalize(start_position - reflection_position);
 	glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflection_position);
 
-    //Angle between the reflection direction to the normal of surface
+    //Angle between the reflections direction to the normal of surface
     float angle_1 = glm::angle(ref_to_start_direction, ref_to_end_direction)/2.0f;
 
 	// Calculate the angle_2
@@ -386,12 +383,13 @@ float RayTracer::CalculateReflectionCoefficient(glm::vec3 start_position, glm::v
 				(sqrt(n2) * cos(angle_1) + sqrt(n1) * cos(angle_2));
 	}
 	}
+	return 0;
 }
 
 
 glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec3 points)
 {
-	/// The reflection point on the triangle plane can be calculated as following:
+	/// The reflections point on the triangle plane can be calculated as following:
 
 	// 1. construct the plane from 3 points (non-collinear points)
 	auto triangle_points = triangle->GetPoints();
@@ -848,22 +846,21 @@ void RayTracer::CalculateReflection( const glm::vec3 & tx_position, const glm::v
                                      const float & rx_gain, const float & tx_power,
                                      const glm::vec3 & ref_position, Result & result) const {
 
-    // Get distances
+    // Get distances.
     float d1 = glm::distance(tx_position, ref_position);
     float d2 = glm::distance(rx_position, ref_position);
     float total_distance = d1+d2; // total distance
 
     constexpr Polarization polar = TE;
-    // Store tx, rx gains
-    result.reflection.tx_gains.push_back(tx_gain);
-    result.reflection.rx_gains.push_back(rx_gain);
     // Calculate Reflection Coefficient.
     const float ref_coe = CalculateReflectionCoefficient(tx_position, rx_position,
                                                         ref_position, polar);
-    // Calculate Receive Power
+    // Calculate Receive Power.
     float reflection_loss = 20*log10(total_distance) + 20*log10(tx_freq) - 20*log10(abs(ref_coe)) - 147.55f;
-    result.reflection.relection_losses.push_back(reflection_loss);
 
-    // Calculate delay
-    result.reflection.delays.push_back(total_distance/LIGHT_SPEED);
+    // Calculate delay.
+    float delay = total_distance/LIGHT_SPEED;
+
+    // Store the values in result.
+    result.reflections.push_back(ReflectionResult{reflection_loss, delay, tx_gain, rx_gain});
 }

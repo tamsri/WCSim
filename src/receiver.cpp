@@ -38,6 +38,7 @@ unsigned int Receiver::GetID() const
 void Receiver::ConnectATransmitter(Transmitter* transmitter)
 {
 	transmitter_ = transmitter;
+	UpdateResult();
 }
 
 void Receiver::DisconnectATransmitter()

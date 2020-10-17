@@ -57,7 +57,7 @@ class Engine{
         void Run();
         void RunWithWindow();
 
-        // Exernal Actions
+        // External Actions
         std::string GetTransmittersList() const;
         std::string GetTransmitterInfo(unsigned int transmitter_id);
         std::string GetReceiversList() const;

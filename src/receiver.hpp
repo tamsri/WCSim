@@ -25,7 +25,7 @@ public:
 
 	void ConnectATransmitter(Transmitter* transmitter);
 	void DisconnectATransmitter();
-	Transmitter* GetTransmitter() const;
+	Transmitter * GetTransmitter() const;
 	Transform GetTransform()const;
 
 	void AddRecorder(Recorder* recorder);

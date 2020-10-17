@@ -25,10 +25,10 @@ struct DirectResult{
 };
 
 struct ReflectionResult{
-    std::vector<float> relection_losses;
-    std::vector<float> delays;
-    std::vector<float> tx_gains;
-    std::vector<float> rx_gains;
+    float reflection_loss;
+    float delay;
+    float tx_gain;
+    float rx_gain;
 };
 
 struct DiffractionResult{
@@ -45,7 +45,7 @@ struct Result {
 	// Direct Path Result.
 	DirectResult direct;
     // Reflection Results
-	ReflectionResult reflection;
+	std::vector<ReflectionResult> reflections;
     // Diffraction Result
 	DiffractionResult diffraction;
 	// Transmitting Power

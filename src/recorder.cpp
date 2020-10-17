@@ -12,7 +12,7 @@ Recorder::Recorder(const std::string& record_path) : direct_file(nullptr), ref_f
 		std::cout << "Cannot write direct_file" << std::endl;
 		return;
 	}
-	ref_file = new std::ofstream(record_path + "reflection.csv");
+	ref_file = new std::ofstream(record_path + "reflections.csv");
 	if (!direct_file->is_open()) {
 		std::cout << "Cannot write direct_file" << std::endl;
 		direct_file->close();

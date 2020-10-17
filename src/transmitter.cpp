@@ -73,8 +73,8 @@ void Transmitter::Clear()
 void Transmitter::DrawObjects(Camera* camera)
 {
 	DrawRadiationPattern(camera);
-	for (auto itr = receivers_.begin(); itr != receivers_.end(); ++itr) {
-		auto * receiver = itr->second;
+	for (auto & itr : receivers_) {
+		auto * receiver = itr.second;
 		receiver->DrawObjects(camera);
 	}
 	if (current_pattern_ != nullptr)

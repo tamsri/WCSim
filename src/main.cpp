@@ -9,6 +9,7 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
+
 namespace ip = boost::asio::ip;
 
 int main(int argc, char *argv[]){
@@ -39,7 +40,7 @@ int main(int argc, char *argv[]){
     } while (tcp_answer != 'y' && tcp_answer != 'n');
     if (tcp_answer == 'y') is_tcp_on = true;
     
-    // Quesetion 2: Turn on Window?
+    // Question 2: Turn on Window?
     
      bool is_window_on = true;
      if (is_tcp_on) {
@@ -61,10 +62,10 @@ int main(int argc, char *argv[]){
         try{
             boost::asio::io_context io_context;
             ip::tcp::acceptor acceptor(io_context, ip::tcp::endpoint(ip::tcp::v4(), 8877));
-            std::cout << "Server is initialized, wait for incoming the client\n";
+            std::cout << "Server is initialized, Waiting for incoming the client\n";
             for (;;) {
                 ip::tcp::socket socket(io_context);
-                boost::array<char, 1024> data_buffer;
+                boost::array<char, 1024> data_buffer{};
                 acceptor.accept(socket); // if not accepted, continue the loop 
 
                 boost::system::error_code ign_err; // param for ignoring the error.
@@ -91,14 +92,12 @@ int main(int argc, char *argv[]){
 
                 // Communications
                 while (true) {
-                    //if (is_window_on) engine->Visualize();
                     len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
                     rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-                    //std::cout << rec_data << std::endl;
 
                     if (rec_data == "e") {
                         std::cout << "Server: the client disconnected to the server.\n";
-                        delete engine; // Engine automaitcally delete the window if window exists.
+                        delete engine; // Engine automatically delete the window if window exists.
                         boost::asio::write(socket, boost::asio::buffer("eok"), ign_err);
                         socket.close();
                         break;
@@ -117,7 +116,7 @@ int main(int argc, char *argv[]){
                         boost::asio::write(socket, boost::asio::buffer("rok"), ign_err);
                     }break;
                     default: {
-                        std::cout << "Server: " << rec_data << "Unknown command, Disconencting the client.\n";
+                        std::cout << "Server: " << rec_data << "Unknown command, Disconnecting the client.\n";
                         goto end_connect;
                     } break;
                 }
