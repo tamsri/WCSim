@@ -26,7 +26,7 @@ public:
 				float transmit_power,
 				RayTracer * ray_tracer);
 	~Transmitter();
-	const unsigned int & GetID() const;
+	unsigned int GetID() const;
 	// Actions
 	void ConnectAReceiver(Receiver* receiver);
 	void DisconnectAReceiver(unsigned int receiver_id);
@@ -34,10 +34,10 @@ public:
 	void AssignRadiationPattern(RadiationPattern* pattern);
 	void MoveTo(glm::vec3 position);
 	void RotateTo(glm::vec3 rotation);
-	const Transform & GetTransform() const;
-	const float & GetFrequency() const;
-	const float & GetTransmitPower() const;
-	const float & GetTransmitterGain(glm::vec3 near_tx_position);
+	Transform GetTransform() const;
+	float GetFrequency() const;
+	float GetTransmitPower() const;
+	float GetTransmitterGain(glm::vec3 near_tx_position);
 	std::unordered_map<unsigned int, Receiver* >& GetReceivers();
 
 	std::string GetReceiversIDs();

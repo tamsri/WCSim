@@ -41,7 +41,7 @@ Transmitter::~Transmitter()
 	receivers_.clear();
 }
 
-const unsigned int & Transmitter::GetID() const
+unsigned int Transmitter::GetID() const
 {
 	return id_;
 }
@@ -119,17 +119,17 @@ void Transmitter::RotateTo(glm::vec3 rotation)
     UpdateResult();
 }
 
-const Transform & Transmitter::GetTransform() const
+Transform Transmitter::GetTransform() const
 {
 	return transform_;
 }
 
-const float & Transmitter::GetFrequency() const
+float Transmitter::GetFrequency() const
 {
 	return frequency_;
 }
 
-const float & Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
+float Transmitter::GetTransmitterGain(glm::vec3 near_tx_position)
 {
 	if (current_pattern_== nullptr) return 0.0f;
 
@@ -264,7 +264,7 @@ void Transmitter::Rotate(const Direction rotation, float delta_time)
 	UpdateResult();
 }
 
-const float &Transmitter::GetTransmitPower() const {
+float Transmitter::GetTransmitPower() const {
     return transmit_power_;
 }
 
