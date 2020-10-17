@@ -1,10 +1,5 @@
 #include "record.hpp"
 
-
-Point::Point(glm::vec3 point_position):position(point_position)
-{
-}
-
 Record::Record(RecordType record_type):type(record_type)
 {
 }
