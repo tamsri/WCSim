@@ -8,6 +8,7 @@
 // Relative permittivity according to ITU-R, P.2040-1. (for 1-100 GHz)
 #define AIR_IOR 1.00029f
 #define CONCRETE_IOR 5.31f
+
 #include <vector>
 #include <utility>
 #include <cstdlib>

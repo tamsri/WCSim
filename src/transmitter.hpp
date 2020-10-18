@@ -43,8 +43,8 @@ public:
 	std::string GetReceiversIDs();
 	glm::vec3 GetPosition();
 	// Movement
-	void Move(const Direction direction, float delta_time);
-	void Rotate(const Direction rotation, float delta_time);
+	void Move(Direction direction, float delta_time);
+	void Rotate(Direction rotation, float delta_time);
 
 	void UpdateResult();
 	void Reset();

@@ -36,7 +36,7 @@ public:
 	glm::vec3 GetPosition() const;
 
 	// Actions
-	void MoveTo(const glm::vec3 near_rx_position);
+	void MoveTo(glm::vec3 near_rx_position);
 	void Move(Direction direction, float delta_time);
 
 	// Visualization

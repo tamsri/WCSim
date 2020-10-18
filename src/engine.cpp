@@ -2,6 +2,7 @@
 
 #include <map>
 #include <iostream>
+#include <sstream>
 #include <utility>
 
 #include <glad/glad.h>
@@ -96,12 +97,9 @@ std::string Engine::GetTransmittersList() const
 {
 	if(transmitters_.empty()) return "0";
 	std::string answer = std::to_string(transmitters_.size()) + '&';
-	/*for (auto & [id, transmitter] : transmitters_) {
-		if (transmitter != nullptr)
-			answer += std::to_string(id) + ',';
-	}*/
-    for(auto itr = transmitters_.begin();itr != transmitters_.end(); ++itr){
-        answer += std::to_string(itr->first) + ',';
+
+    for(const auto & transmitter : transmitters_){
+        answer += std::to_string(transmitter.first) + ',';
     }
 	answer.pop_back();
 	return answer;
@@ -130,21 +128,22 @@ std::string Engine::GetTransmitterInfo(unsigned int transmitter_id)
         tx = transmitters_.find(transmitter_id)->second;
 	else
 	    return "-1";
-
-	std::string answer = std::to_string(transmitter_id) + ":";
+    std::stringstream answer;
+    answer.precision(8);
+	answer << transmitter_id << ":";
 	// ID : Position : Rotation : Frequency : Receiver N & Receivers' IDs : Average Path Loss
 	const Transform& tx_trans = tx->GetTransform();
 	const glm::vec3& tx_pos = tx_trans.position;
 	const glm::vec3& tx_rot = tx_trans.rotation;
-	answer +=	std::to_string(tx_pos.x) + "," +
-				std::to_string(tx_pos.y) + "," + 
-				std::to_string(tx_pos.z) + ":" + 
-				std::to_string(tx_rot.x) + "," +
-				std::to_string(tx_rot.y) + ":" +
-				std::to_string(tx->GetFrequency()) + ":" +
-				std::to_string(tx->GetTransmitPower()) + ":" +
+	answer <<	std::scientific << tx_pos.x << "," <<
+				std::scientific << tx_pos.y << "," <<
+				std::scientific << tx_pos.z << ":" <<
+				std::scientific << tx_rot.x << "," <<
+				std::scientific << tx_rot.y << ":" <<
+				std::scientific << tx->GetFrequency() << ":" <<
+				std::scientific << tx->GetTransmitPower() << ":" <<
 				tx->GetReceiversIDs();
-	return std::string(answer);
+	return answer.str();
 }
 
 
@@ -156,7 +155,10 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
         rx = receivers_.find(receiver_id)->second;
     }else return "-1";
     // #0 - ID
-	std::string answer = std::to_string(receiver_id) + ":";
+    std::stringstream answer;
+    answer.precision(8);
+
+	answer  << receiver_id << ":";
 
 	// ID : Position : Rotation : Station ID : ...
 	// (total rec pow: tx pow: attenuation : direct or diff :  )
@@ -164,49 +166,50 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 	auto rx_pos = rx_trans.position;
 	auto rx_rot = rx_trans.rotation;
     // #1 - Position
-	answer +=	 std::to_string(rx_pos.x) + "," +
-				std::to_string(rx_pos.y) + "," +
-				std::to_string(rx_pos.z) + ":";
+	answer <<	std::scientific << rx_pos.x << ","  <<
+				std::scientific << rx_pos.y  << "," <<
+				std::scientific << rx_pos.z << ":";
     // #2 - Rotation
-    answer +=   std::to_string(rx_rot.x) + "," +
-                std::to_string(rx_rot.y);
+    answer <<   std::scientific << rx_rot.x << "," <<
+                std::scientific << rx_rot.y;
 	// Check the transmitter
 	auto connected_tx = rx->GetTransmitter();
-	if (connected_tx == nullptr) return std::string(answer);
-    // #3 - Station ID
-    answer += ":" + std::to_string(connected_tx->GetID());
+	if (connected_tx == nullptr) return answer.str();
+
+	// #3 - Station ID
+    answer << ":" << connected_tx->GetID();
 
     auto result = rx->GetResult();
     // Giving out result
     if (result.is_valid) {
-        answer += ":" + std::to_string(result.total_received_power);
-        answer += ":" + std::to_string(result.transmit_power);
-        answer += ":" + std::to_string(result.total_attenuation);
+        answer << ":" << std::scientific << result.total_received_power;
+        answer << ":" << std::scientific << result.transmit_power;
+        answer << ":" << std::scientific << result.total_attenuation;
         if (result.is_los) {
             // Transmitting the direct result.
-            answer += ":t";
-            answer += "," + std::to_string(result.direct.direct_loss);
-            answer += "," + std::to_string(result.direct.tx_gain);
-            answer += "," + std::to_string(result.direct.rx_gain);
-            answer += "," + std::to_string(result.direct.delay);
+            answer << ":t";
+            answer << "," << std::scientific << result.direct.direct_loss;
+            answer << "," << std::scientific << result.direct.tx_gain;
+            answer << "," << std::scientific << result.direct.rx_gain;
+            answer << "," << std::scientific << result.direct.delay;
         }else{
             // Transmitting the diffraction result.
-            answer += ":f";
-            answer += "," + std::to_string(result.diffraction.diffraction_loss);
-            answer += "," + std::to_string(result.diffraction.tx_gain);
-            answer += "," + std::to_string(result.diffraction.rx_gain);
-            answer += "," + std::to_string(result.diffraction.delay);
+            answer << ":f";
+            answer << "," << std::scientific << result.diffraction.diffraction_loss;
+            answer << "," << std::scientific << result.diffraction.tx_gain;
+            answer << "," << std::scientific << result.diffraction.rx_gain;
+            answer << "," << std::scientific << result.diffraction.delay;
         }
-        answer += ":" + std::to_string(result.reflections.size());
+        answer << ":" << result.reflections.size();
         // Transmitting the reflection results.
         for(const auto & reflection: result.reflections ){
-            answer += "&" + std::to_string(reflection.reflection_loss);
-            answer += "," + std::to_string(reflection.tx_gain);
-            answer += "," + std::to_string(reflection.rx_gain);
-            answer += "," + std::to_string(reflection.delay);
+            answer << "&" << std::scientific << reflection.reflection_loss;
+            answer << "," << std::scientific << reflection.tx_gain;
+            answer << "," << std::scientific << reflection.rx_gain;
+            answer << "," << std::scientific << reflection.delay;
         }
     }
-	return std::string(answer);
+	return answer.str();
 }
 
 void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code & ign_err, std::string & command)
@@ -260,13 +263,11 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 	case '3': {
 		// Add a user to a station 
 		std::cout << "Server: The client wants to connect a receiver to a station.\n";
-		std::string input_data = command.substr(3);
+		std::vector<std::string> split_data;
+		boost::split(split_data, input_data, boost::is_any_of(","));
 
-		std::vector<std::string> splitted_data;
-		boost::split(splitted_data, input_data, boost::is_any_of(","));
-
-		if (this->ConnectReceiverToTransmitter(std::stoul(splitted_data[0]),
-			std::stoul(splitted_data[1])))
+		if (this->ConnectReceiverToTransmitter(std::stoul(split_data[0]),
+			std::stoul(split_data[1])))
 			boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
 		else
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
@@ -275,23 +276,21 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 	case '4': {
 		// Move a station
 		std::cout << "Server: The client wants to move a station.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, input_data, boost::is_any_of(":"));
 
-		std::string input_data = command.substr(3);
-		std::vector<std::string> splitted_inputs;
-		boost::split(splitted_inputs, input_data, boost::is_any_of(":"));
-
-		unsigned int transmitter_id = std::stoul(splitted_inputs[0]);
+		unsigned int transmitter_id = std::stoul(split_inputs[0]);
 
 		std::vector<std::string> splitted_data;
 		// Get location from input string
-		std::string location_string = splitted_inputs[1];
+		std::string location_string = split_inputs[1];
 		boost::split(splitted_data, location_string, boost::is_any_of(","));
 		glm::vec3 position = glm::vec3(std::stof(splitted_data[0]),
 			std::stof(splitted_data[1]),
 			std::stof(splitted_data[2]));
 		splitted_data.clear();
 		// Get rotation from input string
-		std::string rotation_string = splitted_inputs[2];
+		std::string rotation_string = split_inputs[2];
 		boost::split(splitted_data, rotation_string, boost::is_any_of(","));
 		glm::vec3 rotation = glm::vec3(std::stof(splitted_data[0]),
 			std::stof(splitted_data[1]),
@@ -306,7 +305,6 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 		// Remove a station
 		std::cout << "Server: The client wants to remove a station.\n";
 		// Get id from input
-		std::string input_data = command.substr(3);
 		unsigned int station_id = std::stoul(input_data);
 		// Command the engine
 		if (this->RemoveTransmitter(station_id))
@@ -318,7 +316,6 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 		// Remove a user
 		std::cout << "Server: The client wants to remove a user.\n";
 		// Get id from input
-		std::string input_data = command.substr(3);
 		unsigned int user_id = std::stoul(input_data);
 		// Command the engine
 		if (this->RemoveReceiver(user_id))
@@ -330,11 +327,10 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 		// Disconnect a user from station
 		std::cout << "Server: The client wants to disconnect a user from a station.\n";
 		// Get ids from input
-		std::string input_data = command.substr(3);
-		std::vector<std::string> splitted_inputs;
-		boost::split(splitted_inputs, input_data, boost::is_any_of(":"));
-		unsigned int station_id = std::stoul(splitted_inputs[0]);
-		unsigned int user_id = std::stoul(splitted_inputs[1]);
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, input_data, boost::is_any_of(":"));
+		unsigned int station_id = std::stoul(split_inputs[0]);
+		unsigned int user_id = std::stoul(split_inputs[1]);
 		if (this->DisconnectReceiverFromTransmitter(station_id, user_id))
 			boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
 		else
@@ -343,8 +339,6 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 	case '8': {
 		// Move a user to a location
 		std::cout << "Server: The client wants to move a user.\n";
-		// Get id and locations
-		std::string input_data = command.substr(3);
 		std::vector<std::string> split_inputs;
 		boost::split(split_inputs, input_data, boost::is_any_of(":"));
 		// Get ID

@@ -3,6 +3,7 @@
 
 #include <set>
 #include <utility>
+#include <iomanip>
 
 #include <algorithm>
 #include <cmath>
@@ -269,7 +270,8 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
     // Summary All Results.
     float total_Pr_over_Pt;
     if (result.is_los){
-        float direct_attenuation = result.direct.tx_gain + result.direct.rx_gain - result.direct.direct_loss;
+        float direct_attenuation =
+                result.direct.tx_gain + result.direct.rx_gain - result.direct.direct_loss;
         total_Pr_over_Pt = pow(10, direct_attenuation / 10.0f);
     } else {
         float diffract_attenuation =
@@ -383,7 +385,7 @@ float RayTracer::CalculateReflectionCoefficient(glm::vec3 start_position, glm::v
 				(sqrt(n2) * cos(angle_1) + sqrt(n1) * cos(angle_2));
 	}
 	}
-	return 0;
+	return 1.0f;
 }
 
 
@@ -640,7 +642,7 @@ void RayTracer::CalculateDirectPath(const Record &record, Result &result, Transm
     result.direct.tx_gain = tx_gain;
     result.direct.rx_gain = rx_gain;
     // Calculate Distance
-    auto distance = glm::distance(tx_pos, rx_pos);
+    float distance = glm::distance(tx_pos, rx_pos);
 
     // Friis's Equation
     float free_space_loss = 20*log10(distance) + 20*log10(tx_freq) - 147.55f;
@@ -750,13 +752,9 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         // Calculate tx and rx gain.
         const float &tx_gain = transmitter->GetTransmitterGain(near_tx_pos);
         const float &rx_gain = receiver->GetReceiverGain(near_rx_pos);
+
         result.diffraction.tx_gain = tx_gain;
         result.diffraction.rx_gain = rx_gain;
-
-        // Calculate V1, V2, and V2.
-        float v1 = CalculateVOfEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
-        float v2 = CalculateVOfEdge(tx_pos, center_pos, rx_pos, tx_freq);
-        float v3 = CalculateVOfEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
 
         // Calculate C1, C2, and C3.
         float c1 = CalculateSingleKnifeEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
@@ -809,10 +807,6 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         result.diffraction.tx_gain = tx_gain;
         result.diffraction.rx_gain = rx_gain;
 
-        // Calculate V1, V2, and V2.
-        float v1 = CalculateVOfEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
-        float v2 = CalculateVOfEdge(tx_pos, center_pos, rx_pos, tx_freq);
-        float v3 = CalculateVOfEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
 
         // Calculate C1, C2, and C3.
         float c1 = CalculateSingleKnifeEdge(tx_pos, near_tx_pos, center_pos, tx_freq);

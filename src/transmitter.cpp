@@ -178,12 +178,10 @@ std::unordered_map<unsigned int, Receiver*>& Transmitter::GetReceivers()
 
 std::string Transmitter::GetReceiversIDs()
 {
-    std::cout << "getting ID" << std::endl;
     if (receivers_.empty()) return "0";
 
 	std::string answer = std::to_string(receivers_.size()) + "&";
 	for(auto itr = receivers_.begin(); itr != receivers_.end(); ++itr){
-        std::cout << "getting ID" <<  itr->first <<std::endl;
         answer += std::to_string(itr->first) + ",";
 	}
 	answer.pop_back();
