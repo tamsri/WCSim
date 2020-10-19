@@ -390,8 +390,8 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 	}break;
 	case'5':{
-	    // Give me the map of station moving around the nap
-	    std::cout << "Server: The client asks for the average path loss map.\n";
+	    // Give me the q_map of station moving around the nap
+	    std::cout << "Server: The client asks for the average path loss q_map.\n";
         auto input_data = question.substr(2);
         std::vector<std::string> split_data;
         boost::split(split_data, input_data, boost::is_any_of(","));
@@ -404,29 +404,26 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         constexpr float x_end = 100.0f;
         constexpr float z_start = -100.0f;
         constexpr float z_end = 100.0f;
-        constexpr float x_width = 200.0f;
-        constexpr float z_width = 200.0f;
 
-        float x_step = x_width/(float)resolution;
-        float z_step = z_width/(float)resolution;
+        float x_step = 1/(float)resolution;
+        float z_step = 1/(float)resolution;
 
-        auto map = this->GetStationMap(station_id, x_step, z_step);
+        auto q_map = this->GetStationMap(station_id, x_step, z_step);
 
-        if (map.empty())
+        if (q_map.empty())
             boost::asio::write(socket,boost::asio::buffer("fai"), ign_err);
         else
             boost::asio::write(socket,boost::asio::buffer("suc"), ign_err);
 
-        unsigned int x_depth = map.size();
-        unsigned int z_depth = map[x_start].size();
+        unsigned int x_depth = q_map.size();
+        unsigned int z_depth = q_map.begin()->second.size();
         std::string head_info = std::to_string(x_depth) + "," + std::to_string(z_depth);
         // Send the head of information.
         boost::asio::write(socket, boost::asio::buffer(head_info), ign_err);
-        for(int x = (int)x_start; x < (int)x_end; ++x)
-            for(int z = (int)z_start; z < (int)z_end; ++z){
-                float avg_pl = map[x_start+(float)x*x_step][z_start+(float)z*z_step];
+        for(auto & [x , row] : q_map)
+            for(auto & [z, avg_loss] : row){
                 boost::asio::write(socket,
-                                   boost::asio::buffer(std::to_string(avg_pl)),
+                                   boost::asio::buffer(std::to_string(avg_loss)),
                                    ign_err);
             }
         boost::asio::write(socket,boost::asio::buffer("e"), ign_err);
@@ -833,11 +830,11 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float z_end = 100.0f;
 
     std::vector<std::thread> threads;
-    for(int x = (int)x_start; x < (int)x_end; ++x)
-        for(int z = (int)z_start; z < (int)z_end; ++z){
-            const glm::vec3 position{   x_start+(float)x*x_step,
+    for(float x = x_start; x < x_end; x+=x_step)
+        for(float z = z_start; z < z_end; z+=z_step){
+            const glm::vec3 position{   x,
                                             tx_height,
-                                        z_start+(float)z*z_step};
+                                        z};
             std::thread map_thread(&Engine::TraceMap, this,
                                    tx, position, std::ref(map));
             threads.push_back(std::move(map_thread));
