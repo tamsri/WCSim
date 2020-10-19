@@ -8,6 +8,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/gtx/string_cast.hpp>
 
 #include "window.hpp"
 #include "camera.hpp"
@@ -110,11 +111,8 @@ std::string Engine::GetReceiversList() const
 {
 	if (receivers_.empty()) return "0";
 	std::string answer = std::to_string(receivers_.size()) + '&';
-	/*for (auto & [id, receiver] : receivers_) {
-			answer += std::to_string(id) + ',';
-	}*/
-	for(auto itr = receivers_.begin();itr != receivers_.end(); ++itr){
-	    answer += std::to_string(itr->first) + ',';
+	for(const auto & receiver : receivers_){
+	    answer += std::to_string(receiver.first) + ',';
 	}
 	answer.pop_back();
 	return answer;
@@ -391,9 +389,50 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 		std::string answer = "a:" + this->GetReceiverInfo(id);
 		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 	}break;
+	case'5':{
+	    // Give me the map of station moving around the nap
+	    std::cout << "Server: The client asks for the average path loss map.\n";
+        auto input_data = question.substr(2);
+        std::vector<std::string> split_data;
+        boost::split(split_data, input_data, boost::is_any_of(","));
+
+        unsigned int station_id = std::stoul(split_data[0]);
+        unsigned int resolution = std::stoul(split_data[1]);
+
+        /// TODO: Implement map_ class.
+        constexpr float x_start = -100.0f;
+        constexpr float x_end = 100.0f;
+        constexpr float z_start = -100.0f;
+        constexpr float z_end = 100.0f;
+        constexpr float x_width = 200.0f;
+        constexpr float z_width = 200.0f;
+
+        float x_step = x_width/(float)resolution;
+        float z_step = z_width/(float)resolution;
+
+        auto map = this->GetStationMap(station_id, x_step, z_step);
+
+        if (map.empty())
+            boost::asio::write(socket,boost::asio::buffer("fai"), ign_err);
+        else
+            boost::asio::write(socket,boost::asio::buffer("suc"), ign_err);
+
+        unsigned int x_depth = map.size();
+        unsigned int z_depth = map[x_start].size();
+        std::string head_info = std::to_string(x_depth) + "," + std::to_string(z_depth);
+        // Send the head of information.
+        boost::asio::write(socket, boost::asio::buffer(head_info), ign_err);
+        for(int x = (int)x_start; x < (int)x_end; ++x)
+            for(int z = (int)z_start; z < (int)z_end; ++z){
+                float avg_pl = map[x_start+(float)x*x_step][z_start+(float)z*z_step];
+                boost::asio::write(socket,
+                                   boost::asio::buffer(std::to_string(avg_pl)),
+                                   ign_err);
+            }
+        boost::asio::write(socket,boost::asio::buffer("e"), ign_err);
+	}break;
 	default: {
 		std::cout << "Server: Unknown Question\n";
-		boost::asio::write(socket, boost::asio::buffer("qnok"), ign_err);
 		boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
 	}
@@ -753,5 +792,60 @@ void Engine::Visualize()
 void Engine::OnKeys()
 {
 	KeyActions();
+}
+
+void Engine::TraceMap(Transmitter * transmitter,
+                       glm::vec3 position,
+                       std::map<float,std::map<float,float>> & map) const {
+    std::cout << "Start tracing at: " << glm::to_string(position) << std::endl;
+    transmitter->MoveTo(position);
+    auto receivers = transmitter->GetReceivers();
+    float avg_total_loss = 0.0f;
+    int n_users = 0;
+    // Iterate the result of each receiver.
+    for(auto & [id, rx]: receivers){
+        auto result = rx->GetResult();
+        if(result.is_valid){
+            ++n_users;
+            avg_total_loss += result.total_attenuation;
+        }
+    }
+    // Summary.
+    if(n_users == 0){
+        // In the case of base station is inside the building.
+        map[position.x][position.z] = 0.0f;
+    }else{
+        // average the total loss and store to the map.
+        map[position.x][position.z] = avg_total_loss/(float)n_users;
+    }
+    std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
+}
+
+std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int station_id, float x_step, float z_step) {
+    std::map<float,std::map<float, float>> map;
+    if (transmitters_.find(station_id) == transmitters_.end()) return map;
+    Transmitter * tx = transmitters_.find(station_id)->second;
+
+    float tx_height = tx->GetTransform().position.y;
+    constexpr float x_start = -100.0f;
+    constexpr float z_start = -100.0f;
+    constexpr float x_end = 100.0f;
+    constexpr float z_end = 100.0f;
+
+    std::vector<std::thread> threads;
+    for(int x = (int)x_start; x < (int)x_end; ++x)
+        for(int z = (int)z_start; z < (int)z_end; ++z){
+            const glm::vec3 position{   x_start+(float)x*x_step,
+                                            tx_height,
+                                        z_start+(float)z*z_step};
+            std::thread map_thread(&Engine::TraceMap, this,
+                                   tx, position, std::ref(map));
+            threads.push_back(std::move(map_thread));
+        }
+
+    for(auto & thread:threads)
+        if(thread.joinable()) thread.join();
+
+    return map;
 }
 

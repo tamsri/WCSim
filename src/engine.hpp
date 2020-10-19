@@ -57,15 +57,19 @@ class Engine{
         void Run();
         void RunWithWindow();
 
+        // Main TC orders
+        void ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& command);
+        void ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& question);
+
         // External Actions
         std::string GetTransmittersList() const;
         std::string GetTransmitterInfo(unsigned int transmitter_id);
         std::string GetReceiversList() const;
         std::string GetReceiverInfo(unsigned int receiver_id);
+        std::map<float, std::map<float, float>> GetStationMap(unsigned int station_id, float x_step, float z_step);
+        void TraceMap(Transmitter *transmitter, glm::vec3 position, std::map<float, std::map<float, float>> &map) const;
 
-        // Main orders
-        void ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& command);
-        void ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& question);
+
 
         // Commands for TCP 
         bool AddTransmitter(glm::vec3 position, glm::vec3 rotation, float frequency);
@@ -142,6 +146,8 @@ class Engine{
 
         // Communication
         Communicator* communicator_;
+
+
 };
 
 #endif // !ENGINE_H
