@@ -850,7 +850,7 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     for(auto [id, rx]: tx->GetReceivers()) rx_positions.push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
-    unsigned int threads_limit = std::thread::hardware_concurrency()*2;
+    unsigned int threads_limit = std::thread::hardware_concurrency()*10;
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x, tx_height, z};
