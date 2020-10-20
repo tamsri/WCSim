@@ -542,7 +542,7 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 	std::vector<const Triangle*> check_triangles;
 
 	// Searching for check triangles
-	if (map_->GetObjects().size() > 129600) {
+	/*if (map_->GetObjects().size() > 129600) {
 		// scan hit_triangles
 		std::map<Triangle *, bool> start_hits = ScanHit(start_position); // it won't scan if the point is already checked
 		std::map<Triangle*, bool> end_hits = ScanHit(end_position);
@@ -551,8 +551,8 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 	}
 	else {
 		check_triangles = map_->GetObjects();
-	}
-
+	}*/
+    check_triangles = map_->GetObjects();
 	// check the reflections points on matches triangles
 
 	for (const Triangle* matched_triangle : check_triangles) {

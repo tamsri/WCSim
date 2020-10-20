@@ -826,7 +826,7 @@ void Engine::TraceMap( const glm::vec3  tx_position, const float tx_frequency,
     // Summary.
     if(n_users == 0){
         // In the case of base station is inside the building.
-        map[tx_position.x][tx_position.z] = 0.0f;
+        map[tx_position.x][tx_position.z] = -200.0f;
     }else{
         // average the total loss and store to the map.
         map[tx_position.x][tx_position.z] = avg_total_loss/(float)n_users;
