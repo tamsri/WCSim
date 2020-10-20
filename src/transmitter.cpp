@@ -83,11 +83,9 @@ void Transmitter::DrawObjects(Camera* camera)
 
 void Transmitter::ConnectAReceiver(Receiver* receiver)
 {
-	if (receiver == nullptr) return;
-	unsigned int id = receiver->GetID();
-	if (receivers_.find(id) != receivers_.end()) return;
-	receiver->ConnectATransmitter(this);
-	receivers_.insert(std::make_pair(id, receiver));
+    if(receivers_.find(receiver->GetID()) != receivers_.end()) return;
+	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
+    receiver->ConnectATransmitter(this);
 }
 
 void Transmitter::DisconnectAReceiver(unsigned int receiver_id)

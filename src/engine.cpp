@@ -259,7 +259,7 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
 	case '3': {
-		// Add a user to a station 
+		// Connect a user to a station
 		std::cout << "Server: The client wants to connect a receiver to a station.\n";
 		std::vector<std::string> split_data;
 		boost::split(split_data, input_data, boost::is_any_of(","));
