@@ -1,18 +1,14 @@
 #include "receiver.hpp"
 
-#include <iostream>
-
 #include "object.hpp"
 #include "ray_tracer.hpp"
 #include "transmitter.hpp"
-#include "recorder.hpp"
 
 unsigned int Receiver::global_id_ = 0;
 Receiver::Receiver(Transform transform, RayTracer* ray_tracer):	id_(global_id_++),
 														transform_(transform),
 														ray_tracer_(ray_tracer),
 														transmitter_(nullptr),
-														recorder_(nullptr),
 														velocity_(0),
 														move_speed_(0){
 	Reset();
@@ -23,7 +19,6 @@ Receiver::Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * tr
 	transform_(transform),	
 	ray_tracer_(ray_tracer),
 	transmitter_(transmitter),
-	recorder_(nullptr),
     velocity_(0),
     move_speed_(0)
 {
@@ -56,11 +51,6 @@ Transform Receiver::GetTransform() const
 	return transform_;
 }
 
-void Receiver::AddRecorder(Recorder* recorder)
-{
-	recorder_ = recorder;
-}
-
 Result Receiver::GetResult() const
 {
 	return result_;
@@ -78,7 +68,7 @@ void Receiver::UpdateResult()
 	const glm::vec3 tx_pos = transmitter_->GetPosition();
 	records_.clear();
 	ray_tracer_->Trace(tx_pos, rx_pos, records_);
-	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_, recorder_);
+	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_);
 }
 void Receiver::UpdateAndVisualize()
 {

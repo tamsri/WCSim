@@ -428,6 +428,8 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
         received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
         if (received_data != "ok") return;
+
+
         // Send the head of information.
         for (auto &[x, row] : q_map){
             for (auto &[z, avg_loss] : row) {
@@ -435,7 +437,6 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
                                    boost::asio::buffer(std::to_string(avg_loss)),
                                    ign_err);
                 len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-                std::cout << "Gave data from " << x << ", " << z << std::endl;
                 received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
                 if (received_data != "ok") return;
                 }
@@ -741,7 +742,7 @@ void Engine::MousePosition(double x_pos, double y_pos)
 void Engine::MouseScroll(double xoffset, double yoffset)
 {
 	///  Todo: Implement later
-	main_camera_->camera_move_speed_ += yoffset;
+	main_camera_->camera_move_speed_ += (float)yoffset;
 }
 
 void Engine::MouseButtonToggle(MouseBottons action)
@@ -776,7 +777,7 @@ void Engine::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoff
 
 void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	Engine* my_engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
+	auto* my_engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS) {
         my_engine->MouseButtonToggle(kRightPress);
 	}
@@ -805,23 +806,22 @@ void Engine::OnKeys()
 	KeyActions();
 }
 
-void Engine::TraceMap(Transmitter * transmitter,
+void Engine::TraceMap(Transmitter * tx,
                        glm::vec3 position,
+                       std::vector<Receiver*> receivers,
                        std::map<float,std::map<float,float>> & map) const {
-    std::cout << "Start tracing at: " << glm::to_string(position) << std::endl;
-    auto receivers = transmitter->GetReceivers();
     float avg_total_loss = 0.0f;
     int n_users = 0;
     // Iterate the result of each receiver.
-    for(auto & [id, rx]: receivers){
-        std::vector<Record> records;
-        Result result;
-        ray_tracer_->Trace(position, rx->GetPosition(), records);
-        ray_tracer_->CalculatePathLoss(transmitter, rx, records, result);
-        if(result.is_valid){
+    std::vector<Record> records;
+    Result result;
+    for(Receiver * rx: receivers){
+        ray_tracer_->TraceMap(position, rx->GetPosition(), records);
+        if(ray_tracer_->CalculatePathLossMap(tx, rx, records, result)){
             ++n_users;
             avg_total_loss += result.total_attenuation;
         }
+        records.clear();
     }
     // Summary.
     if(n_users == 0){
@@ -846,8 +846,8 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    unsigned int max_thread = std::thread::hardware_concurrency();
-    std::cout << "Max threads: " << max_thread << std::endl;
+    std::vector<Receiver *> rxs;
+    for(auto [id, rx]: tx->GetReceivers()) rxs.push_back(rx);
 
     std::vector<std::thread> threads;
     for(float x = x_start; x <= x_end; x+=x_step) {
@@ -856,23 +856,24 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
                                      tx_height,
                                      z};
             std::thread map_thread(&Engine::TraceMap, this,
-                                   tx, position, std::ref(q_map));
+                                   tx, position, rxs,
+                                   std::ref(q_map));
             threads.push_back(std::move(map_thread));
             // Optimize to not exceed the max thread;
-            if(threads.size() >= max_thread){
+            /*if(threads.size() >= 4){
                 for(auto & thread:threads){
                     if(thread.joinable()) thread.join();
                 }
                 threads.clear();
-            }
+                std::cout << "--------------------------\n";
+            }*/
         }
 
     }
     // Join threads
     for(auto & thread:threads)
-        if(thread.joinable())
             thread.join();
-
+    threads.clear();
     std::cout << "Completed Map Tracing" << std::endl;
     return q_map;
 }

@@ -107,7 +107,12 @@ void RayTracer::Trace(const glm::vec3 start_position,
     line_tracer.join();
     reflect_tracer.join();
 }
-
+void RayTracer::TraceMap(const glm::vec3 start_position,
+                            const glm::vec3 end_position,
+                      std::vector<Record> & records) const{
+    LineTrace(start_position, end_position, records);
+    ReflectTrace(start_position, end_position, records);
+}
 void RayTracer::GetDrawComponents(const glm::vec3 & start_position, const glm::vec3 & end_position,
                                   std::vector<Record>& records, std::vector<Object*>& objects) const
 {
@@ -212,7 +217,7 @@ void RayTracer::GetDrawComponents(const glm::vec3 & start_position, const glm::v
 
 bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                                   const std::vector<Record>& records,
-                                  Result& result, Recorder* recorder) const {
+                                  Result& result) const {
     // Validation of Result
     if (records.empty()) {
         result.is_valid = false;
@@ -291,6 +296,70 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
 	return true;
 }
 
+bool RayTracer::CalculatePathLossMap(Transmitter *transmitter, Receiver *receiver,
+                                     const std::vector<Record> &records,
+                                     Result &result) const {
+    // Validation of Result
+    if (records.empty()) {
+        result.is_valid = false;
+        return false;
+    }
+    result.is_valid = true;
+    // Initialize the result
+    result.total_received_power = 0.0f;
+    result.transmit_power = transmitter->GetTransmitPower();
+
+    result.direct.rx_gain = 0.0f;
+    result.direct.tx_gain = 0.0f;
+    result.direct.direct_loss = 0.0f;
+    result.direct.delay = 0.0f;
+
+    result.reflections = {};
+
+    result.diffraction.rx_gain = 0.0f;
+    result.diffraction.tx_gain = 0.0f;
+    result.diffraction.diffraction_loss = 0.0f;
+    result.diffraction.delay = 0.0f;
+
+    for (auto &record: records) {
+        switch (record.type) {
+            case RecordType::kDirect: {
+                CalculateDirectPath(record, result, transmitter, receiver);
+            }
+                break;
+            case RecordType::kReflect: {
+                CalculateReflections(record, result, transmitter, receiver);
+            }
+                break;
+            case RecordType::kEdgeDiffraction: {
+                CalculateDiffraction(record,result, transmitter, receiver);
+            } break;
+        }
+
+    }
+
+    // Summary All Results.
+    float total_Pr_over_Pt;
+    if (result.is_los){
+        float direct_attenuation =
+                result.direct.tx_gain + result.direct.rx_gain - result.direct.direct_loss;
+        total_Pr_over_Pt = pow(10, direct_attenuation / 10.0f);
+    } else {
+        float diffract_attenuation =
+                result.diffraction.tx_gain + result.diffraction.rx_gain - result.diffraction.diffraction_loss;
+        total_Pr_over_Pt = pow(10, diffract_attenuation / 10.0f);
+    }
+    for(const auto reflection : result.reflections){
+        float reflect_attenuation = reflection.tx_gain +
+                                    reflection.rx_gain -
+                                    reflection.reflection_loss;
+
+        total_Pr_over_Pt += pow(10, reflect_attenuation / 10.0f);
+    }
+    result.total_attenuation = 10*log10(total_Pr_over_Pt);
+    result.total_received_power = result.total_attenuation + result.transmit_power;
+    return true;
+}
 
 bool RayTracer::IsDirectHit(glm::vec3 start_position,glm::vec3 end_position) const
 {
@@ -859,3 +928,4 @@ void RayTracer::CalculateReflection( const glm::vec3 & tx_position, const glm::v
     // Store the values in result.
     result.reflections.push_back(ReflectionResult{reflection_loss, delay, tx_gain, rx_gain});
 }
+

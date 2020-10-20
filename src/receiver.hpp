@@ -28,8 +28,6 @@ public:
 	Transmitter * GetTransmitter() const;
 	Transform GetTransform()const;
 
-	void AddRecorder(Recorder* recorder);
-
 	float GetReceiverGain(const glm::vec3 & position) const;
 
 	Result GetResult() const;
@@ -64,7 +62,6 @@ private:
 	// Ray Tracer
 	RayTracer * ray_tracer_;
 	Transmitter* transmitter_;
-	Recorder* recorder_;
 
 	// Visualisation
 	std::vector<Object*> objects_;

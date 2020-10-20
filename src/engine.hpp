@@ -67,7 +67,9 @@ class Engine{
         std::string GetReceiversList() const;
         std::string GetReceiverInfo(unsigned int receiver_id);
         std::map<float, std::map<float, float>> GetStationMap(unsigned int station_id, float x_step, float z_step);
-        void TraceMap(Transmitter *transmitter, glm::vec3 position, std::map<float, std::map<float, float>> &map) const;
+        void TraceMap(Transmitter *tx, glm::vec3 position,
+                      std::vector<Receiver *> receivers,
+                      std::map<float,std::map<float, float>> &map) const;
 
 
 
