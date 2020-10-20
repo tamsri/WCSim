@@ -389,9 +389,9 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 		std::string answer = "a:" + this->GetReceiverInfo(id);
 		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 	}break;
-	case'5':{
-	    // Give me the q_map of station moving around the nap
-	    std::cout << "Server: The client asks for the average path loss q_map.\n";
+	case'5': {
+        // Give me the q_map of station moving around the nap
+        std::cout << "Server: The client asks for the average path loss q_map.\n";
         auto input_data = question.substr(2);
         std::vector<std::string> split_data;
         boost::split(split_data, input_data, boost::is_any_of(","));
@@ -405,28 +405,42 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         constexpr float z_start = -100.0f;
         constexpr float z_end = 100.0f;
 
-        float x_step = (x_end-x_start)/(float)resolution;
-        float z_step = (z_end-x_start)/(float)resolution;
+        float x_step = (x_end - x_start) / (float) resolution;
+        float z_step = (z_end - x_start) / (float) resolution;
 
         auto q_map = this->GetStationMap(station_id, x_step, z_step);
 
         if (q_map.empty())
-            boost::asio::write(socket,boost::asio::buffer("fai"), ign_err);
+            boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
         else
-            boost::asio::write(socket,boost::asio::buffer("suc"), ign_err);
+            boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
+
+        boost::array<char, 64> data_buffer{};
+        int len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+        std::string received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+        if (received_data == "ready") std::cout << "Client: Ready to get the map\n";
 
         unsigned int x_depth = q_map.size();
         unsigned int z_depth = q_map.begin()->second.size();
         std::string head_info = std::to_string(x_depth) + "," + std::to_string(z_depth);
-        // Send the head of information.
         boost::asio::write(socket, boost::asio::buffer(head_info), ign_err);
-        for(auto & [x , row] : q_map)
-            for(auto & [z, avg_loss] : row){
+
+        len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+        received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+        if (received_data != "ok") return;
+        // Send the head of information.
+        for (auto &[x, row] : q_map){
+            for (auto &[z, avg_loss] : row) {
                 boost::asio::write(socket,
                                    boost::asio::buffer(std::to_string(avg_loss)),
                                    ign_err);
+                len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+                std::cout << "Gave data from " << x << ", " << z << std::endl;
+                received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+                if (received_data != "ok") return;
+                }
             }
-        boost::asio::write(socket,boost::asio::buffer("e"), ign_err);
+        std::cout<< "Successfully transferred the map\n";
 	}break;
 	default: {
 		std::cout << "Server: Unknown Question\n";
@@ -831,19 +845,19 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    for(float x = x_start; x < x_end; x+=x_step) {
-        std::vector<std::thread> threads;
-        for (float z = z_start; z < z_end; z += z_step) {
+    std::vector<std::thread> threads;
+    for(float x = x_start; x <= x_end; x+=x_step) {
+        for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x,
                                      tx_height,
                                      z};
             std::thread map_thread(&Engine::TraceMap, this,
                                    tx, position, std::ref(map));
             threads.push_back(std::move(map_thread));
-            //TraceMap(tx,position,map);
         }
-        for(auto & thread:threads) if(thread.joinable()) thread.join();
     }
+    for(auto & thread:threads) if(thread.joinable()) thread.join();
+    std::cout << "Completed Map Tracing" << std::endl;
     return map;
 }
 
