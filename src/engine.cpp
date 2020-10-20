@@ -405,8 +405,8 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         constexpr float z_start = -100.0f;
         constexpr float z_end = 100.0f;
 
-        float x_step = 1/(float)resolution;
-        float z_step = 1/(float)resolution;
+        float x_step = (x_end-x_start)/(float)resolution;
+        float z_step = (z_end-x_start)/(float)resolution;
 
         auto q_map = this->GetStationMap(station_id, x_step, z_step);
 
@@ -795,13 +795,15 @@ void Engine::TraceMap(Transmitter * transmitter,
                        glm::vec3 position,
                        std::map<float,std::map<float,float>> & map) const {
     std::cout << "Start tracing at: " << glm::to_string(position) << std::endl;
-    transmitter->MoveTo(position);
     auto receivers = transmitter->GetReceivers();
     float avg_total_loss = 0.0f;
     int n_users = 0;
     // Iterate the result of each receiver.
     for(auto & [id, rx]: receivers){
-        auto result = rx->GetResult();
+        std::vector<Record> records;
+        Result result;
+        ray_tracer_->Trace(position, rx->GetPosition(), records);
+        ray_tracer_->CalculatePathLoss(transmitter, rx, records, result);
         if(result.is_valid){
             ++n_users;
             avg_total_loss += result.total_attenuation;
@@ -829,20 +831,19 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    std::vector<std::thread> threads;
-    for(float x = x_start; x < x_end; x+=x_step)
-        for(float z = z_start; z < z_end; z+=z_step){
-            const glm::vec3 position{   x,
-                                            tx_height,
-                                        z};
+    for(float x = x_start; x < x_end; x+=x_step) {
+        std::vector<std::thread> threads;
+        for (float z = z_start; z < z_end; z += z_step) {
+            const glm::vec3 position{x,
+                                     tx_height,
+                                     z};
             std::thread map_thread(&Engine::TraceMap, this,
                                    tx, position, std::ref(map));
             threads.push_back(std::move(map_thread));
+            //TraceMap(tx,position,map);
         }
-
-    for(auto & thread:threads)
-        if(thread.joinable()) thread.join();
-
+        for(auto & thread:threads) if(thread.joinable()) thread.join();
+    }
     return map;
 }
 
