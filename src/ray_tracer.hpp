@@ -46,8 +46,8 @@ public:
 	void Trace( glm::vec3 start_position,
                 glm::vec3 end_position,
                 std::vector<Record> & records) const;
-    void TraceMap( glm::vec3 start_position,
-                   glm::vec3 end_position,
+    void TraceMap(glm::vec3 tx_position,
+                  glm::vec3 rx_position,
                   std::vector<Record> &records) const;
 
 	void LineTrace(  glm::vec3 start_position,
@@ -100,8 +100,8 @@ public:
     bool CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                            const std::vector<Record>& records,
                            Result& result) const;
-    bool CalculatePathLossMap(Transmitter* transmitter, Receiver * receiver,
-                              const std::vector<Record>& records,
+    bool CalculatePathLossMap(glm::vec3 tx_position, float tx_frequency,
+                              glm::vec3 rx_position, std::vector<Record> records,
                               Result& result) const;
 private:
 	PolygonMesh * map_;

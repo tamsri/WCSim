@@ -806,18 +806,18 @@ void Engine::OnKeys()
 	KeyActions();
 }
 
-void Engine::TraceMap(Transmitter * tx,
-                       glm::vec3 position,
-                       std::vector<Receiver*> receivers,
+void Engine::TraceMap( const glm::vec3  tx_position, const float tx_frequency,
+                       std::vector<glm::vec3> rx_positions,
                        std::map<float,std::map<float,float>> & map) const {
     float avg_total_loss = 0.0f;
     int n_users = 0;
     // Iterate the result of each receiver.
     std::vector<Record> records;
     Result result;
-    for(Receiver * rx: receivers){
-        ray_tracer_->TraceMap(position, rx->GetPosition(), records);
-        if(ray_tracer_->CalculatePathLossMap(tx, rx, records, result)){
+    for(auto rx_position: rx_positions){
+        ray_tracer_->TraceMap(tx_position,  rx_position, records);
+        if(ray_tracer_->CalculatePathLossMap(tx_position, tx_frequency,
+                                             rx_position, records, result)){
             ++n_users;
             avg_total_loss += result.total_attenuation;
         }
@@ -826,10 +826,10 @@ void Engine::TraceMap(Transmitter * tx,
     // Summary.
     if(n_users == 0){
         // In the case of base station is inside the building.
-        map[position.x][position.z] = 0.0f;
+        map[tx_position.x][tx_position.z] = 0.0f;
     }else{
         // average the total loss and store to the map.
-        map[position.x][position.z] = avg_total_loss/(float)n_users;
+        map[tx_position.x][tx_position.z] = avg_total_loss/(float)n_users;
     }
     //std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
 }
@@ -839,34 +839,24 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     std::map<float,std::map<float, float>> q_map;
     if (transmitters_.find(station_id) == transmitters_.end()) return q_map;
     Transmitter * tx = transmitters_.find(station_id)->second;
-
+    float tx_frequency = tx->GetFrequency();
     float tx_height = tx->GetTransform().position.y;
     constexpr float x_start = -100.0f;
     constexpr float z_start = -100.0f;
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    std::vector<Receiver *> rxs;
-    for(auto [id, rx]: tx->GetReceivers()) rxs.push_back(rx);
+    std::vector<glm::vec3> rx_positions;
+    for(auto [id, rx]: tx->GetReceivers()) rx_positions.push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
-            const glm::vec3 position{x,
-                                     tx_height,
-                                     z};
+            const glm::vec3 position{x, tx_height, z};
             std::thread map_thread(&Engine::TraceMap, this,
-                                   tx, position, rxs,
+                                   position, tx_frequency ,rx_positions,
                                    std::ref(q_map));
             threads.push_back(std::move(map_thread));
-            // Optimize to not exceed the max thread;
-            /*if(threads.size() >= 4){
-                for(auto & thread:threads){
-                    if(thread.joinable()) thread.join();
-                }
-                threads.clear();
-                std::cout << "--------------------------\n";
-            }*/
         }
 
     }
