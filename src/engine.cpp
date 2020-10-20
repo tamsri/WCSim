@@ -809,7 +809,7 @@ void Engine::TraceMap(Transmitter * transmitter,
                        glm::vec3 position,
                        std::map<float,std::map<float,float>> & map) const {
     std::cout << "Start tracing at: " << glm::to_string(position) << std::endl;
-    auto & receivers = transmitter->GetReceivers();
+    auto receivers = transmitter->GetReceivers();
     float avg_total_loss = 0.0f;
     int n_users = 0;
     // Iterate the result of each receiver.
@@ -834,9 +834,10 @@ void Engine::TraceMap(Transmitter * transmitter,
     std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
 }
 
-std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int station_id, float x_step, float z_step) {
-    std::map<float,std::map<float, float>> map;
-    if (transmitters_.find(station_id) == transmitters_.end()) return map;
+std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int station_id,
+                                                              float x_step, float z_step) {
+    std::map<float,std::map<float, float>> q_map;
+    if (transmitters_.find(station_id) == transmitters_.end()) return q_map;
     Transmitter * tx = transmitters_.find(station_id)->second;
 
     float tx_height = tx->GetTransform().position.y;
@@ -855,7 +856,7 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
                                      tx_height,
                                      z};
             std::thread map_thread(&Engine::TraceMap, this,
-                                   tx, position, std::ref(map));
+                                   tx, position, std::ref(q_map));
             threads.push_back(std::move(map_thread));
             // Optimize to not exceed the max thread;
             if(threads.size() >= max_thread){
@@ -871,9 +872,8 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     for(auto & thread:threads)
         if(thread.joinable())
             thread.join();
-    threads.clear();
 
     std::cout << "Completed Map Tracing" << std::endl;
-    return map;
+    return q_map;
 }
 

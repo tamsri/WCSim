@@ -43,27 +43,27 @@ public:
 	RayTracer(PolygonMesh * map);
 	
 	// Ray Tracing Part
-	void Trace( const glm::vec3 & start_position,
-                const glm::vec3 & end_position,
+	void Trace( glm::vec3 start_position,
+                glm::vec3 end_position,
                 std::vector<Record> & records) const;
 
-	void LineTrace(const glm::vec3 & start_position,
-                   const glm::vec3 & end_position,
-                   std::vector<Record> & records
+	void LineTrace(  glm::vec3 start_position,
+                     glm::vec3 end_position,
+                     std::vector<Record> & records
     ) const;
 
-    void ReflectTrace(const glm::vec3 &start_position,
-                      const glm::vec3 &end_position,
+    void ReflectTrace(glm::vec3 start_position,
+                      glm::vec3 end_position,
                       std::vector<Record> &records) const;
 
 
 	// Line of Sight
-	bool IsDirectHit(const glm::vec3 & start_point, const glm::vec3 & end_point) const;
+	bool IsDirectHit( glm::vec3 start_position, glm::vec3 end_position) const;
 	
 	// Reflection
-	std::map<Triangle *, bool> ScanHit(const glm::vec3 & position) const;
-	std::vector <Triangle*> ScanHitVec(const glm::vec3 & position) const;
-	bool IsReflected(const glm::vec3 & start_position, const glm::vec3 & end_position, std::vector<glm::vec3> & reflected_points) const;
+	std::map<Triangle *, bool> ScanHit(glm::vec3 position) const;
+	std::vector <Triangle*> ScanHitVec(glm::vec3 position) const;
+	bool IsReflected(glm::vec3 start_position, glm::vec3 end_position, std::vector<glm::vec3> & reflected_points) const;
 	static float CalculateReflectionCoefficient(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 reflection_position, Polarization polar) ;
 	static glm::vec3 ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 point) ;
 

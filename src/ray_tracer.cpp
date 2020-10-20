@@ -28,7 +28,7 @@ RayTracer::RayTracer(PolygonMesh* map) :map_(map)
 {
 }
 
-std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 & position) const
+std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 position) const
 {
 	std::map<Triangle*, bool> hit_triangles;
 	// Approach I: when the triangles are more than the generated scanning rays
@@ -51,7 +51,7 @@ std::map <Triangle *, bool> RayTracer::ScanHit(const glm::vec3 & position) const
 	return hit_triangles;
 }
 
-std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 & position) const
+std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 position) const
 {
 	std::vector <Triangle*> hit_triangles;
 	// Approach I: when the triangles are more than the generated scanning rays
@@ -74,8 +74,9 @@ std::vector <Triangle*> RayTracer::ScanHitVec(const glm::vec3 & position) const
 	return hit_triangles;
 }
 
-void RayTracer::LineTrace(const glm::vec3 & start_position,
-                          const glm::vec3 & end_position,
+
+void RayTracer::LineTrace(const glm::vec3 start_position,
+                          const glm::vec3 end_position,
                           std::vector<Record> & records) const {
     if(IsDirectHit(start_position, end_position)){
             records.emplace_back(RecordType::kDirect);
@@ -86,8 +87,8 @@ void RayTracer::LineTrace(const glm::vec3 & start_position,
     }
 }
 
-void RayTracer::ReflectTrace(const glm::vec3 & start_position,
-                             const glm::vec3 & end_position,
+void RayTracer::ReflectTrace(const glm::vec3 start_position,
+                             const glm::vec3 end_position,
                              std::vector<Record> & records) const {
     std::vector<glm::vec3> reflected_points;
     if (IsReflected(start_position, end_position, reflected_points)) {
@@ -95,8 +96,8 @@ void RayTracer::ReflectTrace(const glm::vec3 & start_position,
     }
 }
 
-void RayTracer::Trace(const glm::vec3 & start_position,
-                      const glm::vec3 & end_position,
+void RayTracer::Trace(const glm::vec3 start_position,
+                      const glm::vec3 end_position,
                       std::vector<Record> & records) const
 {
 	// Multithreading (speed up 30%)
@@ -291,7 +292,7 @@ bool RayTracer::CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
 }
 
 
-bool RayTracer::IsDirectHit(const glm::vec3 & start_position,const glm::vec3 & end_position) const
+bool RayTracer::IsDirectHit(glm::vec3 start_position,glm::vec3 end_position) const
 {
 	// get direction from start point to end point
 	glm::vec3 direction = glm::normalize(end_position - start_position);
@@ -306,7 +307,7 @@ bool RayTracer::IsDirectHit(const glm::vec3 & start_position,const glm::vec3 & e
 	return true;
 }
 
-bool RayTracer::IsReflected(const glm::vec3 & start_position, const glm::vec3 & end_position, std::vector<glm::vec3>& reflected_points) const
+bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& reflected_points) const
 {
 	// Match the co-exist triangles between two points
 	std::vector<const Triangle*> check_triangles;
