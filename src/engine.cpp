@@ -845,8 +845,8 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    std::vector<std::thread> threads;
     for(float x = x_start; x <= x_end; x+=x_step) {
+        std::vector<std::thread> threads;
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x,
                                      tx_height,
@@ -855,8 +855,9 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
                                    tx, position, std::ref(map));
             threads.push_back(std::move(map_thread));
         }
+        for(auto & thread:threads) if(thread.joinable()) thread.join();
     }
-    for(auto & thread:threads) if(thread.joinable()) thread.join();
+
     std::cout << "Completed Map Tracing" << std::endl;
     return map;
 }
