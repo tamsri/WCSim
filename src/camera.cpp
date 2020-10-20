@@ -13,49 +13,48 @@ Camera::Camera(Window* window) :window_(window) {
 	Reset();
 }
 
-void Camera::Move(const CameraDirection camera_direction, float delta_time)
+void Camera::Move(const Direction camera_direction, float delta_time)
 {
 	float distance = delta_time * camera_move_speed_;
 	switch (camera_direction) {
-	case kForward:
+	case (Direction::kForward):{
 		position_ += front_direction_ * distance;
-		break;
-	case kBackward:
+	}	break;
+	case (Direction::kBackward):{
 		position_ -= front_direction_ * distance;
-		break;
-	case kRight:
+	}	break;
+	case (Direction::kRight):{
 		glm::vec3 left_direction = glm::normalize(glm::cross(front_direction_, up_direction_));
 		position_ += left_direction * distance;
-		break;
-
-	case kLeft:
+	}	break;
+	case (Direction::kLeft): {
 		glm::vec3 right_direction = glm::normalize(glm::cross(-front_direction_, up_direction_));
 		position_ += right_direction * distance;
-		break;
-	case kUp:
+	}	break;
+	case (Direction::kUp):{
 		position_ += up_direction_ * distance;
-		break;
-	case kDown:
+	}	break;
+	case (Direction::kDown): {
 		position_ -= up_direction_ * distance;
-		break;
+	}	break;
 	};
 
 	UpdateView();
 }
 
-void Camera::Rotate(const CameraRotation camera_rotation, float delta_time)
+void Camera::Rotate(const Rotation camera_rotation, float delta_time)
 {
 	float angle = camera_rotate_speed_ * delta_time;
 	switch (camera_rotation) {
-	case kYaw:
+	case (Rotation::kYaw): {
 		yaw_ += angle;
-		break;
-	case kRoll:
+	}	break;
+	case (Rotation::kRoll): {
 		/// TODO: to be implemented (maybe)
-		break;
-	case kPitch:
+	}	break;
+	case (Rotation::kPitch): {
 		pitch_ += angle;
-		break;
+	}	break;
 	}
 	UpdateRotation();
 	UpdateView();
@@ -64,11 +63,11 @@ void Camera::Rotate(const CameraRotation camera_rotation, float delta_time)
 void Camera::Reset()
 {
 	fov_ = 45.0f;
-	camera_move_speed_ = 10.0f;
+	camera_move_speed_ = 50.0f;
 	camera_rotate_speed_ = 100.0f;
 	yaw_ = -90.0f;
 	pitch_ = -10.0f;
-	position_ = glm::vec3(0.0f, 2.0f, 5.0f);
+	position_ = glm::vec3(0.0f, 10.0f, 100.0f);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0f);
 	UpdateRotation();
 	UpdateView();
@@ -77,7 +76,7 @@ void Camera::Reset()
 
 void Camera::UpdateProjection()
 {
-	projection_ = glm::perspective(glm::radians(fov_), (float)window_->GetWindowHeight() / (float)window_->GetWindowHeight(), 0.1f, 1000.0f);
+	projection_ = glm::perspective(glm::radians(fov_), (float)window_->GetWindowHeight() / (float)window_->GetWindowHeight(), 0.1f, 10000.0f);
 }
 
 void Camera::UpdateRotation()

@@ -16,21 +16,24 @@ Window::Window(int width, int height) : width_(width), height_(height) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
 
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
 
     glfw_window_ = glfwCreateWindow(
         width_,
-        height_, "WCSim",
+        height_,
+        "WCSim",
         NULL,
         NULL);
+
     if (glfw_window_ == NULL)
     {
         assert("Failed to create GLFW window");
         glfwTerminate();
     }
+
     glfwMakeContextCurrent(glfw_window_);
     glfwSetFramebufferSizeCallback(glfw_window_, FrameBufferSizeCallback);
 
@@ -38,10 +41,6 @@ Window::Window(int width, int height) : width_(width), height_(height) {
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
     }
-
-    // Intialize Engine
-    engine_ = new Engine(this);
-
 }
 void Window::FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -55,10 +54,15 @@ unsigned int Window::GetWindowHeight() const
 {
     return height_;
 }
+GLFWwindow* Window::GetGLFWWindow() const
+{
+    return glfw_window_;
+}
 ;
 
 Window::~Window() {
-    free(glfw_window_);
+    //delete glfw_window_; // TODO: check if can be released.
+    glfwTerminate();
 }
 
 void Window::Run() {
@@ -69,28 +73,29 @@ void Window::Run() {
         return;
     }
     if (engine_ == nullptr) return;
-    /*----------------------------------------------------------------*/
-
-    /*--------------------------------------------------------------------------*/
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(glfw_window_))
     {
         /*Render from Engine*/
-        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glClearColor(0.95f, 0.95f, 0.95f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         engine_->Visualize();
-        engine_->Update();
+        engine_->OnKeys();
+
         /*Swap frames*/
         glfwSwapBuffers(glfw_window_);
         glfwPollEvents();
     }
-    engine_->Destroy();
     glfwTerminate();
-
 }
 void Window::AssignEngine(Engine* engine)
 {
     engine_ = engine;
+}
+
+void Window::RemoveEngine()
+{
+    engine_ = nullptr;
 }
