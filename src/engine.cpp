@@ -809,7 +809,7 @@ void Engine::TraceMap(Transmitter * transmitter,
                        glm::vec3 position,
                        std::map<float,std::map<float,float>> & map) const {
     std::cout << "Start tracing at: " << glm::to_string(position) << std::endl;
-    auto receivers = transmitter->GetReceivers();
+    auto & receivers = transmitter->GetReceivers();
     float avg_total_loss = 0.0f;
     int n_users = 0;
     // Iterate the result of each receiver.
@@ -845,21 +845,34 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    //std::vector<std::thread> threads;
+    unsigned int max_thread = std::thread::hardware_concurrency();
+    std::cout << "Max threads: " << max_thread << std::endl;
+
+    std::vector<std::thread> threads;
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x,
                                      tx_height,
                                      z};
-            //std::thread map_thread(&Engine::TraceMap, this,
-            //                       tx, position, std::ref(map));
-            //threads.push_back(std::move(map_thread));
-            TraceMap(tx,position,map);
+            std::thread map_thread(&Engine::TraceMap, this,
+                                   tx, position, std::ref(map));
+            threads.push_back(std::move(map_thread));
+            // Optimize to not exceed the max thread;
+            if(threads.size() >= max_thread){
+                for(auto & thread:threads){
+                    if(thread.joinable()) thread.join();
+                }
+                threads.clear();
+            }
         }
 
     }
-    //for(auto & thread:threads) if(thread.joinable()) thread.join();
-    // threads.clear();
+    // Join threads
+    for(auto & thread:threads)
+        if(thread.joinable())
+            thread.join();
+    threads.clear();
+
     std::cout << "Completed Map Tracing" << std::endl;
     return map;
 }
