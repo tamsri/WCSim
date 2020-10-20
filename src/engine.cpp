@@ -831,7 +831,7 @@ void Engine::TraceMap(Transmitter * tx,
         // average the total loss and store to the map.
         map[position.x][position.z] = avg_total_loss/(float)n_users;
     }
-    std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
+    //std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
 }
 
 std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int station_id,
@@ -874,7 +874,6 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     for(auto & thread:threads)
             thread.join();
     threads.clear();
-    std::cout << "Completed Map Tracing" << std::endl;
     return q_map;
 }
 
