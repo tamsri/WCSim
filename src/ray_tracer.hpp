@@ -71,38 +71,40 @@ public:
 	static glm::vec3 ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 point) ;
 
 	// Diffraction
-	bool IsKnifeEdgeDiffraction(const glm::vec3 start_point, const glm::vec3 end_point, std::vector<glm::vec3> & edges_points) const;
-	bool FindEdge(const glm::vec3 start_position, const glm::vec3 end_position, glm::vec3 & edge_position) const;
+	bool IsKnifeEdgeDiffraction(glm::vec3 start_point, glm::vec3 end_point, std::vector<glm::vec3> & edges_points) const;
+	bool FindEdge( glm::vec3 start_position, glm::vec3 end_position, glm::vec3 & edge_position) const;
 	static glm::vec3 NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> & edges_points ) ;
-	void CleanEdgePoints(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3> & edges_points) const;
-	float GetHighestPoint(std::vector<glm::vec3> edges) const;
+	void CleanEdgePoints( glm::vec3 start_position,  glm::vec3 end_position, std::vector<glm::vec3> & edges_points) const;
+	static float GetHighestPoint(std::vector<glm::vec3> edges);
 
 	// Calculations
-	float CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) const;
+	static float CalculateSingleKnifeEdge(  glm::vec3 start_position, glm::vec3 edge_position,
+                                            glm::vec3 end_position, float frequency);
 	static float CalculateDiffractionByV(float v) ;
-	static float CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) ;
-	static void CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position, std::pair<float, float> & calculated_cosines) ;
+	static float CalculateVOfEdge(  glm::vec3 start_position, glm::vec3 edge_position,
+                                    glm::vec3 end_position, float frequency) ;
+	static void CalculateCorrectionCosines( glm::vec3 start_position, std::vector<glm::vec3> edges,
+                                            glm::vec3 end_position, std::pair<float, float> & calculated_cosines) ;
+	static void CalculateDirectPath(const Record & record, Result & result, Transmitter * transmitter,
+                                     Receiver * receiver) ;
+    static void CalculateReflections(const Record & record, Result & result, Transmitter * transmitter,
+                                     Receiver * receiver);
+    static void CalculateReflection(const glm::vec3 & tx_position, const glm::vec3 & rx_position,
+                                    const float & tx_freq, const float & tx_gain,
+                                    const float & rx_gain, const float & tx_power,
+                                    const glm::vec3 & ref_position, Result & result);
 
-	void CalculateDirectPath(const Record & record, Result & result, Transmitter * transmitter,
-                                     Receiver * receiver) const ;
-    void CalculateReflections(const Record & record, Result & result, Transmitter * transmitter,
-                              Receiver * receiver) const;
-    void CalculateReflection( const glm::vec3 & tx_position, const glm::vec3 & rx_position,
-                              const float & tx_freq, const float & tx_gain,
-                              const float & rx_gain, const float & tx_power,
-                              const glm::vec3 & ref_position, Result & result) const;
+    static void CalculateDiffraction(const Record & record, Result & result,
+                                     Transmitter * transmitter, Receiver * receiver);
 
-    void CalculateDiffraction(const Record & record, Result & result,
-                              Transmitter * transmitter, Receiver * receiver) const;
-
-    void GetDrawComponents( const glm::vec3 & start_position, const glm::vec3 &end_position,
-                            std::vector<Record> & records, std::vector<Object *> & objects) const;
+    static void GetDrawComponents( const glm::vec3 & start_position, const glm::vec3 &end_position,
+                            std::vector<Record> & records, std::vector<Object *> & objects) ;
     bool CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                            const std::vector<Record>& records,
                            Result& result) const;
-    bool CalculatePathLossMap(glm::vec3 tx_position, float tx_frequency,
+    static bool CalculatePathLossMap(glm::vec3 tx_position, float tx_frequency,
                               glm::vec3 rx_position, std::vector<Record> records,
-                              Result& result) const;
+                              Result& result) ;
 private:
 	PolygonMesh * map_;
 

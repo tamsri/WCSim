@@ -1,5 +1,7 @@
 #include "receiver.hpp"
 
+#include <iostream>
+
 #include "object.hpp"
 #include "ray_tracer.hpp"
 #include "transmitter.hpp"
@@ -33,6 +35,7 @@ unsigned int Receiver::GetID() const
 void Receiver::ConnectATransmitter(Transmitter* transmitter)
 {
 	transmitter_ = transmitter;
+	std::cout << "Updating the result from connecting" << std::endl;
 	UpdateResult();
 }
 
@@ -67,7 +70,9 @@ void Receiver::UpdateResult()
 	const glm::vec3 rx_pos = transform_.position;
 	const glm::vec3 tx_pos = transmitter_->GetPosition();
 	records_.clear();
+	std::cout << "Tracing from rx\n" << std::endl;
 	ray_tracer_->Trace(tx_pos, rx_pos, records_);
+	std::cout << "Calculating from rx\n" << std::endl;
 	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_);
 }
 void Receiver::UpdateAndVisualize()
@@ -87,6 +92,7 @@ void Receiver::Reset()
 
 void Receiver::MoveTo(const glm::vec3 position) {
 	transform_.position = position;
+	std::cout << "Updating the result after Move\n";
 	UpdateResult();
 }
 

@@ -14,7 +14,7 @@ namespace ip = boost::asio::ip;
 
 int main(int argc, char *argv[]){
 
-    std::cout 
+    std::cout
         << "            ___           ___           ___                       ___     \n"
         << "           /\\__\\         /\\  \\         /\\  \\          ___        /\\__\\    \n"
         << "          /:/ _/_       /::\\  \\       /::\\  \\        /\\  \\      /::|  |   \n"
@@ -24,10 +24,8 @@ int main(int argc, char *argv[]){
         << "       \\:\\/:/ /:/  / \\:\\  \\  \\/__/ \\:\\ \\:\\ \\/__/ /\\/:/  /    \\/__/~~/:/  /\n"
         << "        \\::/_/:/  /   \\:\\  \\        \\:\\ \\:\\__\\   \\::/__/           /:/  / \n"
         << "         \\:\\/:/  /     \\:\\  \\        \\:\\/:/  /    \\:\\__\\          /:/  /  \n"
-        << "          \\::/  /       \\:\\__\\        \\::/  /      \\/__/         /:/  /   \n"
-        << "           \\/__/         \\/__/         \\/__/                     \\/__/    \n"
-        << "                                                                By Supawat Tamsri\n"
-        << "                                                                   <meep@supawat.dev>\n";
+        << "          \\::/  /       \\:\\__\\        \\::/  /      \\/__/         /:/  /   \n\n";
+
     std::cout << "Welcome to WCSim, the Wireless Communication Simulator\n";
     
     // Question 1: Turn on TCP Server?
