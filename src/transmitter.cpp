@@ -85,7 +85,6 @@ void Transmitter::ConnectAReceiver(Receiver* receiver)
 {
     if(receivers_.find(receiver->GetID()) != receivers_.end()) return;
 	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
-    receiver->ConnectATransmitter(this);
 }
 
 void Transmitter::DisconnectAReceiver(unsigned int receiver_id)

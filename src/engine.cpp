@@ -504,7 +504,8 @@ bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id
         receivers_.find(rx_id) == receivers_.end())  return false;
     Transmitter * tx = transmitters_.find(tx_id)->second;
     Receiver* rx = receivers_.find(rx_id)->second;
-	tx->ConnectAReceiver(rx);
+    tx->ConnectAReceiver(rx);
+    rx->ConnectATransmitter(tx);
 	return true;
 }
 
