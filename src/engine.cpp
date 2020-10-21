@@ -430,6 +430,21 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         if (received_data != "ok") return;
 
 
+        std::string file_name = std::to_string(resolution)+"res" +
+                std::to_string(transmitters_[station_id]->GetReceivers().size()) +".csv";
+        std::ofstream output_file{"../assets/" + file_name};
+        if(output_file.is_open()){
+            for(auto &[x, row]: q_map){
+                for(auto & [z, loss]: row) {
+                    output_file << std::scientific << loss << ",";
+                }
+                output_file << "\n";
+            }
+            output_file.close();}
+        else{
+            std::cout << "Unable to write the file.\n";
+        }
+
         // Send the head of information.
         for (auto &[x, row] : q_map){
             for (auto &[z, avg_loss] : row) {
@@ -851,7 +866,7 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     for(auto [id, rx]: tx->GetReceivers()) rx_positions.push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
-    unsigned int threads_limit = std::thread::hardware_concurrency()*10;
+    unsigned int threads_limit = std::thread::hardware_concurrency();
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x, tx_height, z};
