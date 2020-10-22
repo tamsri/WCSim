@@ -61,7 +61,7 @@ private:
 
 	// Ray Tracer
 	RayTracer * ray_tracer_;
-	Transmitter * transmitter_;
+	Transmitter* transmitter_;
 
 	// Visualisation
 	std::vector<Object*> objects_;

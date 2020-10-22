@@ -108,7 +108,7 @@ class Engine{
         // Engine Simulation
         RayTracer* ray_tracer_;
         Shader * default_shader_;
-        PolygonMesh * map_{};
+        PolygonMesh * map_;
 
         
         Recorder* recorder_;
@@ -118,7 +118,7 @@ class Engine{
         std::vector<RadiationPattern> pattern_;
 
 
-        float last_time_{};
+        float last_time_;
 
 
         void KeyActions();

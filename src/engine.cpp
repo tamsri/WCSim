@@ -36,7 +36,6 @@ Engine::Engine():
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
 							main_camera_(nullptr),
-							ray_tracer_(nullptr),
 							recorder_(nullptr)
 {
 	main_camera_ = nullptr;
@@ -47,7 +46,6 @@ Engine::Engine(Window* window) :
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
 							main_camera_(nullptr),
-							ray_tracer_(nullptr),
 							recorder_(nullptr)
 {
 	main_camera_ = new Camera(window_);
@@ -521,8 +519,8 @@ bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id
         receivers_.find(rx_id) == receivers_.end())  return false;
     Transmitter * tx = transmitters_.find(tx_id)->second;
     Receiver* rx = receivers_.find(rx_id)->second;
-	rx->ConnectATransmitter(tx);
     tx->ConnectAReceiver(rx);
+    rx->ConnectATransmitter(tx);
 	return true;
 }
 
@@ -834,7 +832,7 @@ void Engine::TraceMap( const glm::vec3  tx_position, const float tx_frequency,
     Result result;
     for(auto rx_position: rx_positions){
         ray_tracer_->TraceMap(tx_position,  rx_position, records);
-        if(RayTracer::CalculatePathLossMap(tx_position, tx_frequency,
+        if(ray_tracer_->CalculatePathLossMap(tx_position, tx_frequency,
                                              rx_position, records, result)){
             ++n_users;
             avg_total_loss += result.total_attenuation;
@@ -868,7 +866,7 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     for(auto [id, rx]: tx->GetReceivers()) rx_positions.push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
-    unsigned int threads_limit = std::thread::hardware_concurrency()*20;
+    unsigned int threads_limit = std::thread::hardware_concurrency();
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x, tx_height, z};
