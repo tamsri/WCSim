@@ -2,6 +2,7 @@
 
 #include <map>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <utility>
 
@@ -36,7 +37,8 @@ Engine::Engine():
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
 							main_camera_(nullptr),
-							recorder_(nullptr)
+							recorder_(nullptr),
+							ray_tracer_(nullptr)
 {
 	main_camera_ = nullptr;
 	communicator_ = new Communicator();
@@ -46,7 +48,8 @@ Engine::Engine(Window* window) :
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
 							main_camera_(nullptr),
-							recorder_(nullptr)
+							recorder_(nullptr),
+							ray_tracer_(nullptr)
 {
 	main_camera_ = new Camera(window_);
 	communicator_ = new Communicator();
@@ -410,52 +413,54 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 
         auto q_map = this->GetStationMap(station_id, x_step, z_step);
 
+		// Store the map locally.
+		{
+			std::string file_name = std::to_string(resolution) + "res" +
+				std::to_string(transmitters_[station_id]->GetReceivers().size()) + ".csv";
+			std::ofstream output_file{ "../assets/" + file_name };
+			if (output_file.is_open()) {
+				for (auto& [position, avg_pl] : q_map) {
+					output_file << position.first << ", "
+						<< position.second << ", "
+						<< std::scientific << avg_pl << "\n";
+				}
+				output_file.close();
+			}
+			else {
+				std::cout << "Unable to write the file.\n";
+			}
+		}
+
         if (q_map.empty())
             boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
         else
             boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
 
-        boost::array<char, 64> data_buffer{};
-        int len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-        std::string received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-        if (received_data == "ready") std::cout << "Client: Ready to get the map\n";
-
-        unsigned int x_depth = q_map.size();
-        unsigned int z_depth = q_map.begin()->second.size();
-        std::string head_info = std::to_string(x_depth) + "," + std::to_string(z_depth);
-        boost::asio::write(socket, boost::asio::buffer(head_info), ign_err);
-
-        len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-        received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-        if (received_data != "ok") return;
-
-
-        std::string file_name = std::to_string(resolution)+"res" +
-                std::to_string(transmitters_[station_id]->GetReceivers().size()) +".csv";
-        std::ofstream output_file{"../assets/" + file_name};
-        if(output_file.is_open()){
-            for(auto &[x, row]: q_map){
-                for(auto & [z, loss]: row) {
-                    output_file << std::scientific << loss << ",";
-                }
-                output_file << "\n";
-            }
-            output_file.close();}
-        else{
-            std::cout << "Unable to write the file.\n";
-        }
-
+		boost::array<char, 1024> data_buffer{};
+		int len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+		std::string rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+		if (rec_data != "ready") {
+			std::cout << "Communication Error.\n";
+			return;
+		}
         // Send the head of information.
-        for (auto &[x, row] : q_map){
-            for (auto &[z, avg_loss] : row) {
-                boost::asio::write(socket,
-                                   boost::asio::buffer(std::to_string(avg_loss)),
-                                   ign_err);
-                len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-                received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-                if (received_data != "ok") return;
-                }
-            }
+
+		for (auto& [position, avg_pl] : q_map) {
+			std::stringstream data_stream;
+			data_stream << position.first << ","
+				<< position.second << ","
+				<< std::scientific << avg_pl;
+			boost::asio::write(socket, boost::asio::buffer(data_stream.str()), ign_err);
+			len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+			rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+			if (rec_data != "ok") {
+				std::cout << "Communication Error.\n";
+				return;
+			}
+		}
+
+		boost::asio::write(socket, boost::asio::buffer("end"), ign_err);
+
         std::cout<< "Successfully transferred the map\n";
 	}break;
 	default: {
@@ -575,6 +580,7 @@ void Engine::InitializeWithWindow()
 	glfwSetCursorPosCallback(window_->GetGLFWWindow(), MousePositionCallback);
 	glfwSetMouseButtonCallback(window_->GetGLFWWindow(), MouseButtonCallback);
 	glfwSetScrollCallback(window_->GetGLFWWindow(), MouseScrollCallback);
+	std::cout << "Press 'h' to see the available commands\n";
 }
 
 void Engine::LoadRayTracer()
@@ -598,7 +604,7 @@ void Engine::LoadComponents()
 void Engine::LoadMap()
 {
 	// Load the map from .obj file
-	map_ = new PolygonMesh("../assets/obj/new2.obj", default_shader_, window_ != nullptr);
+	map_ = new PolygonMesh("../assets/obj/poznan.obj", default_shader_, window_ != nullptr);
 }
 
 void Engine::LoadObjects()
@@ -627,10 +633,48 @@ void Engine::Update()
 
 void Engine::PrintMap()
 {
-	std::cout << "Printing\n";
-	Printer printer{ray_tracer_};
-	printer.Print("../test.ppm", glm::vec3(0.0f, 8.0f, 0.0f), 2.5e9f, 1.5f );
+	//std::cout << "Printing\n";
+	//Printer printer{ray_tracer_};
+	//printer.Print("../test.ppm", glm::vec3(0.0f, 8.0f, 0.0f), 2.5e9f, 1.5f );
 	//printer.TestPrint("../test-head-map.ppm");
+}
+
+void Engine::TransmitterMode(float delta_time)
+{
+	GLFWwindow* window = window_->GetGLFWWindow();
+	std::cout << "Transmitter Mode\n";
+	std::cout << "Press A - Add a transmitter\n";
+	std::cout << "Press S - Select a transmitter\n";
+	std::cout << "Press L - Display transmitter IDs\n";
+	std::cout << "Press M - Control a transmitter\n";
+	//std::cin >> 
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+		engine_mode_ = EngineMode::kView;
+
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		Transform tx_trans;
+		std::cout << "Enter the transmitter's information.\n";
+		std::cout << "x: ";
+		std::cin >> tx_trans.position.x;
+		std::cout << "y: ";
+		std::cin >> tx_trans.position.y;
+		std::cout << "z: ";
+		std::cin >> tx_trans.position.z;
+		float frequency;
+		std::cout << "frequency[Hz](eg. 2.5e9): ";
+		std::cin >> frequency;
+		std::cout << "transmit power[dBm]: ";
+		float power;
+		std::cin >> power;
+		Transmitter* tx = new Transmitter(tx_trans, frequency, power, ray_tracer_);
+		transmitters_.insert({ tx->GetID(), tx });
+		std::cout << "Transmitter #" << tx->GetID() << " added to the environment.\n";
+	}
+
+}
+
+void Engine::ReceiverMode(float delta_time)
+{
 }
 
 void Engine::KeyActions()
@@ -652,6 +696,10 @@ void Engine::KeyActions()
 		break;
 	case kMoveObjects:
 		KeyMoveMode(delta_time);
+	case kTransmitter:
+		TransmitterMode(delta_time);
+	case kReceiver:
+		ReceiverMode(delta_time);
 	}
 
 }
@@ -687,6 +735,15 @@ void Engine::KeyViewMode(float delta_time)
 
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kMoveObjects;
+
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+		PrintInstructions();
+
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+		engine_mode_ = EngineMode::kTransmitter;
+
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+		engine_mode_ = EngineMode::kReceiver;
 }
 
 void Engine::KeyMoveMode(float delta_time)
@@ -822,37 +879,60 @@ void Engine::OnKeys()
 	KeyActions();
 }
 
-void Engine::TraceMap( const glm::vec3  tx_position, const float tx_frequency,
-                       std::vector<glm::vec3> rx_positions,
-                       std::map<float,std::map<float,float>> & map) const {
+void Engine::PrintInstructions()
+{
+	std::cout << std::setw(15) << "Key" << std::setw(25) << "Command" << std::endl;
+	std::cout << "----------------------------------------------------------\n";
+	std::cout << std::setw(15) << "W" << std::setw(25) << "Move Forward" << std::endl;
+	std::cout << std::setw(15) << "S" << std::setw(25) << "Move Backward" << std::endl;
+	std::cout << std::setw(15) << "A" << std::setw(25) << "Move Left" << std::endl;
+	std::cout << std::setw(15) << "D" << std::setw(25) << "Move Right" << std::endl;
+	std::cout << std::setw(15) << "E" << std::setw(25) << "Rotate Right" << std::endl;
+	std::cout << std::setw(15) << "Q" << std::setw(25) << "Rotate Left" << std::endl;
+	std::cout << std::setw(15) << "LShift" << std::setw(25) << "Move Upward" << std::endl;
+	std::cout << std::setw(15) << "CTRL" << std::setw(25) << "Move Downward" << std::endl;
+	std::cout << std::setw(15) << "Z" << std::setw(25) << "Rotate Upward" << std::endl;
+	std::cout << std::setw(15) << "X" << std::setw(25) << "Rotate Downward" << std::endl;
+	std::cout << std::setw(15) << "T" << std::setw(25) << "Transmitter Mode" << std::endl;
+	std::cout << std::setw(15) << "R" << std::setw(25) << "Receiver Mode" << std::endl;
+	std::cout << std::setw(15) << "Scroll Up" << std::setw(25) << "increase camera speed" << std::endl;
+	std::cout << std::setw(15) << "Scroll Down" << std::setw(25) << "decrease camera speed" << std::endl;
+	std::cout << std::setw(15) << "ESC" << std::setw(25) << "Exit" << std::endl;
+
+}
+
+void Engine::ComputeMap( const glm::vec3  tx_position, const float tx_frequency,
+                       std::vector<glm::vec3> * rx_positions,
+						std::map<std::pair<float, float>, float>& map) const {
     float avg_total_loss = 0.0f;
     int n_users = 0;
-    // Iterate the result of each receiver.
-    std::vector<Record> records;
-    Result result;
-    for(auto rx_position: rx_positions){
+
+    for(auto & rx_position: *rx_positions){
+		std::vector<Record> records;
+		Result result;
+
         ray_tracer_->TraceMap(tx_position,  rx_position, records);
         if(ray_tracer_->CalculatePathLossMap(tx_position, tx_frequency,
                                              rx_position, records, result)){
             ++n_users;
             avg_total_loss += result.total_attenuation;
         }
-        records.clear();
     }
     // Summary.
     if(n_users == 0){
         // In the case of base station is inside the building.
-        map[tx_position.x][tx_position.z] = -200.0f;
-    }else{
-        // average the total loss and store to the map.
-        map[tx_position.x][tx_position.z] = avg_total_loss/(float)n_users;
+		map.insert({ std::make_pair(tx_position.x, tx_position.z), -200.0f });
+	}
+	else {
+		// average the total loss and store to the map.
+		map.insert({ std::make_pair(tx_position.x, tx_position.z), avg_total_loss / (float)n_users });
     }
     //std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
 }
 
-std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int station_id,
+std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int station_id,
                                                               float x_step, float z_step) {
-    std::map<float,std::map<float, float>> q_map;
+    std::map<std::pair<float, float>, float> q_map;
     if (transmitters_.find(station_id) == transmitters_.end()) return q_map;
     Transmitter * tx = transmitters_.find(station_id)->second;
     float tx_frequency = tx->GetFrequency();
@@ -862,30 +942,28 @@ std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int stati
     constexpr float x_end = 100.0f;
     constexpr float z_end = 100.0f;
 
-    std::vector<glm::vec3> rx_positions;
-    for(auto [id, rx]: tx->GetReceivers()) rx_positions.push_back(rx->GetPosition());
+    std::vector<glm::vec3> * rx_positions = new std::vector<glm::vec3>;
+    for(auto [id, rx]: tx->GetReceivers()) rx_positions->push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
-    unsigned int threads_limit = std::thread::hardware_concurrency();
+    unsigned int threads_limit = std::thread::hardware_concurrency()*20;
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x, tx_height, z};
-            std::thread map_thread(&Engine::TraceMap, this,
+            std::thread map_thread(&Engine::ComputeMap, this,
                                    position, tx_frequency ,rx_positions,
                                    std::ref(q_map));
             threads.push_back(std::move(map_thread));
 
-            if(threads.size() > threads_limit){
-                for(auto & thread:threads)
-                    thread.join();
+            if(threads.size() == threads_limit){
+                for(auto & thread:threads) thread.join();
                 threads.clear();
             }
         }
 
     }
     // Join threads
-    for(auto & thread:threads)
-            thread.join();
+    for(auto & thread:threads) thread.join();
     threads.clear();
     return q_map;
 }

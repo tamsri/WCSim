@@ -34,7 +34,9 @@ enum EngineMode : int {
     kView = 0,
     kMoveObjects,
     kSimulation,
-    kServer
+    kServer,
+    kTransmitter,
+    kReceiver
 };
 
 enum MouseBottons : int {
@@ -66,10 +68,10 @@ class Engine{
         std::string GetTransmitterInfo(unsigned int transmitter_id);
         std::string GetReceiversList() const;
         std::string GetReceiverInfo(unsigned int receiver_id);
-        std::map<float, std::map<float, float>> GetStationMap(unsigned int station_id, float x_step, float z_step);
-        void TraceMap(glm::vec3 tx_positions, float tx_frequency,
-                      std::vector<glm::vec3> rx_positions,
-                      std::map<float,std::map<float, float>> &map) const;
+        std::map<std::pair<float, float>, float>  GetStationMap(unsigned int station_id, float x_step, float z_step);
+        void ComputeMap(glm::vec3 tx_positions, float tx_frequency,
+                        std::vector<glm::vec3> * rx_positions,
+                        std::map<std::pair<float, float>, float> & map) const;
 
 
 
@@ -92,7 +94,7 @@ class Engine{
         void LoadTexture();
         void Visualize();
         void OnKeys();
-
+        void PrintInstructions();
         // Ray Tracer
         void LoadRayTracer();
         void Update();
@@ -120,7 +122,8 @@ class Engine{
 
         float last_time_;
 
-
+        void TransmitterMode(float delta_time);
+        void ReceiverMode(float delta_time);
         void KeyActions();
         void KeyViewMode(float delta_time);
         void KeyMoveMode(float delta_time);

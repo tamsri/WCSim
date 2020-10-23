@@ -316,27 +316,11 @@ bool RayTracer::CalculatePathLossMap(const glm::vec3 tx_position,  const float t
         return false;
     }
     result.is_valid = true;
-    // Initialize the result
-    result.total_received_power = 0.0f;
-    result.transmit_power = 0.0f;
-
-    result.direct.rx_gain = 0.0f;
-    result.direct.tx_gain = 0.0f;
-    result.direct.direct_loss = 0.0f;
-    result.direct.delay = 0.0f;
-
-    result.reflections = {};
-
-    result.diffraction.rx_gain = 0.0f;
-    result.diffraction.tx_gain = 0.0f;
-    result.diffraction.diffraction_loss = 0.0f;
-    result.diffraction.delay = 0.0f;
 
     for (auto &record: records) {
         switch (record.type) {
             case RecordType::kDirect: {
                 result.is_los = true;
-                // Get Receiver's Info
                 // Calculate Distance
                 float distance = glm::distance(tx_position, rx_position);
 
@@ -399,7 +383,7 @@ bool RayTracer::CalculatePathLossMap(const glm::vec3 tx_position,  const float t
                     // Copy Edges to stack.
                     std::vector<glm::vec3> edges = record.data;
                     const glm::vec3 nearest_tx_edge = NearestEdgeFromPoint(tx_position, edges);
-                    const glm::vec3 nearest_rx_edge = edges.front();
+                    const glm::vec3 nearest_rx_edge = NearestEdgeFromPoint(rx_position, edges);
 
                     // Find the max V as single edge V
                     const float v1 = CalculateVOfEdge(tx_position, nearest_tx_edge, rx_position, tx_frequency);
@@ -951,7 +935,7 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         // Copy Edges to stack.
         std::vector<glm::vec3> edges = record.data;
         const glm::vec3 nearest_tx_edge = NearestEdgeFromPoint(tx_pos, edges);
-        const glm::vec3 nearest_rx_edge = edges.front();
+        const glm::vec3 nearest_rx_edge = NearestEdgeFromPoint(rx_pos, edges);
         // Calculate tx, rx gains
         const float &tx_gain = transmitter->GetTransmitterGain(nearest_tx_edge);
         const float &rx_gain = receiver->GetReceiverGain(nearest_rx_edge);
