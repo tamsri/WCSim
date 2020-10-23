@@ -59,7 +59,7 @@ public:
                       glm::vec3 end_position,
                       std::vector<Record> &records) const;
 
-
+    void GetMapBorder(float & min_x, float & max_x, float & min_z, float & max_z) const;
 	// Line of Sight
 	bool IsDirectHit( glm::vec3 start_position, glm::vec3 end_position) const;
 	

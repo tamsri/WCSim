@@ -1073,3 +1073,7 @@ void RayTracer::CalculateReflection( const glm::vec3 & tx_position, const glm::v
     result.reflections.push_back(ReflectionResult{reflection_loss, delay, tx_gain, rx_gain});
 }
 
+void RayTracer::GetMapBorder(float &min_x, float &max_x, float & min_z, float & max_z) const {
+    map_->GetBorders(min_x, max_x, min_z, max_z);
+}
+

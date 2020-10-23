@@ -402,11 +402,8 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         unsigned int station_id = std::stoul(split_data[0]);
         unsigned int resolution = std::stoul(split_data[1]);
 
-        /// TODO: Implement map_ class.
-        constexpr float x_start = -100.0f;
-        constexpr float x_end = 100.0f;
-        constexpr float z_start = -100.0f;
-        constexpr float z_end = 100.0f;
+        float x_start, x_end, z_start, z_end;
+        ray_tracer_->GetMapBorder(x_start, x_end, z_start, z_end);
 
         float x_step = (x_end - x_start) / (float) resolution;
         float z_step = (z_end - x_start) / (float) resolution;
@@ -937,12 +934,11 @@ std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int stat
     Transmitter * tx = transmitters_.find(station_id)->second;
     float tx_frequency = tx->GetFrequency();
     float tx_height = tx->GetTransform().position.y;
-    constexpr float x_start = -100.0f;
-    constexpr float z_start = -100.0f;
-    constexpr float x_end = 100.0f;
-    constexpr float z_end = 100.0f;
 
-    std::vector<glm::vec3> * rx_positions = new std::vector<glm::vec3>;
+    /// Get the order for image.
+    float x_start, z_start, x_end, z_end;
+    ray_tracer_->GetMapBorder(x_start, x_end, z_start, z_end);
+    auto * rx_positions = new std::vector<glm::vec3>;
     for(auto [id, rx]: tx->GetReceivers()) rx_positions->push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
