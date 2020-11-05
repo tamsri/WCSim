@@ -25,7 +25,7 @@ unsigned int Transmitter::global_id_ = 0;
 Transmitter::Transmitter(Transform transform,
 						float frequency,
 						float transmit_power,
-						RayTracer * ray_tracer):	id_(global_id_++),
+						RayTracer * ray_tracer):	id_(++global_id_),
 													transform_(transform), 
 													frequency_(frequency),
 													transmit_power_(transmit_power),

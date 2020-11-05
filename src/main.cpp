@@ -130,15 +130,11 @@ int main(int argc, char *argv[]){
         }
         return 0;
     }
-    
-
-
 
     // Run as Local Simulator
     if (is_window_on) {
         window = new Window(800, 600);
         engine = new Engine(window);
-        engine->AssignWindow(window);
         engine->InitializeWithWindow();
         engine->RunWithWindow();
     }

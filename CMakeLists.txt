@@ -45,8 +45,9 @@ add_subdirectory("${GLM_DIR}")
 target_link_libraries(${PROJECT_NAME} glm)
 target_include_directories(${PROJECT_NAME} PRIVATE ${GLM_INCLUDEDIR})
 
-# #OOST
-set(Boost_USE_STATIC_LIBS        ON)  
+
+## BOOST
+set(Boost_USE_STATIC_LIBS ON)
 set(BOOST_ROOT "C:\\Boost\\boost_1_74_0")
 find_package(Boost REQUIRED COMPONENTS system thread regex)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIR})
@@ -54,8 +55,10 @@ target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 
 
+
+
 # DEBUGING variables
 #     get_cmake_property(_variableNames VARIABLES)
 #     foreach (_variableName ${_variableNames})
 #         message(STATUS "${_variableName}=${${_variableName}}")
-#     endforeach()
+#    endforeach()

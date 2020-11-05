@@ -5,7 +5,7 @@
 #include "transmitter.hpp"
 
 unsigned int Receiver::global_id_ = 0;
-Receiver::Receiver(Transform transform, RayTracer* ray_tracer):	id_(global_id_++),
+Receiver::Receiver(Transform transform, RayTracer* ray_tracer):	id_(++global_id_),
 														transform_(transform),
 														ray_tracer_(ray_tracer),
 														transmitter_(nullptr),

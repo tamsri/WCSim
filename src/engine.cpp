@@ -1,5 +1,6 @@
 #include "engine.hpp"
 
+#include <thread>
 #include <map>
 #include <iostream>
 #include <iomanip>
@@ -27,6 +28,7 @@
 
 #include "printer.hpp"
 #include "communicator.hpp"
+#include "console_controller.hpp"
 
 #include "record.hpp"
 
@@ -38,22 +40,25 @@ Engine::Engine():
 							default_shader_(nullptr),
 							main_camera_(nullptr),
 							recorder_(nullptr),
-							ray_tracer_(nullptr)
+							ray_tracer_(nullptr),
+							on_pressed_(false)
 {
-	main_camera_ = nullptr;
 	communicator_ = new Communicator();
+	console_controller_ = new ConsoleController(this);
 }
 Engine::Engine(Window* window) :
 							window_(window), 
 							engine_id_(++global_engine_id_),
 							default_shader_(nullptr),
-							main_camera_(nullptr),
+							main_camera_(new Camera(window)),
 							recorder_(nullptr),
-							ray_tracer_(nullptr)
+							ray_tracer_(nullptr),
+							on_pressed_(false)
 {
-	main_camera_ = new Camera(window_);
 	communicator_ = new Communicator();
-	AssignWindow(window_);
+	console_controller_ = new ConsoleController(this);
+	// Assign engine to window.
+	window_->AssignEngine(this);
 }
 
 Engine::~Engine()
@@ -63,12 +68,6 @@ Engine::~Engine()
 	delete map_;
 }
 
-
-void Engine::AssignWindow(Window* window)
-{
-	window_ = window;
-	window_->AssignEngine(this);
-}
 
 void Engine::Reset()
 {
@@ -94,6 +93,7 @@ void Engine::RunWithWindow()
 		std::cout << "Cannot run window without assigning the window\n";
 		return;
 	}
+	std::thread (&ConsoleController::Run, console_controller_).detach();
 	window_->Run();
 }
 
@@ -472,7 +472,6 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
-	transmitters_[transmitter->GetID()] = transmitter;
 	transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
 	return true;
 }
@@ -577,7 +576,6 @@ void Engine::InitializeWithWindow()
 	glfwSetCursorPosCallback(window_->GetGLFWWindow(), MousePositionCallback);
 	glfwSetMouseButtonCallback(window_->GetGLFWWindow(), MouseButtonCallback);
 	glfwSetScrollCallback(window_->GetGLFWWindow(), MouseScrollCallback);
-	std::cout << "Press 'h' to see the available commands\n";
 }
 
 void Engine::LoadRayTracer()
@@ -644,12 +642,15 @@ void Engine::TransmitterMode(float delta_time)
 	std::cout << "Press S - Select a transmitter\n";
 	std::cout << "Press L - Display transmitter IDs\n";
 	std::cout << "Press M - Control a transmitter\n";
-	//std::cin >> 
-	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
-		engine_mode_ = EngineMode::kView;
+	std::cout << "Press V - Go back to View Mode";
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
+	    if(glfwGetKey(window, GLFW_KEY_V) != GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+    }
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		Transform tx_trans;
+        if(glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS) {
+        Transform tx_trans;
 		std::cout << "Enter the transmitter's information.\n";
 		std::cout << "x: ";
 		std::cin >> tx_trans.position.x;
@@ -666,6 +667,7 @@ void Engine::TransmitterMode(float delta_time)
 		Transmitter* tx = new Transmitter(tx_trans, frequency, power, ray_tracer_);
 		transmitters_.insert({ tx->GetID(), tx });
 		std::cout << "Transmitter #" << tx->GetID() << " added to the environment.\n";
+	    }
 	}
 
 }
@@ -693,10 +695,13 @@ void Engine::KeyActions()
 		break;
 	case kMoveObjects:
 		KeyMoveMode(delta_time);
+		break;
 	case kTransmitter:
 		TransmitterMode(delta_time);
+		break;
 	case kReceiver:
 		ReceiverMode(delta_time);
+		break;
 	}
 
 }
@@ -732,9 +737,6 @@ void Engine::KeyViewMode(float delta_time)
 
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kMoveObjects;
-
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		PrintInstructions();
 
 	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kTransmitter;
@@ -876,27 +878,7 @@ void Engine::OnKeys()
 	KeyActions();
 }
 
-void Engine::PrintInstructions()
-{
-	std::cout << std::setw(15) << "Key" << std::setw(25) << "Command" << std::endl;
-	std::cout << "----------------------------------------------------------\n";
-	std::cout << std::setw(15) << "W" << std::setw(25) << "Move Forward" << std::endl;
-	std::cout << std::setw(15) << "S" << std::setw(25) << "Move Backward" << std::endl;
-	std::cout << std::setw(15) << "A" << std::setw(25) << "Move Left" << std::endl;
-	std::cout << std::setw(15) << "D" << std::setw(25) << "Move Right" << std::endl;
-	std::cout << std::setw(15) << "E" << std::setw(25) << "Rotate Right" << std::endl;
-	std::cout << std::setw(15) << "Q" << std::setw(25) << "Rotate Left" << std::endl;
-	std::cout << std::setw(15) << "LShift" << std::setw(25) << "Move Upward" << std::endl;
-	std::cout << std::setw(15) << "CTRL" << std::setw(25) << "Move Downward" << std::endl;
-	std::cout << std::setw(15) << "Z" << std::setw(25) << "Rotate Upward" << std::endl;
-	std::cout << std::setw(15) << "X" << std::setw(25) << "Rotate Downward" << std::endl;
-	std::cout << std::setw(15) << "T" << std::setw(25) << "Transmitter Mode" << std::endl;
-	std::cout << std::setw(15) << "R" << std::setw(25) << "Receiver Mode" << std::endl;
-	std::cout << std::setw(15) << "Scroll Up" << std::setw(25) << "increase camera speed" << std::endl;
-	std::cout << std::setw(15) << "Scroll Down" << std::setw(25) << "decrease camera speed" << std::endl;
-	std::cout << std::setw(15) << "ESC" << std::setw(25) << "Exit" << std::endl;
 
-}
 
 void Engine::ComputeMap( const glm::vec3  tx_position, const float tx_frequency,
                        std::vector<glm::vec3> * rx_positions,
@@ -962,5 +944,9 @@ std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int stat
     for(auto & thread:threads) thread.join();
     threads.clear();
     return q_map;
+}
+
+RayTracer *Engine::GetRayTracer() const {
+    return ray_tracer_;
 }
 

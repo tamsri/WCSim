@@ -23,6 +23,7 @@ class Receiver;
 class RadiationPattern;
 class Communicator;
 class Recorder;
+class ConsoleController;
 
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
@@ -33,8 +34,6 @@ namespace ip = boost::asio::ip;
 enum EngineMode : int {
     kView = 0,
     kMoveObjects,
-    kSimulation,
-    kServer,
     kTransmitter,
     kReceiver
 };
@@ -51,7 +50,6 @@ class Engine{
         Engine();
         Engine(Window* window);
         ~Engine();
-        void AssignWindow(Window * window);
 
         // Main Process
         void InitializeWithoutWindow();
@@ -62,6 +60,8 @@ class Engine{
         // Main TC orders
         void ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& command);
         void ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& question);
+
+        void Command();
 
         // External Actions
         std::string GetTransmittersList() const;
@@ -94,16 +94,22 @@ class Engine{
         void LoadTexture();
         void Visualize();
         void OnKeys();
-        void PrintInstructions();
+
         // Ray Tracer
+        RayTracer * GetRayTracer() const;
         void LoadRayTracer();
         void Update();
         void PrintMap();
 
-    private:
+        Transmitter * current_transmitter_;
+        Receiver * current_receiver_;
+        std::map<unsigned int ,Receiver *> receivers_;
+        std::map<unsigned int, Transmitter *> transmitters_;
+        EngineMode engine_mode_;
+
+private:
         // Engine Parameters
         unsigned int engine_id_;
-        EngineMode engine_mode_;
         Window * window_;
         static unsigned int global_engine_id_;
         
@@ -115,8 +121,6 @@ class Engine{
         
         Recorder* recorder_;
 
-        std::map<unsigned int ,Receiver *> receivers_;
-        std::map<unsigned int, Transmitter *> transmitters_;
         std::vector<RadiationPattern> pattern_;
 
 
@@ -130,6 +134,8 @@ class Engine{
         void MousePosition(double x_pos, double ypos);
         void MouseScroll(double xoffset, double yoffset);
         void MouseButtonToggle(MouseBottons action);
+
+        bool on_pressed_;
 
         bool on_first_right_click_;
         bool on_first_left_click_;
@@ -145,13 +151,13 @@ class Engine{
         // Engine Visualisation
         Camera * main_camera_;
 
-        // Control from Windows
 
-        // Control from Communication Pipe
+
+
 
         // Communication
         Communicator* communicator_;
-
+        ConsoleController * console_controller_;
 
 };
 
