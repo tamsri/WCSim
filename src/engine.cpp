@@ -3,8 +3,6 @@
 #include <thread>
 #include <map>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
 #include <utility>
 
 #include <glad/glad.h>
@@ -27,9 +25,6 @@
 #include "radiation_pattern.hpp"
 
 #include "printer.hpp"
-#include "communicator.hpp"
-#include "console_controller.hpp"
-
 #include "record.hpp"
 
 unsigned int Engine::global_engine_id_ = 0;
@@ -43,8 +38,6 @@ Engine::Engine():
 							ray_tracer_(nullptr),
 							on_pressed_(false)
 {
-	communicator_ = new Communicator();
-	console_controller_ = new ConsoleController(this);
 }
 Engine::Engine(Window* window) :
 							window_(window), 
@@ -55,8 +48,6 @@ Engine::Engine(Window* window) :
 							ray_tracer_(nullptr),
 							on_pressed_(false)
 {
-	communicator_ = new Communicator();
-	console_controller_ = new ConsoleController(this);
 	// Assign engine to window.
 	window_->AssignEngine(this);
 }
@@ -83,17 +74,12 @@ void Engine::Reset()
 	receivers_.clear();
 }
 
-void Engine::Run()
-{
-}
-
 void Engine::RunWithWindow()
 {
 	if (window_ == nullptr) {
 		std::cout << "Cannot run window without assigning the window\n";
 		return;
 	}
-	std::thread (&ConsoleController::Run, console_controller_).detach();
 	window_->Run();
 }
 
@@ -626,14 +612,6 @@ void Engine::Update()
 	
 }
 
-void Engine::PrintMap()
-{
-	//std::cout << "Printing\n";
-	//Printer printer{ray_tracer_};
-	//printer.Print("../test.ppm", glm::vec3(0.0f, 8.0f, 0.0f), 2.5e9f, 1.5f );
-	//printer.TestPrint("../test-head-map.ppm");
-}
-
 void Engine::TransmitterMode(float delta_time)
 {
 	GLFWwindow* window = window_->GetGLFWWindow();
@@ -868,6 +846,7 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
+	//UpdateVisualization();
 	for (const auto & [id, transmitter] : transmitters_) {
 		transmitter->DrawObjects(main_camera_);
 	}

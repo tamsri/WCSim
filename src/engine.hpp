@@ -54,14 +54,13 @@ class Engine{
         // Main Process
         void InitializeWithoutWindow();
         void Reset();
-        void Run();
+
         void RunWithWindow();
 
         // Main TC orders
         void ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& command);
         void ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code& ign_err, std::string& question);
 
-        void Command();
 
         // External Actions
         std::string GetTransmittersList() const;
@@ -99,7 +98,6 @@ class Engine{
         RayTracer * GetRayTracer() const;
         void LoadRayTracer();
         void Update();
-        void PrintMap();
 
         Transmitter * current_transmitter_;
         Receiver * current_receiver_;
@@ -150,15 +148,6 @@ private:
         static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
         // Engine Visualisation
         Camera * main_camera_;
-
-
-
-
-
-        // Communication
-        Communicator* communicator_;
-        ConsoleController * console_controller_;
-
 };
 
 #endif // !ENGINE_H
