@@ -26,5 +26,10 @@ private:
     unsigned int width_;
     unsigned int height_;
 
+    void UpdateVisualComponents();
+
+    void VisualizeComponents();
+
+    void OnKeysPressed();
 };
 #endif //!WINDOW_H

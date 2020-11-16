@@ -6,7 +6,8 @@
 #include "object.hpp"
 #include "ray.hpp"
 #include "line.hpp"
-
+#include "cube.hpp"
+#include "shader.hpp"
 #include "record.hpp"
 #include "receiver.hpp"
 
@@ -29,7 +30,8 @@ Transmitter::Transmitter(Transform transform,
 													transform_(transform), 
 													frequency_(frequency),
 													transmit_power_(transmit_power),
-													ray_tracer_(ray_tracer)
+													ray_tracer_(ray_tracer),
+													object_(nullptr)
 {
 	current_pattern_ = nullptr;
 	Reset();
@@ -37,8 +39,8 @@ Transmitter::Transmitter(Transform transform,
 
 Transmitter::~Transmitter()
 {
-	// TODO: implement de-constructor.
 	receivers_.clear();
+	delete object_;
 }
 
 unsigned int Transmitter::GetID() const
@@ -63,22 +65,11 @@ void Transmitter::Reset()
 	transform_.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
-void Transmitter::Clear()
+void Transmitter::DrawObject(Camera* camera)
 {
-	for (Object * object : objects_)
-		delete object;
-	objects_.clear();
-}
-
-void Transmitter::DrawObjects(Camera* camera)
-{
-	DrawRadiationPattern(camera);
-	for (auto & itr : receivers_) {
-		auto * receiver = itr.second;
-		receiver->DrawObjects(camera);
-	}
+    object_->DrawObject(camera);
 	if (current_pattern_ != nullptr)
-		current_pattern_->DrawPattern(camera, transform_);
+	    current_pattern_->DrawPattern(camera, transform_);
 }
 
 void Transmitter::ConnectAReceiver(Receiver* receiver)
@@ -90,13 +81,6 @@ void Transmitter::ConnectAReceiver(Receiver* receiver)
 void Transmitter::DisconnectAReceiver(unsigned int receiver_id)
 {
 	receivers_.erase(receiver_id);
-}
-
-void Transmitter::DrawRadiationPattern(Camera * camera)
-{
-	for (auto & ray : objects_) {
-		ray->DrawObject(camera);
-	}
 }
 
 void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
@@ -263,4 +247,14 @@ float Transmitter::GetTransmitPower() const {
     return transmit_power_;
 }
 
+void Transmitter::InitializeVisualObject(Shader * shader) {
+	object_ = new Cube(transform_, shader);
+}
 
+bool Transmitter::IsInitializedObject() {
+    return bool(object_!=nullptr);
+}
+void Transmitter::VisualUpdate(){
+	if (object_ == nullptr) return;
+	object_->MoveTo(transform_.position);
+}

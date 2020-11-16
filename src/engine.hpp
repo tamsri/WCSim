@@ -28,12 +28,12 @@ class ConsoleController;
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
+
 namespace ip = boost::asio::ip;
 
 
 enum EngineMode : int {
     kView = 0,
-    kMoveObjects,
     kTransmitter,
     kReceiver
 };
@@ -105,6 +105,14 @@ class Engine{
         std::map<unsigned int, Transmitter *> transmitters_;
         EngineMode engine_mode_;
 
+
+        std::map<unsigned int, Receiver *> updated_receivers_;
+        std::map<unsigned int, Transmitter *> updated_transmitters_;
+
+        void UpdateVisualComponents();
+        Shader* default_shader_;
+
+        bool IsWindowOn();
 private:
         // Engine Parameters
         unsigned int engine_id_;
@@ -113,7 +121,6 @@ private:
         
         // Engine Simulation
         RayTracer* ray_tracer_;
-        Shader * default_shader_;
         PolygonMesh * map_;
 
         
@@ -128,7 +135,8 @@ private:
         void ReceiverMode(float delta_time);
         void KeyActions();
         void KeyViewMode(float delta_time);
-        void KeyMoveMode(float delta_time);
+        void KeyRXMoveMode(float delta_time);
+        void KeyTXMoveMode(float delta_time);
         void MousePosition(double x_pos, double ypos);
         void MouseScroll(double xoffset, double yoffset);
         void MouseButtonToggle(MouseBottons action);
@@ -148,6 +156,7 @@ private:
         static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
         // Engine Visualisation
         Camera * main_camera_;
+
 };
 
 #endif // !ENGINE_H

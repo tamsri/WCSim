@@ -29,24 +29,24 @@
 
 unsigned int Engine::global_engine_id_ = 0;
 
-Engine::Engine():	
-							window_(nullptr), 
-							engine_id_(++global_engine_id_),
-							default_shader_(nullptr),
-							main_camera_(nullptr),
-							recorder_(nullptr),
-							ray_tracer_(nullptr),
-							on_pressed_(false)
+Engine::Engine():
+        window_(nullptr),
+        engine_id_(++global_engine_id_),
+        default_shader_(nullptr),
+        main_camera_(nullptr),
+        recorder_(nullptr),
+        ray_tracer_(nullptr),
+        on_pressed_(false)
 {
 }
 Engine::Engine(Window* window) :
-							window_(window), 
-							engine_id_(++global_engine_id_),
-							default_shader_(nullptr),
-							main_camera_(new Camera(window)),
-							recorder_(nullptr),
-							ray_tracer_(nullptr),
-							on_pressed_(false)
+        window_(window),
+        engine_id_(++global_engine_id_),
+        default_shader_(nullptr),
+        main_camera_(new Camera(window)),
+        recorder_(nullptr),
+        ray_tracer_(nullptr),
+        on_pressed_(false)
 {
 	// Assign engine to window.
 	window_->AssignEngine(this);
@@ -80,6 +80,7 @@ void Engine::RunWithWindow()
 		std::cout << "Cannot run window without assigning the window\n";
 		return;
 	}
+	AddTransmitter(glm::vec3{ 0, 12.0f, 0 }, glm::vec3{ 0.0f, 0.0f, 0.0f }, 3e9);
 	window_->Run();
 }
 
@@ -318,8 +319,10 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 		boost::split(split_inputs, input_data, boost::is_any_of(":"));
 		unsigned int station_id = std::stoul(split_inputs[0]);
 		unsigned int user_id = std::stoul(split_inputs[1]);
-		if (this->DisconnectReceiverFromTransmitter(station_id, user_id))
+		if (this->DisconnectReceiverFromTransmitter(station_id, user_id)) {
 			boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
+
+		}
 		else
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
@@ -458,15 +461,21 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
-	transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
-	return true;
+	// If window is on, Initialize the transmitter's object.
+	if (IsWindowOn()) updated_transmitters_.insert({ transmitter->GetID(), transmitter });
+    transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
+
+    return true;
 }
 
 bool Engine::AddReceiver(glm::vec3 position)
 {
 	if (ray_tracer_ == nullptr) return false;
 	auto * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
+	if (IsWindowOn()) updated_receivers_.insert({ receiver->GetID(), receiver });
 	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
+	// If the window is on, Initialize the receiver's object.
+
 	return true;
 }
 
@@ -478,6 +487,10 @@ bool Engine::RemoveTransmitter(unsigned int transmitter_id)
 	for (auto& [id, rx] : tx->GetReceivers()) {
 	    if(rx == nullptr) continue;
 		rx->DisconnectATransmitter();
+	}
+	if (IsWindowOn()) {
+		delete tx->object_;
+		tx->object_ = nullptr;
 	}
 	transmitters_.erase(transmitter_id);
 	// delete the transmitter
@@ -494,6 +507,10 @@ bool Engine::RemoveReceiver(unsigned int receiver_id)
 	if (tx != nullptr) {
         DisconnectReceiverFromTransmitter(tx->GetID(), rx->GetID());
 	}
+	if (IsWindowOn()) {
+		delete rx->object_;
+		rx->object_ = nullptr;
+	}
 	// Remove from the engine list
 	receivers_.erase(receiver_id);
 	delete rx;
@@ -508,6 +525,9 @@ bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id
     Receiver* rx = receivers_.find(rx_id)->second;
     tx->ConnectAReceiver(rx);
     rx->ConnectATransmitter(tx);
+	if (IsWindowOn()) {
+		updated_transmitters_.insert({ tx->GetID(), tx });
+	}
 	return true;
 }
 
@@ -519,6 +539,10 @@ bool Engine::DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int 
 	Receiver* rx = receivers_.find(rx_id)->second;
 	tx->DisconnectAReceiver(rx_id);
 	rx->DisconnectATransmitter();
+	if (IsWindowOn()) {
+		updated_transmitters_.insert({ tx->GetID(), tx });
+		updated_receivers_.insert({rx->GetID(), rx});
+	}
 	return true;
 }
 
@@ -528,6 +552,8 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
     Transmitter* tx = transmitters_.find(id)->second;
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
+	if (IsWindowOn()) 
+		updated_transmitters_.insert({ tx->GetID(), tx });
 	return true;
 }
 
@@ -536,6 +562,8 @@ bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
     if(receivers_.find(rx_id) == receivers_.end()) return false;
 	Receiver* rx = receivers_.find(rx_id)->second;
 	rx->MoveTo(position);
+	if (IsWindowOn()) 
+		updated_receivers_.insert({ rx->GetID(), rx });
 	return true;
 }
 
@@ -671,103 +699,130 @@ void Engine::KeyActions()
 	case kView:
 		KeyViewMode(delta_time);
 		break;
-	case kMoveObjects:
-		KeyMoveMode(delta_time);
-		break;
 	case kTransmitter:
-		TransmitterMode(delta_time);
+        KeyTXMoveMode(delta_time);
 		break;
 	case kReceiver:
-		ReceiverMode(delta_time);
+        KeyRXMoveMode(delta_time);
 		break;
-	}
+    }
 
 }
 
 void Engine::KeyViewMode(float delta_time)
 {
 	GLFWwindow* window = window_->GetGLFWWindow();
+	// Camera Transition
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		main_camera_->Move(Direction::kForward, delta_time);
+        main_camera_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		main_camera_->Move(Direction::kLeft, delta_time);
+        main_camera_->Move(Direction::kLeft, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		main_camera_->Move(Direction::kBackward, delta_time);
+        main_camera_->Move(Direction::kBackward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		main_camera_->Move(Direction::kRight, delta_time);
+        main_camera_->Move(Direction::kRight, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		main_camera_->Move(Direction::kUp, delta_time);
+        main_camera_->Move(Direction::kUp, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		main_camera_->Move(Direction::kDown, delta_time);
-
+        main_camera_->Move(Direction::kDown, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		main_camera_->Reset();
+        main_camera_->Reset();
 
+	// Cemera Rotation
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kYaw, delta_time);
+        main_camera_->Rotate(Rotation::kYaw, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kYaw, -delta_time);
-
+        main_camera_->Rotate(Rotation::kYaw, -delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kPitch, delta_time);
+        main_camera_->Rotate(Rotation::kPitch, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kPitch, -delta_time);
+        main_camera_->Rotate(Rotation::kPitch, -delta_time);
 
-	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-		engine_mode_ = EngineMode::kMoveObjects;
-
+	// Switch Mode Keys
 	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-		engine_mode_ = EngineMode::kTransmitter;
-
+        engine_mode_ = EngineMode::kTransmitter;
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		engine_mode_ = EngineMode::kReceiver;
+        engine_mode_ = EngineMode::kReceiver;
 }
 
-void Engine::KeyMoveMode(float delta_time)
+void Engine::KeyTXMoveMode(float delta_time)
 {
+    if(current_transmitter_ == nullptr) return;
 	GLFWwindow* window = window_->GetGLFWWindow();
-	//std::cin >> 
+
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kView;
 
+	// TX Transition Keys
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kForward, delta_time);
+		current_transmitter_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kLeft, delta_time);
+        current_transmitter_->Move(Direction::kLeft, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kBackward, delta_time);
+        current_transmitter_->Move(Direction::kBackward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kRight, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kUp, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kDown, delta_time);
+        current_transmitter_->Move(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        current_transmitter_->Move(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        current_transmitter_->Move(Direction::kDown, delta_time);
 
-	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kForward, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kLeft, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kBackward, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kRight, delta_time);
+    // TX Rotation Keys
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kLeft, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kDown, delta_time);
 
-	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kLeft, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kRight, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kUp, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kDown, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS);
-		//transmitter_->ToggleDisplay();
-	//if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
-	//	ray_tracer_->print_each_ = true;
-	//if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-	//	ray_tracer_->print_each_ = false;
+    // Switch Mode Keys
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kReceiver;
 }
 
+void Engine::KeyRXMoveMode(float delta_time)
+{
+    if(current_receiver_ == nullptr) return;
+    GLFWwindow* window = window_->GetGLFWWindow();
+
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+
+    // Transition Keys
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kForward, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kLeft, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kBackward, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kDown, delta_time);
+
+    // Rotation Keys
+    /*if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kLeft, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kDown, delta_time);*/
+
+    // Switch Mode Keys
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kTransmitter;
+
+}
 void Engine::MousePosition(double x_pos, double y_pos)
 {
 	if (on_right_click_) {
@@ -846,10 +901,14 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
-	//UpdateVisualization();
-	for (const auto & [id, transmitter] : transmitters_) {
-		transmitter->DrawObjects(main_camera_);
-	}
+
+	for (const auto & [id, transmitter] : transmitters_)
+		if(transmitter->IsInitializedObject())
+			transmitter->DrawObject(main_camera_);
+
+    for (const auto & [id, receiver] : receivers_)
+		if(receiver->IsInitializedObject())
+			receiver->DrawObjects(main_camera_);
 }
 
 void Engine::OnKeys()
@@ -876,7 +935,7 @@ void Engine::ComputeMap( const glm::vec3  tx_position, const float tx_frequency,
             avg_total_loss += result.total_attenuation;
         }
     }
-    // Summary.
+    // Summary
     if(n_users == 0){
         // In the case of base station is inside the building.
 		map.insert({ std::make_pair(tx_position.x, tx_position.z), -200.0f });
@@ -885,7 +944,6 @@ void Engine::ComputeMap( const glm::vec3  tx_position, const float tx_frequency,
 		// average the total loss and store to the map.
 		map.insert({ std::make_pair(tx_position.x, tx_position.z), avg_total_loss / (float)n_users });
     }
-    //std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
 }
 
 std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int station_id,
@@ -927,5 +985,37 @@ std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int stat
 
 RayTracer *Engine::GetRayTracer() const {
     return ray_tracer_;
+}
+
+void Engine::UpdateVisualComponents() {
+    // Update Transmitters.
+    if(!updated_transmitters_.empty()){
+        for(auto & [tx_id, tx] : updated_transmitters_){
+			if (!tx->IsInitializedObject()) 
+				tx->InitializeVisualObject(default_shader_);
+			tx->VisualUpdate();
+            for(auto &[rx_id, rx] : tx->receivers_){
+				if (!rx->IsInitializedObject()) 
+					rx->InitializeVisualObject(default_shader_);
+                rx->VisualUpdate();
+                if(updated_receivers_.find(rx_id) != updated_receivers_.end())
+                    updated_receivers_.erase(rx_id);
+            }
+        }
+        updated_transmitters_.clear();
+    }
+    // Update Receivers.
+    if(!updated_receivers_.empty()){
+        for(auto & [rx_id, rx]: updated_receivers_){
+			if (!rx->IsInitializedObject())
+				rx->InitializeVisualObject(default_shader_);
+            rx->VisualUpdate();
+        }
+        updated_receivers_.clear();
+    }
+}
+
+bool Engine::IsWindowOn() {
+    return window_ != nullptr;
 }
 

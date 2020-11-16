@@ -82,8 +82,10 @@ void Window::Run() {
         /*Render from Engine*/
         glClearColor(0.95f, 0.95f, 0.95f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        engine_->Visualize();
-        engine_->OnKeys();
+        UpdateVisualComponents();
+        VisualizeComponents();
+
+        OnKeysPressed();
 
         /*Swap frames*/
         glfwSwapBuffers(glfw_window_);
@@ -99,4 +101,16 @@ void Window::AssignEngine(Engine* engine)
 void Window::RemoveEngine()
 {
     engine_ = nullptr;
+}
+
+void Window::UpdateVisualComponents() {
+    engine_->UpdateVisualComponents();
+}
+
+void Window::VisualizeComponents() {
+    engine_->Visualize();
+}
+
+void Window::OnKeysPressed() {
+    engine_->OnKeys();
 }

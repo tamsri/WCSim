@@ -13,6 +13,7 @@ class Transmitter;
 class Object;
 struct Result;
 class Recorder;
+class Shader;
 
 class Receiver {
 
@@ -20,6 +21,7 @@ public:
 
 	Receiver(Transform transform, RayTracer * ray_tracer);
 	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
+    ~Receiver();
 
 	unsigned int GetID() const;
 
@@ -39,15 +41,23 @@ public:
 
 	// Visualization
 	void UpdateResult();
-	void UpdateAndVisualize();
 	void Reset();
- 
+	// Visualisation
+	std::vector<Object*> rays_;
+	Object* object_;
 
 	void Clear();
 
 	void DrawObjects(Camera* main_camera);
 
+	bool is_on_visual_update;
+
 	static unsigned int global_id_;
+
+    void InitializeVisualObject(Shader * shader);
+	bool IsInitializedObject();
+    void VisualUpdate();
+
 private:
 	unsigned int id_;
 	Result result_;
@@ -63,8 +73,8 @@ private:
 	RayTracer * ray_tracer_;
 	Transmitter* transmitter_;
 
-	// Visualisation
-	std::vector<Object*> objects_;
 
+
+    void UpdateVisualComponents();
 };
 #endif //!RECEIVER_H

@@ -7,9 +7,7 @@
 Cube::Cube(Transform transform, Shader* shader) : vao_(0), vbo_(0), ebo_(0)
 {
 
-	transform_.position = transform.position;
-	transform_.scale = transform.scale;
-	transform_.rotation = transform.rotation;
+	transform_ = transform;
 
 	shader_ = shader;
 
@@ -165,6 +163,7 @@ Cube::Cube(Transform transform): vao_(0), vbo_(0), ebo_(0)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
+
 
 void Cube::Draw() const
 {

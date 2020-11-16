@@ -10,12 +10,12 @@
 
 class Camera;
 class Ray;
-
 class RadiationPattern;
 class RayTracer;
 class Object;
 class Receiver;
 class Triangle;
+class Shader;
 
 struct Result;
 
@@ -30,7 +30,6 @@ public:
 	// Actions
 	void ConnectAReceiver(Receiver* receiver);
 	void DisconnectAReceiver(unsigned int receiver_id);
-	void DrawRadiationPattern(Camera * camera);
 	void AssignRadiationPattern(RadiationPattern* pattern);
 	void MoveTo(glm::vec3 position);
 	void RotateTo(glm::vec3 rotation);
@@ -49,10 +48,21 @@ public:
 	void UpdateResult();
 	void Reset();
 	void Clear();
-	// Visualisation
-	void DrawObjects(Camera * camera);
 
-	static unsigned int global_id_;
+	bool IsInitializedObject();
+
+	// Visualisation
+	void InitializeVisualObject(Shader * shader);
+	void DrawObject(Camera * camera);
+    void VisualUpdate();
+	// Visualization
+	Object* object_;
+
+
+    std::unordered_map<unsigned int, Receiver* > receivers_;
+
+    // Global Variables
+    static unsigned int global_id_;
 private:
 	
 	// Variables
@@ -67,9 +77,6 @@ private:
 	RadiationPattern * current_pattern_;
 	RayTracer* ray_tracer_;
 
-	std::unordered_map<unsigned int, Receiver* > receivers_;
-	// Visualization
-	std::vector<Object* > objects_;
 };
 
 #endif
