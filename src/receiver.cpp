@@ -75,7 +75,7 @@ void Receiver::UpdateResult()
 	ray_tracer_->Trace(tx_pos, rx_pos, records_);
 	ray_tracer_->CalculatePathLoss( transmitter_, this, records_, result_);
 }
-void Receiver::UpdateVisualComponents()
+void Receiver::UpdateVisualRayComponents()
 {
     Clear();
     if(transmitter_ == nullptr) return;
@@ -163,7 +163,7 @@ void Receiver::DrawObjects(Camera *main_camera) {
 void Receiver::VisualUpdate(){
 	if (object_ == nullptr) return;
 	object_->MoveTo(transform_.position);
-    UpdateVisualComponents();
+    UpdateVisualRayComponents();
 }
 
 void Receiver::InitializeVisualObject(Shader * shader){

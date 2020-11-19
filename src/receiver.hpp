@@ -50,8 +50,6 @@ public:
 
 	void DrawObjects(Camera* main_camera);
 
-	bool is_on_visual_update;
-
 	static unsigned int global_id_;
 
     void InitializeVisualObject(Shader * shader);
@@ -75,6 +73,6 @@ private:
 
 
 
-    void UpdateVisualComponents();
+    void UpdateVisualRayComponents();
 };
 #endif //!RECEIVER_H

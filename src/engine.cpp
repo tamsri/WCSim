@@ -993,6 +993,7 @@ void Engine::UpdateVisualComponents() {
         for(auto & [tx_id, tx] : updated_transmitters_){
 			if (!tx->IsInitializedObject()) 
 				tx->InitializeVisualObject(default_shader_);
+			tx->UpdateResult();
 			tx->VisualUpdate();
             for(auto &[rx_id, rx] : tx->receivers_){
 				if (!rx->IsInitializedObject()) 
@@ -1009,6 +1010,7 @@ void Engine::UpdateVisualComponents() {
         for(auto & [rx_id, rx]: updated_receivers_){
 			if (!rx->IsInitializedObject())
 				rx->InitializeVisualObject(default_shader_);
+			rx->UpdateResult();
             rx->VisualUpdate();
         }
         updated_receivers_.clear();
