@@ -725,9 +725,10 @@ void Engine::KeyViewMode(float delta_time)
         main_camera_->Move(Direction::kUp, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         main_camera_->Move(Direction::kDown, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
         main_camera_->Reset();
-
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+		main_camera_->TopView();
 	// Cemera Rotation
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
         main_camera_->Rotate(Rotation::kYaw, delta_time);

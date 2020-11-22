@@ -36,7 +36,7 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 
     glfwMakeContextCurrent(glfw_window_);
     glfwSetFramebufferSizeCallback(glfw_window_, FrameBufferSizeCallback);
-
+    glfwSetWindowUserPointer(glfw_window_, this);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -44,7 +44,9 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 }
 void Window::FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
+    Window* p_window = static_cast<Window *>(glfwGetWindowUserPointer(window));
     glViewport(0, 0, width, height);
+    p_window->Resize(width, height);
 }
 unsigned int Window::GetWindowWidth() const
 {
@@ -58,7 +60,11 @@ GLFWwindow* Window::GetGLFWWindow() const
 {
     return glfw_window_;
 }
-;
+void Window::Resize(int width, int height)
+{
+    width_ = width;
+    height_ = height;
+}
 
 Window::~Window() {
     //delete glfw_window_; // TODO: check if can be released.

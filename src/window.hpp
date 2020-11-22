@@ -18,7 +18,7 @@ public:
     unsigned int GetWindowWidth() const;
     unsigned int GetWindowHeight() const;
     GLFWwindow * GetGLFWWindow() const;
-
+    void Resize(int width, int height);
 private:
 
     GLFWwindow * glfw_window_;
