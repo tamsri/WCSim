@@ -58,6 +58,10 @@ void TCPServer(Engine * engine){
                         engine->Reset();
                         boost::asio::write(socket, boost::asio::buffer("rok"), ign_err);
                     }break;
+                    case 'u': {
+                        std::cout << "Server: The client wants to update the result.\n";
+                        engine->UpdateResults();
+                    }
                     default: {
                         std::cout << "Server: " << rec_data << "Unknown command, Disconnecting the client.\n";
                         goto end_connect;

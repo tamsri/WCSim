@@ -91,13 +91,11 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 void Transmitter::MoveTo(glm::vec3 position)
 {
 	transform_.position = position;
-	UpdateResult();
 }
 
 void Transmitter::RotateTo(glm::vec3 rotation)
 {
 	transform_.rotation = rotation;
-    UpdateResult();
 }
 
 Transform Transmitter::GetTransform() const

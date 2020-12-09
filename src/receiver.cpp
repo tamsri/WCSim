@@ -92,7 +92,6 @@ void Receiver::Reset()
 void Receiver::MoveTo(const glm::vec3 position) {
 	if (object_ == nullptr) return;
 	transform_.position = position;
-	UpdateResult();
 }
 
 void Receiver::Move(Direction direction,float delta_time) {

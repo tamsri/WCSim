@@ -57,6 +57,8 @@ Engine::~Engine()
 	delete window_;
 	delete main_camera_;
 	delete map_;
+	for (auto* pattern : patterns_)
+		delete pattern;
 }
 
 
@@ -200,7 +202,9 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 	return answer.str();
 }
 
-void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code & ign_err, std::string & command)
+void Engine::ExecuteCommand(	ip::tcp::socket& socket,
+								boost::system::error_code & ign_err, 
+								std::string & command)
 {
     auto input_data = command.substr(3);
 	switch (command[1]) {
@@ -346,7 +350,7 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
 	default: {
-        std::cout << "Server: Unknown Command\n";
+        std::cout << "Server: Unknown Command.\n";
         boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
     } break;
 	}
@@ -381,6 +385,7 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 		std::string answer = "a:" + this->GetReceiverInfo(id);
 		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 	}break;
+
 	case'5': {
         // Give me the q_map of station moving around the nap
         std::cout << "Server: The client asks for the average path loss q_map.\n";
@@ -449,6 +454,75 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 
         std::cout<< "Successfully transferred the map\n";
 	}break;
+	case '6': {
+		std::cout << "Server: The client asks about an outdoor position.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, question, boost::is_any_of(":"));
+
+		std::vector<std::string> split_data;
+		// Get location from input string
+		std::string location_string = split_inputs[1];
+		boost::split(split_data, location_string, boost::is_any_of(","));
+		glm::vec3 position = glm::vec3(std::stof(split_data[0]),
+							std::stof(split_data[1]),
+							std::stof(split_data[2]));
+		std::string answer = "a:";
+		if (this->IsOutdoor(position))
+			answer += 't';
+		else 
+			answer += 'f';
+		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
+	} break;
+	case '7': {
+		std::cout << "Server: The client asks about direct path between positions.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, question, boost::is_any_of(":"));
+
+		std::vector<std::string> split_data;
+		// Get location from input string
+		std::string location1_string = split_inputs[1];
+		std::string location2_string = split_inputs[2];
+		boost::split(split_data, location1_string, boost::is_any_of(","));
+		glm::vec3 position1 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+		split_data.clear();
+
+		boost::split(split_data, location2_string, boost::is_any_of(","));
+		glm::vec3 position2 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+
+		std::string answer = "a:";
+		if (this->IsDirect(position1, position2))
+			answer += 't';
+		else
+			answer += 'f';
+		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
+	} break;
+	case '9': {
+		std::cout << "Server: The client asks paths between positions.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, question, boost::is_any_of(":"));
+
+		std::vector<std::string> split_data;
+		// Get location from input string
+		std::string location1_string = split_inputs[1];
+		std::string location2_string = split_inputs[2];
+		boost::split(split_data, location1_string, boost::is_any_of(","));
+		glm::vec3 position1 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+		split_data.clear();
+
+		boost::split(split_data, location2_string, boost::is_any_of(","));
+		glm::vec3 position2 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+		std::string answer = "a:" + GetPossiblePath(position1, position2);
+		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
+		}
+		break;
 	default: {
 		std::cout << "Server: Unknown Question\n";
 		boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
@@ -461,8 +535,9 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
+	transmitter->AssignRadiationPattern(patterns_[0]);
 	// If window is on, Initialize the transmitter's object.
-	if (IsWindowOn()) updated_transmitters_.insert({ transmitter->GetID(), transmitter });
+	if (IsWindowOn()) updated_transmitters_.push_back(transmitter);
     transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
 
     return true;
@@ -472,7 +547,7 @@ bool Engine::AddReceiver(glm::vec3 position)
 {
 	if (ray_tracer_ == nullptr) return false;
 	auto * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
-	if (IsWindowOn()) updated_receivers_.insert({ receiver->GetID(), receiver });
+	if (IsWindowOn()) updated_receivers_.push_back(receiver);
 	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
 	// If the window is on, Initialize the receiver's object.
 
@@ -525,9 +600,8 @@ bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id
     Receiver* rx = receivers_.find(rx_id)->second;
     tx->ConnectAReceiver(rx);
     rx->ConnectATransmitter(tx);
-	if (IsWindowOn()) {
-		updated_transmitters_.insert({ tx->GetID(), tx });
-	}
+	if (IsWindowOn())
+		updated_transmitters_.push_back(tx);
 	return true;
 }
 
@@ -535,13 +609,14 @@ bool Engine::DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int 
 {
     if( transmitters_.find(tx_id) == transmitters_.end() ||
         receivers_.find(rx_id) == receivers_.end())  return false;
+
 	Transmitter * tx = transmitters_.find(tx_id)->second;
 	Receiver* rx = receivers_.find(rx_id)->second;
 	tx->DisconnectAReceiver(rx_id);
 	rx->DisconnectATransmitter();
 	if (IsWindowOn()) {
-		updated_transmitters_.insert({ tx->GetID(), tx });
-		updated_receivers_.insert({rx->GetID(), rx});
+		updated_transmitters_.push_back(tx);
+		updated_receivers_.push_back(rx);
 	}
 	return true;
 }
@@ -553,7 +628,7 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
 	if (IsWindowOn()) 
-		updated_transmitters_.insert({ tx->GetID(), tx });
+		updated_transmitters_.push_back(tx);
 	return true;
 }
 
@@ -563,7 +638,30 @@ bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
 	Receiver* rx = receivers_.find(rx_id)->second;
 	rx->MoveTo(position);
 	if (IsWindowOn()) 
-		updated_receivers_.insert({ rx->GetID(), rx });
+		updated_receivers_.push_back(rx);
+	return true;
+}
+
+bool Engine::IsDirect(glm::vec3 start_position, glm::vec3 end_position)
+{
+	return ray_tracer_->IsDirectHit(start_position, end_position);
+}
+
+bool Engine::IsOutdoor(glm::vec3 position)
+{
+	// TODO[]: implement outdoor position reference
+	constexpr glm::vec3 outdoor_pos = glm::vec3(0.0f, 1.0f, 0.0f);
+	if (IsDirect(position, outdoor_pos))
+		return true;
+	std::vector<glm::vec3> dummer_edges;
+	return ray_tracer_->IsKnifeEdgeDiffraction(position, outdoor_pos, dummer_edges);
+}
+
+bool Engine::UpdateResults()
+{
+	for (auto& [id, tx] : transmitters_) {
+		tx->UpdateResult();
+	}
 	return true;
 }
 
@@ -596,7 +694,7 @@ void Engine::LoadRayTracer()
 {
 	std::cout << "Loading Ray Tracer" << std::endl;
 	ray_tracer_ = new RayTracer(map_);
-	pattern_.emplace_back( "../assets/patterns/pattern-1.txt" );
+	patterns_.push_back( new RadiationPattern("../assets/patterns/pattern-1.txt") );
 	//recorder_ = new Recorder("../assets/records/");
 }
 
@@ -637,7 +735,9 @@ void Engine::LoadTexture()
 
 void Engine::Update()
 {
-	
+	/*for (auto& rx : updated_receivers_) {
+		rx->VisualUpdate();
+	}*/
 }
 
 void Engine::TransmitterMode(float delta_time)
@@ -947,6 +1047,40 @@ void Engine::ComputeMap( const glm::vec3  tx_position, const float tx_frequency,
     }
 }
 
+std::string Engine::GetPossiblePath(glm::vec3 start_position, glm::vec3 end_position) const
+{
+	std::stringstream result;
+	result.precision(8);
+	std::vector<Record> records;
+	ray_tracer_->Trace(start_position, end_position, records);
+	for (Record& record : records) {
+		switch (record.type) {
+		case RecordType::kDirect: {
+			result << "dir:";
+		} break;
+		case RecordType::kReflect: {
+			result << "ref";
+			for (glm::vec3 position : record.data) {
+				result << std::scientific << position.x << ","
+					<< std::scientific << position.y << ","
+					<< std::scientific << position.z;
+			}
+			result << ":";
+		} break;
+		case RecordType::kEdgeDiffraction: {
+			result << "dif";
+			for (glm::vec3 position : record.data) {
+				result << std::scientific << position.x << ","
+					<< std::scientific << position.y << ","
+					<< std::scientific << position.z;
+			}
+			result << ":";
+		} break;
+		}
+	}
+	return result.str();
+}
+
 std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int station_id,
                                                               float x_step, float z_step) {
     std::map<std::pair<float, float>, float> q_map;
@@ -991,27 +1125,24 @@ RayTracer *Engine::GetRayTracer() const {
 void Engine::UpdateVisualComponents() {
     // Update Transmitters.
     if(!updated_transmitters_.empty()){
-        for(auto & [tx_id, tx] : updated_transmitters_){
+        for(auto * tx : updated_transmitters_){
 			if (!tx->IsInitializedObject()) 
 				tx->InitializeVisualObject(default_shader_);
-			tx->UpdateResult();
 			tx->VisualUpdate();
             for(auto &[rx_id, rx] : tx->receivers_){
 				if (!rx->IsInitializedObject()) 
 					rx->InitializeVisualObject(default_shader_);
                 rx->VisualUpdate();
-                if(updated_receivers_.find(rx_id) != updated_receivers_.end())
-                    updated_receivers_.erase(rx_id);
             }
         }
         updated_transmitters_.clear();
     }
+
     // Update Receivers.
     if(!updated_receivers_.empty()){
-        for(auto & [rx_id, rx]: updated_receivers_){
+        for(auto * rx: updated_receivers_){
 			if (!rx->IsInitializedObject())
 				rx->InitializeVisualObject(default_shader_);
-			rx->UpdateResult();
             rx->VisualUpdate();
         }
         updated_receivers_.clear();

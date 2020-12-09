@@ -71,6 +71,7 @@ class Engine{
         void ComputeMap(glm::vec3 tx_positions, float tx_frequency,
                         std::vector<glm::vec3> * rx_positions,
                         std::map<std::pair<float, float>, float> & map) const;
+        std::string GetPossiblePath(glm::vec3 start_position, glm::vec3 end_position) const;
 
 
 
@@ -83,7 +84,9 @@ class Engine{
         bool DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int rx_id);
         bool MoveTransmitterTo(unsigned int rx_id, glm::vec3 position, glm::vec3 rotation);
         bool MoveReceiverTo(unsigned int rx_id, glm::vec3 position);
-
+        bool IsDirect(glm::vec3 start_position, glm::vec3 end_position);
+        bool IsOutdoor(glm::vec3 position);
+        bool UpdateResults();
         // Visualization
         void InitializeWithWindow();
         void LoadComponents();
@@ -101,13 +104,12 @@ class Engine{
 
         Transmitter * current_transmitter_;
         Receiver * current_receiver_;
-        std::map<unsigned int ,Receiver *> receivers_;
+        std::map<unsigned int , Receiver *> receivers_;
         std::map<unsigned int, Transmitter *> transmitters_;
         EngineMode engine_mode_;
 
-
-        std::map<unsigned int, Receiver *> updated_receivers_;
-        std::map<unsigned int, Transmitter *> updated_transmitters_;
+        std::vector<Receiver *> updated_receivers_;
+        std::vector<Transmitter *> updated_transmitters_;
 
         void UpdateVisualComponents();
         Shader* default_shader_;
@@ -126,7 +128,7 @@ private:
         
         Recorder* recorder_;
 
-        std::vector<RadiationPattern> pattern_;
+        std::vector<RadiationPattern *> patterns_;
 
 
         float last_time_;
@@ -156,7 +158,6 @@ private:
         static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
         // Engine Visualisation
         Camera * main_camera_;
-
 };
 
 #endif // !ENGINE_H
