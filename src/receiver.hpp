@@ -13,6 +13,7 @@ class Transmitter;
 class Object;
 struct Result;
 class Recorder;
+class Shader;
 
 class Receiver {
 
@@ -20,6 +21,7 @@ public:
 
 	Receiver(Transform transform, RayTracer * ray_tracer);
 	Receiver(Transform transform, RayTracer * ray_tracer, Transmitter * transmitter);
+    ~Receiver();
 
 	unsigned int GetID() const;
 
@@ -27,8 +29,6 @@ public:
 	void DisconnectATransmitter();
 	Transmitter * GetTransmitter() const;
 	Transform GetTransform()const;
-
-	void AddRecorder(Recorder* recorder);
 
 	float GetReceiverGain(const glm::vec3 & position) const;
 
@@ -41,15 +41,21 @@ public:
 
 	// Visualization
 	void UpdateResult();
-	void UpdateAndVisualize();
 	void Reset();
- 
+	// Visualisation
+	std::vector<Object*> rays_;
+	Object* object_;
 
 	void Clear();
 
 	void DrawObjects(Camera* main_camera);
 
 	static unsigned int global_id_;
+
+    void InitializeVisualObject(Shader * shader);
+	bool IsInitializedObject();
+    void VisualUpdate();
+
 private:
 	unsigned int id_;
 	Result result_;
@@ -64,10 +70,9 @@ private:
 	// Ray Tracer
 	RayTracer * ray_tracer_;
 	Transmitter* transmitter_;
-	Recorder* recorder_;
 
-	// Visualisation
-	std::vector<Object*> objects_;
 
+
+    void UpdateVisualRayComponents();
 };
 #endif //!RECEIVER_H

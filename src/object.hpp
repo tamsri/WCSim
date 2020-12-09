@@ -1,7 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 #include "transform.hpp"
 
@@ -12,6 +12,8 @@ class Object {
 public:
 	virtual void Draw() const = 0;
 	void DrawObject(Camera* camera) const;
+	void MoveTo(glm::vec3 position);
+
 	Shader * shader_;
 	Transform transform_;
 	glm::mat4 model_;

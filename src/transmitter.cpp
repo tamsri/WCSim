@@ -6,7 +6,8 @@
 #include "object.hpp"
 #include "ray.hpp"
 #include "line.hpp"
-
+#include "cube.hpp"
+#include "shader.hpp"
 #include "record.hpp"
 #include "receiver.hpp"
 
@@ -25,11 +26,12 @@ unsigned int Transmitter::global_id_ = 0;
 Transmitter::Transmitter(Transform transform,
 						float frequency,
 						float transmit_power,
-						RayTracer * ray_tracer):	id_(global_id_++),
+						RayTracer * ray_tracer):	id_(++global_id_),
 													transform_(transform), 
 													frequency_(frequency),
 													transmit_power_(transmit_power),
-													ray_tracer_(ray_tracer)
+													ray_tracer_(ray_tracer),
+													object_(nullptr)
 {
 	current_pattern_ = nullptr;
 	Reset();
@@ -37,8 +39,8 @@ Transmitter::Transmitter(Transform transform,
 
 Transmitter::~Transmitter()
 {
-	// TODO: implement de-constructor.
 	receivers_.clear();
+	delete object_;
 }
 
 unsigned int Transmitter::GetID() const
@@ -63,43 +65,22 @@ void Transmitter::Reset()
 	transform_.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
-void Transmitter::Clear()
+void Transmitter::DrawObject(Camera* camera)
 {
-	for (Object * object : objects_)
-		delete object;
-	objects_.clear();
-}
-
-void Transmitter::DrawObjects(Camera* camera)
-{
-	DrawRadiationPattern(camera);
-	for (auto & itr : receivers_) {
-		auto * receiver = itr.second;
-		receiver->DrawObjects(camera);
-	}
+    object_->DrawObject(camera);
 	if (current_pattern_ != nullptr)
-		current_pattern_->DrawPattern(camera, transform_);
+	    current_pattern_->DrawPattern(camera, transform_);
 }
 
 void Transmitter::ConnectAReceiver(Receiver* receiver)
 {
-	if (receiver == nullptr) return;
-	unsigned int id = receiver->GetID();
-	if (receivers_.find(id) != receivers_.end()) return;
-	receiver->ConnectATransmitter(this);
-	receivers_.insert(std::make_pair(id, receiver));
+    if(receivers_.find(receiver->GetID()) != receivers_.end()) return;
+	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
 }
 
 void Transmitter::DisconnectAReceiver(unsigned int receiver_id)
 {
 	receivers_.erase(receiver_id);
-}
-
-void Transmitter::DrawRadiationPattern(Camera * camera)
-{
-	for (auto & ray : objects_) {
-		ray->DrawObject(camera);
-	}
 }
 
 void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
@@ -110,13 +91,11 @@ void Transmitter::AssignRadiationPattern(RadiationPattern* pattern)
 void Transmitter::MoveTo(glm::vec3 position)
 {
 	transform_.position = position;
-	UpdateResult();
 }
 
 void Transmitter::RotateTo(glm::vec3 rotation)
 {
 	transform_.rotation = rotation;
-    UpdateResult();
 }
 
 Transform Transmitter::GetTransform() const
@@ -266,4 +245,14 @@ float Transmitter::GetTransmitPower() const {
     return transmit_power_;
 }
 
+void Transmitter::InitializeVisualObject(Shader * shader) {
+	object_ = new Cube(transform_, shader);
+}
 
+bool Transmitter::IsInitializedObject() {
+    return bool(object_!=nullptr);
+}
+void Transmitter::VisualUpdate(){
+	if (object_ == nullptr) return;
+	object_->MoveTo(transform_.position);
+}

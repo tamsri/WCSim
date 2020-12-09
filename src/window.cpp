@@ -36,7 +36,7 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 
     glfwMakeContextCurrent(glfw_window_);
     glfwSetFramebufferSizeCallback(glfw_window_, FrameBufferSizeCallback);
-
+    glfwSetWindowUserPointer(glfw_window_, this);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -44,7 +44,9 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 }
 void Window::FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
+    Window* p_window = static_cast<Window *>(glfwGetWindowUserPointer(window));
     glViewport(0, 0, width, height);
+    p_window->Resize(width, height);
 }
 unsigned int Window::GetWindowWidth() const
 {
@@ -58,7 +60,11 @@ GLFWwindow* Window::GetGLFWWindow() const
 {
     return glfw_window_;
 }
-;
+void Window::Resize(int width, int height)
+{
+    width_ = width;
+    height_ = height;
+}
 
 Window::~Window() {
     //delete glfw_window_; // TODO: check if can be released.
@@ -76,13 +82,16 @@ void Window::Run() {
 
     glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     while (!glfwWindowShouldClose(glfw_window_))
     {
         /*Render from Engine*/
         glClearColor(0.95f, 0.95f, 0.95f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        engine_->Visualize();
-        engine_->OnKeys();
+        UpdateVisualComponents();
+        VisualizeComponents();
+
+        OnKeysPressed();
 
         /*Swap frames*/
         glfwSwapBuffers(glfw_window_);
@@ -98,4 +107,16 @@ void Window::AssignEngine(Engine* engine)
 void Window::RemoveEngine()
 {
     engine_ = nullptr;
+}
+
+void Window::UpdateVisualComponents() {
+    engine_->UpdateVisualComponents();
+}
+
+void Window::VisualizeComponents() {
+    engine_->Visualize();
+}
+
+void Window::OnKeysPressed() {
+    engine_->OnKeys();
 }

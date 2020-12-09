@@ -17,27 +17,7 @@ Triangle::Triangle(const std::vector<glm::vec3>& points, glm::vec3 normal)
 bool Triangle::IsHit(const Ray& ray, float & t) const
 {
 	const float k_epsilon = 0.00000001f; /// ?? is it ok?
-	// moller trumbore
-	//glm::vec3 p0p1 = points_[1] - points_[0];
-	//glm::vec3 p0p2 = points_[2] - points_[0];
-	//glm::vec3 p_vec = glm::cross(ray.GetDirection(), p0p2);
-	//float det = glm::dot(p0p1, p_vec);
 
-	//// det is close to 0, miss triangle
-	////if (det < k_epsilon) return false;
-
-	//// ray and triangle are parallel
-	//if (fabs(det) < k_epsilon) return false;
-
-	//float inverse_det = 1 / det;
-	//glm::vec3 t_vector = ray.GetOrigin() - points_[0];
-
-	//glm::vec3 q_vec = glm::cross(t_vector, p0p1);
-	//t = glm::dot(p0p2, q_vec) * inverse_det;
-	//
-	//return true;
-
-	// second try
 	glm::vec3 v0 = points_[0];
 	glm::vec3 v1 = points_[1];
 	glm::vec3 v2 = points_[2];

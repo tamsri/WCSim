@@ -2,8 +2,9 @@
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
-
+#include <iostream>
 #include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -74,6 +75,15 @@ void Camera::Reset()
 	UpdateProjection();
 }
 
+void Camera::TopView()
+{
+	yaw_ = 270.0f;
+	pitch_ = 270.0;
+	position_ = glm::vec3(0.0f, 390.0, 0.0f);
+	UpdateRotation();
+	UpdateView();
+}
+
 void Camera::UpdateProjection()
 {
 	projection_ = glm::perspective(glm::radians(fov_), (float)window_->GetWindowHeight() / (float)window_->GetWindowHeight(), 0.1f, 10000.0f);
@@ -90,6 +100,9 @@ void Camera::UpdateRotation()
 void Camera::UpdateView()
 {
 	view_ = glm::lookAt(position_, position_ + front_direction_, up_direction_);
+	//std::cout << "position: " << glm::to_string(position_) << std::endl;
+	//std::cout << "yaw: " << yaw_;
+	//std::cout << "pitch: " << pitch_;
 }
 
 glm::mat4 Camera::GetView() const

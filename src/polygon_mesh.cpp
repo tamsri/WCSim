@@ -4,6 +4,7 @@
 #include<assert.h>
 #include<iostream>
 #include<set>
+#include<limits>
 
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
@@ -95,6 +96,12 @@ PolygonMesh::PolygonMesh(const std::string& path, Shader * shader, bool is_windo
                                                                      vbo_(0)
 {
     transform_ = { glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(0.0f) };
+
+    min_x_ = 0.0f;
+    max_z_ = 0.0f;
+    min_z_ = 0.0f;
+    max_z_ = 0.0f;
+
     shader_ = shader;
     model_ = glm::mat4(1.0f);
 
@@ -122,6 +129,10 @@ bool PolygonMesh::LoadObj(const std::string& path)
             if (buffer == "v") {
                 float x, y, z;
                 input_file_stream >> x >> y >> z;
+                if(x > max_x_) max_x_ = x;
+                if(x < min_x_) min_x_ = x;
+                if(z > max_z_) max_z_ = z;
+                if(z < min_z_) min_z_ = z;
                 vertices.push_back(glm::vec3(x, y, z));
             }
             else if (buffer == "vn") {
@@ -155,6 +166,8 @@ bool PolygonMesh::LoadObj(const std::string& path)
         }
         input_file_stream.close();
     }
+    std::cout << "Min X: " << min_x_ << ", Max X: " << max_x_ << std::endl;
+    std::cout << "Min Z: " << min_z_ << ", Max Z: " << max_z_ << std::endl;
     return true;
 }
 
@@ -250,4 +263,11 @@ void PolygonMesh::Draw() const {
     glBindVertexArray(vao_);
     glDrawArrays(GL_TRIANGLES, 0, vertices_.size());
     glBindVertexArray(0);
+}
+
+void PolygonMesh::GetBorders(float &min_x, float &max_x, float &min_z, float &max_z) const {
+    min_x = min_x_;
+    max_x = max_x_;
+    min_z = min_z_;
+    max_z = max_z_;
 }

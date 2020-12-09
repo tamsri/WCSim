@@ -1,8 +1,8 @@
 #include "engine.hpp"
 
+#include <thread>
 #include <map>
 #include <iostream>
-#include <sstream>
 #include <utility>
 
 #include <glad/glad.h>
@@ -25,32 +25,31 @@
 #include "radiation_pattern.hpp"
 
 #include "printer.hpp"
-#include "communicator.hpp"
-
 #include "record.hpp"
 
 unsigned int Engine::global_engine_id_ = 0;
 
-Engine::Engine():	
-							window_(nullptr), 
-							engine_id_(++global_engine_id_),
-							default_shader_(nullptr),
-							main_camera_(nullptr),
-							recorder_(nullptr)
+Engine::Engine():
+        window_(nullptr),
+        engine_id_(++global_engine_id_),
+        default_shader_(nullptr),
+        main_camera_(nullptr),
+        recorder_(nullptr),
+        ray_tracer_(nullptr),
+        on_pressed_(false)
 {
-	main_camera_ = nullptr;
-	communicator_ = new Communicator();
 }
 Engine::Engine(Window* window) :
-							window_(window), 
-							engine_id_(++global_engine_id_),
-							default_shader_(nullptr),
-							main_camera_(nullptr),
-							recorder_(nullptr)
+        window_(window),
+        engine_id_(++global_engine_id_),
+        default_shader_(nullptr),
+        main_camera_(new Camera(window)),
+        recorder_(nullptr),
+        ray_tracer_(nullptr),
+        on_pressed_(false)
 {
-	main_camera_ = new Camera(window_);
-	communicator_ = new Communicator();
-	AssignWindow(window_);
+	// Assign engine to window.
+	window_->AssignEngine(this);
 }
 
 Engine::~Engine()
@@ -58,14 +57,10 @@ Engine::~Engine()
 	delete window_;
 	delete main_camera_;
 	delete map_;
+	for (auto* pattern : patterns_)
+		delete pattern;
 }
 
-
-void Engine::AssignWindow(Window* window)
-{
-	window_ = window;
-	window_->AssignEngine(this);
-}
 
 void Engine::Reset()
 {
@@ -81,16 +76,13 @@ void Engine::Reset()
 	receivers_.clear();
 }
 
-void Engine::Run()
-{
-}
-
 void Engine::RunWithWindow()
 {
 	if (window_ == nullptr) {
 		std::cout << "Cannot run window without assigning the window\n";
 		return;
 	}
+	AddTransmitter(glm::vec3{ 0, 12.0f, 0 }, glm::vec3{ 0.0f, 0.0f, 0.0f }, 3e9);
 	window_->Run();
 }
 
@@ -210,7 +202,9 @@ std::string Engine::GetReceiverInfo(unsigned int receiver_id)
 	return answer.str();
 }
 
-void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code & ign_err, std::string & command)
+void Engine::ExecuteCommand(	ip::tcp::socket& socket,
+								boost::system::error_code & ign_err, 
+								std::string & command)
 {
     auto input_data = command.substr(3);
 	switch (command[1]) {
@@ -259,7 +253,7 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
 	case '3': {
-		// Add a user to a station 
+		// Connect a user to a station
 		std::cout << "Server: The client wants to connect a receiver to a station.\n";
 		std::vector<std::string> split_data;
 		boost::split(split_data, input_data, boost::is_any_of(","));
@@ -329,8 +323,10 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 		boost::split(split_inputs, input_data, boost::is_any_of(":"));
 		unsigned int station_id = std::stoul(split_inputs[0]);
 		unsigned int user_id = std::stoul(split_inputs[1]);
-		if (this->DisconnectReceiverFromTransmitter(station_id, user_id))
+		if (this->DisconnectReceiverFromTransmitter(station_id, user_id)) {
 			boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
+
+		}
 		else
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
@@ -354,7 +350,7 @@ void Engine::ExecuteCommand(ip::tcp::socket& socket, boost::system::error_code &
 			boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
 	}break;
 	default: {
-        std::cout << "Server: Unknown Command\n";
+        std::cout << "Server: Unknown Command.\n";
         boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
     } break;
 	}
@@ -389,6 +385,7 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
 		std::string answer = "a:" + this->GetReceiverInfo(id);
 		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
 	}break;
+
 	case'5': {
         // Give me the q_map of station moving around the nap
         std::cout << "Server: The client asks for the average path loss q_map.\n";
@@ -399,49 +396,133 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         unsigned int station_id = std::stoul(split_data[0]);
         unsigned int resolution = std::stoul(split_data[1]);
 
-        /// TODO: Implement map_ class.
-        constexpr float x_start = -100.0f;
-        constexpr float x_end = 100.0f;
-        constexpr float z_start = -100.0f;
-        constexpr float z_end = 100.0f;
+        float x_start, x_end, z_start, z_end;
+        ray_tracer_->GetMapBorder(x_start, x_end, z_start, z_end);
 
         float x_step = (x_end - x_start) / (float) resolution;
         float z_step = (z_end - x_start) / (float) resolution;
 
         auto q_map = this->GetStationMap(station_id, x_step, z_step);
 
+		// Store the map locally.
+		{
+			std::string file_name = std::to_string(resolution) + "res" +
+				std::to_string(transmitters_[station_id]->GetReceivers().size()) + ".csv";
+			std::ofstream output_file{ "../assets/" + file_name };
+			if (output_file.is_open()) {
+				for (auto& [position, avg_pl] : q_map) {
+					output_file << position.first << ", "
+						<< position.second << ", "
+						<< std::scientific << avg_pl << "\n";
+				}
+				output_file.close();
+			}
+			else {
+				std::cout << "Unable to write the file.\n";
+			}
+		}
+
         if (q_map.empty())
             boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
         else
             boost::asio::write(socket, boost::asio::buffer("suc"), ign_err);
 
-        boost::array<char, 64> data_buffer{};
-        int len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-        std::string received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-        if (received_data == "ready") std::cout << "Client: Ready to get the map\n";
-
-        unsigned int x_depth = q_map.size();
-        unsigned int z_depth = q_map.begin()->second.size();
-        std::string head_info = std::to_string(x_depth) + "," + std::to_string(z_depth);
-        boost::asio::write(socket, boost::asio::buffer(head_info), ign_err);
-
-        len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-        received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-        if (received_data != "ok") return;
+		boost::array<char, 1024> data_buffer{};
+		int len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+		std::string rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+		if (rec_data != "ready") {
+			std::cout << "Communication Error.\n";
+			return;
+		}
         // Send the head of information.
-        for (auto &[x, row] : q_map){
-            for (auto &[z, avg_loss] : row) {
-                boost::asio::write(socket,
-                                   boost::asio::buffer(std::to_string(avg_loss)),
-                                   ign_err);
-                len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-                std::cout << "Gave data from " << x << ", " << z << std::endl;
-                received_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-                if (received_data != "ok") return;
-                }
-            }
+
+		for (auto& [position, avg_pl] : q_map) {
+			std::stringstream data_stream;
+			data_stream << position.first << ","
+				<< position.second << ","
+				<< std::scientific << avg_pl;
+			boost::asio::write(socket, boost::asio::buffer(data_stream.str()), ign_err);
+			len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+			rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+			if (rec_data != "ok") {
+				std::cout << "Communication Error.\n";
+				return;
+			}
+		}
+
+		boost::asio::write(socket, boost::asio::buffer("end"), ign_err);
+
         std::cout<< "Successfully transferred the map\n";
 	}break;
+	case '6': {
+		std::cout << "Server: The client asks about an outdoor position.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, question, boost::is_any_of(":"));
+
+		std::vector<std::string> split_data;
+		// Get location from input string
+		std::string location_string = split_inputs[1];
+		boost::split(split_data, location_string, boost::is_any_of(","));
+		glm::vec3 position = glm::vec3(std::stof(split_data[0]),
+							std::stof(split_data[1]),
+							std::stof(split_data[2]));
+		std::string answer = "a:";
+		if (this->IsOutdoor(position))
+			answer += 't';
+		else 
+			answer += 'f';
+		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
+	} break;
+	case '7': {
+		std::cout << "Server: The client asks about direct path between positions.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, question, boost::is_any_of(":"));
+
+		std::vector<std::string> split_data;
+		// Get location from input string
+		std::string location1_string = split_inputs[1];
+		std::string location2_string = split_inputs[2];
+		boost::split(split_data, location1_string, boost::is_any_of(","));
+		glm::vec3 position1 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+		split_data.clear();
+
+		boost::split(split_data, location2_string, boost::is_any_of(","));
+		glm::vec3 position2 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+
+		std::string answer = "a:";
+		if (this->IsDirect(position1, position2))
+			answer += 't';
+		else
+			answer += 'f';
+		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
+	} break;
+	case '9': {
+		std::cout << "Server: The client asks paths between positions.\n";
+		std::vector<std::string> split_inputs;
+		boost::split(split_inputs, question, boost::is_any_of(":"));
+
+		std::vector<std::string> split_data;
+		// Get location from input string
+		std::string location1_string = split_inputs[1];
+		std::string location2_string = split_inputs[2];
+		boost::split(split_data, location1_string, boost::is_any_of(","));
+		glm::vec3 position1 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+		split_data.clear();
+
+		boost::split(split_data, location2_string, boost::is_any_of(","));
+		glm::vec3 position2 = glm::vec3(std::stof(split_data[0]),
+			std::stof(split_data[1]),
+			std::stof(split_data[2]));
+		std::string answer = "a:" + GetPossiblePath(position1, position2);
+		boost::asio::write(socket, boost::asio::buffer(answer), ign_err);
+		}
+		break;
 	default: {
 		std::cout << "Server: Unknown Question\n";
 		boost::asio::write(socket, boost::asio::buffer("fai"), ign_err);
@@ -454,16 +535,22 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
-	transmitters_[transmitter->GetID()] = transmitter;
-	transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
-	return true;
+	transmitter->AssignRadiationPattern(patterns_[0]);
+	// If window is on, Initialize the transmitter's object.
+	if (IsWindowOn()) updated_transmitters_.push_back(transmitter);
+    transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
+
+    return true;
 }
 
 bool Engine::AddReceiver(glm::vec3 position)
 {
 	if (ray_tracer_ == nullptr) return false;
 	auto * receiver = new Receiver({ position, glm::vec3(1.0f) , glm::vec3(0.0f) }, ray_tracer_);
+	if (IsWindowOn()) updated_receivers_.push_back(receiver);
 	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
+	// If the window is on, Initialize the receiver's object.
+
 	return true;
 }
 
@@ -475,6 +562,10 @@ bool Engine::RemoveTransmitter(unsigned int transmitter_id)
 	for (auto& [id, rx] : tx->GetReceivers()) {
 	    if(rx == nullptr) continue;
 		rx->DisconnectATransmitter();
+	}
+	if (IsWindowOn()) {
+		delete tx->object_;
+		tx->object_ = nullptr;
 	}
 	transmitters_.erase(transmitter_id);
 	// delete the transmitter
@@ -491,6 +582,10 @@ bool Engine::RemoveReceiver(unsigned int receiver_id)
 	if (tx != nullptr) {
         DisconnectReceiverFromTransmitter(tx->GetID(), rx->GetID());
 	}
+	if (IsWindowOn()) {
+		delete rx->object_;
+		rx->object_ = nullptr;
+	}
 	// Remove from the engine list
 	receivers_.erase(receiver_id);
 	delete rx;
@@ -503,7 +598,10 @@ bool Engine::ConnectReceiverToTransmitter(unsigned int tx_id, unsigned int rx_id
         receivers_.find(rx_id) == receivers_.end())  return false;
     Transmitter * tx = transmitters_.find(tx_id)->second;
     Receiver* rx = receivers_.find(rx_id)->second;
-	tx->ConnectAReceiver(rx);
+    tx->ConnectAReceiver(rx);
+    rx->ConnectATransmitter(tx);
+	if (IsWindowOn())
+		updated_transmitters_.push_back(tx);
 	return true;
 }
 
@@ -511,10 +609,15 @@ bool Engine::DisconnectReceiverFromTransmitter(unsigned int tx_id, unsigned int 
 {
     if( transmitters_.find(tx_id) == transmitters_.end() ||
         receivers_.find(rx_id) == receivers_.end())  return false;
+
 	Transmitter * tx = transmitters_.find(tx_id)->second;
 	Receiver* rx = receivers_.find(rx_id)->second;
 	tx->DisconnectAReceiver(rx_id);
 	rx->DisconnectATransmitter();
+	if (IsWindowOn()) {
+		updated_transmitters_.push_back(tx);
+		updated_receivers_.push_back(rx);
+	}
 	return true;
 }
 
@@ -524,6 +627,8 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
     Transmitter* tx = transmitters_.find(id)->second;
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
+	if (IsWindowOn()) 
+		updated_transmitters_.push_back(tx);
 	return true;
 }
 
@@ -532,6 +637,31 @@ bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
     if(receivers_.find(rx_id) == receivers_.end()) return false;
 	Receiver* rx = receivers_.find(rx_id)->second;
 	rx->MoveTo(position);
+	if (IsWindowOn()) 
+		updated_receivers_.push_back(rx);
+	return true;
+}
+
+bool Engine::IsDirect(glm::vec3 start_position, glm::vec3 end_position)
+{
+	return ray_tracer_->IsDirectHit(start_position, end_position);
+}
+
+bool Engine::IsOutdoor(glm::vec3 position)
+{
+	// TODO[]: implement outdoor position reference
+	constexpr glm::vec3 outdoor_pos = glm::vec3(0.0f, 1.0f, 0.0f);
+	if (IsDirect(position, outdoor_pos))
+		return true;
+	std::vector<glm::vec3> dummer_edges;
+	return ray_tracer_->IsKnifeEdgeDiffraction(position, outdoor_pos, dummer_edges);
+}
+
+bool Engine::UpdateResults()
+{
+	for (auto& [id, tx] : transmitters_) {
+		tx->UpdateResult();
+	}
 	return true;
 }
 
@@ -564,7 +694,7 @@ void Engine::LoadRayTracer()
 {
 	std::cout << "Loading Ray Tracer" << std::endl;
 	ray_tracer_ = new RayTracer(map_);
-	pattern_.emplace_back( "../assets/patterns/pattern-1.txt" );
+	patterns_.push_back( new RadiationPattern("../assets/patterns/pattern-1.txt") );
 	//recorder_ = new Recorder("../assets/records/");
 }
 
@@ -581,7 +711,7 @@ void Engine::LoadComponents()
 void Engine::LoadMap()
 {
 	// Load the map from .obj file
-	map_ = new PolygonMesh("../assets/obj/new2.obj", default_shader_, window_ != nullptr);
+	map_ = new PolygonMesh("../assets/obj/poznan.obj", default_shader_, window_ != nullptr);
 }
 
 void Engine::LoadObjects()
@@ -605,15 +735,51 @@ void Engine::LoadTexture()
 
 void Engine::Update()
 {
-	
+	/*for (auto& rx : updated_receivers_) {
+		rx->VisualUpdate();
+	}*/
 }
 
-void Engine::PrintMap()
+void Engine::TransmitterMode(float delta_time)
 {
-	std::cout << "Printing\n";
-	Printer printer{ray_tracer_};
-	printer.Print("../test.ppm", glm::vec3(0.0f, 8.0f, 0.0f), 2.5e9f, 1.5f );
-	//printer.TestPrint("../test-head-map.ppm");
+	GLFWwindow* window = window_->GetGLFWWindow();
+	std::cout << "Transmitter Mode\n";
+	std::cout << "Press A - Add a transmitter\n";
+	std::cout << "Press S - Select a transmitter\n";
+	std::cout << "Press L - Display transmitter IDs\n";
+	std::cout << "Press M - Control a transmitter\n";
+	std::cout << "Press V - Go back to View Mode";
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
+	    if(glfwGetKey(window, GLFW_KEY_V) != GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+    }
+
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        if(glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS) {
+        Transform tx_trans;
+		std::cout << "Enter the transmitter's information.\n";
+		std::cout << "x: ";
+		std::cin >> tx_trans.position.x;
+		std::cout << "y: ";
+		std::cin >> tx_trans.position.y;
+		std::cout << "z: ";
+		std::cin >> tx_trans.position.z;
+		float frequency;
+		std::cout << "frequency[Hz](eg. 2.5e9): ";
+		std::cin >> frequency;
+		std::cout << "transmit power[dBm]: ";
+		float power;
+		std::cin >> power;
+		Transmitter* tx = new Transmitter(tx_trans, frequency, power, ray_tracer_);
+		transmitters_.insert({ tx->GetID(), tx });
+		std::cout << "Transmitter #" << tx->GetID() << " added to the environment.\n";
+	    }
+	}
+
+}
+
+void Engine::ReceiverMode(float delta_time)
+{
 }
 
 void Engine::KeyActions()
@@ -633,90 +799,131 @@ void Engine::KeyActions()
 	case kView:
 		KeyViewMode(delta_time);
 		break;
-	case kMoveObjects:
-		KeyMoveMode(delta_time);
-	}
+	case kTransmitter:
+        KeyTXMoveMode(delta_time);
+		break;
+	case kReceiver:
+        KeyRXMoveMode(delta_time);
+		break;
+    }
 
 }
 
 void Engine::KeyViewMode(float delta_time)
 {
 	GLFWwindow* window = window_->GetGLFWWindow();
+	// Camera Transition
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		main_camera_->Move(Direction::kForward, delta_time);
+        main_camera_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		main_camera_->Move(Direction::kLeft, delta_time);
+        main_camera_->Move(Direction::kLeft, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		main_camera_->Move(Direction::kBackward, delta_time);
+        main_camera_->Move(Direction::kBackward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		main_camera_->Move(Direction::kRight, delta_time);
+        main_camera_->Move(Direction::kRight, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		main_camera_->Move(Direction::kUp, delta_time);
+        main_camera_->Move(Direction::kUp, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		main_camera_->Move(Direction::kDown, delta_time);
-
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		main_camera_->Reset();
-
+        main_camera_->Move(Direction::kDown, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+        main_camera_->Reset();
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+		main_camera_->TopView();
+	// Cemera Rotation
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kYaw, delta_time);
+        main_camera_->Rotate(Rotation::kYaw, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kYaw, -delta_time);
-
+        main_camera_->Rotate(Rotation::kYaw, -delta_time);
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kPitch, delta_time);
+        main_camera_->Rotate(Rotation::kPitch, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		main_camera_->Rotate(Rotation::kPitch, -delta_time);
+        main_camera_->Rotate(Rotation::kPitch, -delta_time);
 
-	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-		engine_mode_ = EngineMode::kMoveObjects;
+	// Switch Mode Keys
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kTransmitter;
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kReceiver;
 }
 
-void Engine::KeyMoveMode(float delta_time)
+void Engine::KeyTXMoveMode(float delta_time)
 {
+    if(current_transmitter_ == nullptr) return;
 	GLFWwindow* window = window_->GetGLFWWindow();
-	//std::cin >> 
+
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
 		engine_mode_ = EngineMode::kView;
 
+	// TX Transition Keys
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kForward, delta_time);
+		current_transmitter_->Move(Direction::kForward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kLeft, delta_time);
+        current_transmitter_->Move(Direction::kLeft, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kBackward, delta_time);
+        current_transmitter_->Move(Direction::kBackward, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kRight, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kUp, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		//test_receiver_->Move(Direction::kDown, delta_time);
+        current_transmitter_->Move(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        current_transmitter_->Move(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        current_transmitter_->Move(Direction::kDown, delta_time);
 
-	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kForward, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kLeft, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kBackward, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-		//transmitter_->Move(Direction::kRight, delta_time);
+    // TX Rotation Keys
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kLeft, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+        current_transmitter_->Rotate(Direction::kDown, delta_time);
 
-	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kLeft, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kRight, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kUp, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		//transmitter_->Rotate(Direction::kDown, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS);
-		//transmitter_->ToggleDisplay();
-	//if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
-	//	ray_tracer_->print_each_ = true;
-	//if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-	//	ray_tracer_->print_each_ = false;
+    // Switch Mode Keys
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kReceiver;
 }
 
+void Engine::KeyRXMoveMode(float delta_time)
+{
+    if(current_receiver_ == nullptr) return;
+    GLFWwindow* window = window_->GetGLFWWindow();
+
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+
+    // Transition Keys
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kForward, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kLeft, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kBackward, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        current_receiver_->Move(Direction::kDown, delta_time);
+
+    // Rotation Keys
+    /*if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kLeft, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kRight, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kUp, delta_time);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+        current_receiver_->Rotate(Direction::kDown, delta_time);*/
+
+    // Switch Mode Keys
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kView;
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+        engine_mode_ = EngineMode::kTransmitter;
+
+}
 void Engine::MousePosition(double x_pos, double y_pos)
 {
 	if (on_right_click_) {
@@ -741,7 +948,7 @@ void Engine::MousePosition(double x_pos, double y_pos)
 void Engine::MouseScroll(double xoffset, double yoffset)
 {
 	///  Todo: Implement later
-	main_camera_->camera_move_speed_ += yoffset;
+	main_camera_->camera_move_speed_ += (float)yoffset;
 }
 
 void Engine::MouseButtonToggle(MouseBottons action)
@@ -776,7 +983,7 @@ void Engine::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoff
 
 void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	Engine* my_engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
+	auto* my_engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS) {
         my_engine->MouseButtonToggle(kRightPress);
 	}
@@ -795,9 +1002,14 @@ void Engine::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Engine::Visualize() 
 {
 	map_->DrawObject(main_camera_);
-	for (const auto & [id, transmitter] : transmitters_) {
-		transmitter->DrawObjects(main_camera_);
-	}
+
+	for (const auto & [id, transmitter] : transmitters_)
+		if(transmitter->IsInitializedObject())
+			transmitter->DrawObject(main_camera_);
+
+    for (const auto & [id, receiver] : receivers_)
+		if(receiver->IsInitializedObject())
+			receiver->DrawObjects(main_camera_);
 }
 
 void Engine::OnKeys()
@@ -805,59 +1017,139 @@ void Engine::OnKeys()
 	KeyActions();
 }
 
-void Engine::TraceMap(Transmitter * transmitter,
-                       glm::vec3 position,
-                       std::map<float,std::map<float,float>> & map) const {
-    std::cout << "Start tracing at: " << glm::to_string(position) << std::endl;
-    auto receivers = transmitter->GetReceivers();
+
+
+void Engine::ComputeMap( const glm::vec3  tx_position, const float tx_frequency,
+                       std::vector<glm::vec3> * rx_positions,
+						std::map<std::pair<float, float>, float>& map) const {
     float avg_total_loss = 0.0f;
     int n_users = 0;
-    // Iterate the result of each receiver.
-    for(auto & [id, rx]: receivers){
-        std::vector<Record> records;
-        Result result;
-        ray_tracer_->Trace(position, rx->GetPosition(), records);
-        ray_tracer_->CalculatePathLoss(transmitter, rx, records, result);
-        if(result.is_valid){
+
+    for(auto & rx_position: *rx_positions){
+		std::vector<Record> records;
+		Result result;
+
+        ray_tracer_->TraceMap(tx_position,  rx_position, records);
+        if(ray_tracer_->CalculatePathLossMap(tx_position, tx_frequency,
+                                             rx_position, records, result)){
             ++n_users;
             avg_total_loss += result.total_attenuation;
         }
     }
-    // Summary.
+    // Summary
     if(n_users == 0){
         // In the case of base station is inside the building.
-        map[position.x][position.z] = 0.0f;
-    }else{
-        // average the total loss and store to the map.
-        map[position.x][position.z] = avg_total_loss/(float)n_users;
+		map.insert({ std::make_pair(tx_position.x, tx_position.z), -200.0f });
+	}
+	else {
+		// average the total loss and store to the map.
+		map.insert({ std::make_pair(tx_position.x, tx_position.z), avg_total_loss / (float)n_users });
     }
-    std::cout << "Complete Tracing at: " << glm::to_string(position) << std::endl;
 }
 
-std::map<float, std::map<float, float>> Engine::GetStationMap(unsigned int station_id, float x_step, float z_step) {
-    std::map<float,std::map<float, float>> map;
-    if (transmitters_.find(station_id) == transmitters_.end()) return map;
-    Transmitter * tx = transmitters_.find(station_id)->second;
+std::string Engine::GetPossiblePath(glm::vec3 start_position, glm::vec3 end_position) const
+{
+	std::stringstream result;
+	result.precision(8);
+	std::vector<Record> records;
+	ray_tracer_->Trace(start_position, end_position, records);
+	for (Record& record : records) {
+		switch (record.type) {
+		case RecordType::kDirect: {
+			result << "dir:";
+		} break;
+		case RecordType::kReflect: {
+			result << "ref";
+			for (glm::vec3 position : record.data) {
+				result << std::scientific << position.x << ","
+					<< std::scientific << position.y << ","
+					<< std::scientific << position.z;
+			}
+			result << ":";
+		} break;
+		case RecordType::kEdgeDiffraction: {
+			result << "dif";
+			for (glm::vec3 position : record.data) {
+				result << std::scientific << position.x << ","
+					<< std::scientific << position.y << ","
+					<< std::scientific << position.z;
+			}
+			result << ":";
+		} break;
+		}
+	}
+	return result.str();
+}
 
+std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int station_id,
+                                                              float x_step, float z_step) {
+    std::map<std::pair<float, float>, float> q_map;
+    if (transmitters_.find(station_id) == transmitters_.end()) return q_map;
+    Transmitter * tx = transmitters_.find(station_id)->second;
+    float tx_frequency = tx->GetFrequency();
     float tx_height = tx->GetTransform().position.y;
-    constexpr float x_start = -100.0f;
-    constexpr float z_start = -100.0f;
-    constexpr float x_end = 100.0f;
-    constexpr float z_end = 100.0f;
+
+    /// Get the order for image.
+    float x_start, z_start, x_end, z_end;
+    ray_tracer_->GetMapBorder(x_start, x_end, z_start, z_end);
+    auto * rx_positions = new std::vector<glm::vec3>;
+    for(auto [id, rx]: tx->GetReceivers()) rx_positions->push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
+    unsigned int threads_limit = std::thread::hardware_concurrency()*20;
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
-            const glm::vec3 position{x,
-                                     tx_height,
-                                     z};
-            std::thread map_thread(&Engine::TraceMap, this,
-                                   tx, position, std::ref(map));
+            const glm::vec3 position{x, tx_height, z};
+            std::thread map_thread(&Engine::ComputeMap, this,
+                                   position, tx_frequency ,rx_positions,
+                                   std::ref(q_map));
             threads.push_back(std::move(map_thread));
+
+            if(threads.size() == threads_limit){
+                for(auto & thread:threads) thread.join();
+                threads.clear();
+            }
         }
+
     }
-    for(auto & thread:threads) if(thread.joinable()) thread.join();
-    std::cout << "Completed Map Tracing" << std::endl;
-    return map;
+    // Join threads
+    for(auto & thread:threads) thread.join();
+    threads.clear();
+    return q_map;
+}
+
+RayTracer *Engine::GetRayTracer() const {
+    return ray_tracer_;
+}
+
+void Engine::UpdateVisualComponents() {
+    // Update Transmitters.
+    if(!updated_transmitters_.empty()){
+        for(auto * tx : updated_transmitters_){
+			if (!tx->IsInitializedObject()) 
+				tx->InitializeVisualObject(default_shader_);
+			tx->VisualUpdate();
+            for(auto &[rx_id, rx] : tx->receivers_){
+				if (!rx->IsInitializedObject()) 
+					rx->InitializeVisualObject(default_shader_);
+                rx->VisualUpdate();
+            }
+        }
+        updated_transmitters_.clear();
+    }
+
+    // Update Receivers.
+    if(!updated_receivers_.empty()){
+        for(auto * rx: updated_receivers_){
+			if (!rx->IsInitializedObject())
+				rx->InitializeVisualObject(default_shader_);
+            rx->VisualUpdate();
+        }
+        updated_receivers_.clear();
+    }
+}
+
+bool Engine::IsWindowOn() {
+    return window_ != nullptr;
 }
 

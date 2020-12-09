@@ -25,14 +25,12 @@ enum class Rotation : unsigned  int {
 
 class Camera {
 public:
-	// todo:
-	// camera speed
-	// constructors
 	Camera(Window* window);
 
 	void Move(const Direction camera_direction, float delta_time);
 	void Rotate(const Rotation camera_rotation, float delta_time);
 	void Reset();
+	void TopView();
 	void UpdateProjection();
 
 	void UpdateRotation();

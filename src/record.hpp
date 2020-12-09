@@ -39,21 +39,21 @@ struct DiffractionResult{
 };
 struct Result {
 	// Validation of Result.
-    bool is_valid;
+    bool is_valid = false;
     // Is line-of-sight?
-    bool is_los;
+    bool is_los = false;
 	// Direct Path Result.
-	DirectResult direct;
+    DirectResult direct {0.0f,0.0f,0.0f,0.0f};
     // Reflection Results
-	std::vector<ReflectionResult> reflections;
+    std::vector<ReflectionResult> reflections;
     // Diffraction Result
-	DiffractionResult diffraction;
+    DiffractionResult diffraction{ 0.0f,0.0f,0.0f,0.0f };
 	// Transmitting Power
-	float transmit_power; // Unit: dBm
+	float transmit_power = 0.0f; // Unit: dBm
     // Total Loss
-    float total_attenuation; // Unit: dB
+    float total_attenuation = 0.0f; // Unit: dB
     // Total Received Power
-	float total_received_power; // Unit: dBm
+	float total_received_power = 0.0f; // Unit: dBm
 };
 
 struct Record {

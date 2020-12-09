@@ -43,43 +43,46 @@ public:
 	RayTracer(PolygonMesh * map);
 	
 	// Ray Tracing Part
-	void Trace( const glm::vec3 & start_position,
-                const glm::vec3 & end_position,
+	void Trace( glm::vec3 start_position,
+                glm::vec3 end_position,
                 std::vector<Record> & records) const;
+    void TraceMap(glm::vec3 tx_position,
+                  glm::vec3 rx_position,
+                  std::vector<Record> &records) const;
 
-	void LineTrace(const glm::vec3 & start_position,
-                   const glm::vec3 & end_position,
-                   std::vector<Record> & records
+	void LineTrace(  glm::vec3 start_position,
+                     glm::vec3 end_position,
+                     std::vector<Record> & records
     ) const;
 
-    void ReflectTrace(const glm::vec3 &start_position,
-                      const glm::vec3 &end_position,
+    void ReflectTrace(glm::vec3 start_position,
+                      glm::vec3 end_position,
                       std::vector<Record> &records) const;
 
-
+    void GetMapBorder(float & min_x, float & max_x, float & min_z, float & max_z) const;
 	// Line of Sight
-	bool IsDirectHit(const glm::vec3 & start_point, const glm::vec3 & end_point) const;
+	bool IsDirectHit( glm::vec3 start_position, glm::vec3 end_position) const;
 	
 	// Reflection
-	std::map<Triangle *, bool> ScanHit(const glm::vec3 & position) const;
-	std::vector <Triangle*> ScanHitVec(const glm::vec3 & position) const;
-	bool IsReflected(const glm::vec3 & start_position, const glm::vec3 & end_position, std::vector<glm::vec3> & reflected_points) const;
+	std::map<Triangle *, bool> ScanHit(glm::vec3 position) const;
+	std::vector <Triangle*> ScanHitVec(glm::vec3 position) const;
+	bool IsReflected(glm::vec3 start_position, glm::vec3 end_position, std::vector<glm::vec3> & reflected_points) const;
 	static float CalculateReflectionCoefficient(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 reflection_position, Polarization polar) ;
 	static glm::vec3 ReflectedPointOnTriangle(const Triangle * triangle, glm::vec3 point) ;
 
 	// Diffraction
-	bool IsKnifeEdgeDiffraction(const glm::vec3 start_point, const glm::vec3 end_point, std::vector<glm::vec3> & edges_points) const;
-	bool FindEdge(const glm::vec3 start_position, const glm::vec3 end_position, glm::vec3 & edge_position) const;
+	bool IsKnifeEdgeDiffraction(glm::vec3 start_point, glm::vec3 end_point, std::vector<glm::vec3> & edges_points) const;
+	bool FindEdge(glm::vec3 start_position, glm::vec3 end_position, glm::vec3 & edge_position) const;
 	static glm::vec3 NearestEdgeFromPoint(glm::vec3 point_position, std::vector<glm::vec3> & edges_points ) ;
-	void CleanEdgePoints(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3> & edges_points) const;
+	void CleanEdgePoints(glm::vec3 start_position, glm::vec3 end_position, std::vector<glm::vec3> & edges_points) const;
 	float GetHighestPoint(std::vector<glm::vec3> edges) const;
 
 	// Calculations
 	float CalculateSingleKnifeEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) const;
 	static float CalculateDiffractionByV(float v) ;
 	static float CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) ;
-	static void CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position, std::pair<float, float> & calculated_cosines) ;
-
+	static void CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position,
+                                            std::pair<float, float> & calculated_cosines) ;
 	void CalculateDirectPath(const Record & record, Result & result, Transmitter * transmitter,
                                      Receiver * receiver) const ;
     void CalculateReflections(const Record & record, Result & result, Transmitter * transmitter,
@@ -88,16 +91,21 @@ public:
                               const float & tx_freq, const float & tx_gain,
                               const float & rx_gain, const float & tx_power,
                               const glm::vec3 & ref_position, Result & result) const;
-
     void CalculateDiffraction(const Record & record, Result & result,
                               Transmitter * transmitter, Receiver * receiver) const;
-
-    void GetDrawComponents( const glm::vec3 & start_position, const glm::vec3 &end_position,
-                            std::vector<Record> & records, std::vector<Object *> & objects) const;
     bool CalculatePathLoss(Transmitter* transmitter, Receiver * receiver,
                            const std::vector<Record>& records,
-                           Result& result, Recorder * recorder = nullptr) const;
+                           Result& result) const;
+    bool CalculatePathLossMap(glm::vec3 tx_position, float tx_frequency,
+                              glm::vec3 rx_position, std::vector<Record> records,
+                              Result& result) const;
+
+    // Visualization
+    void GetDrawComponents( const glm::vec3 & start_position, const glm::vec3 &end_position,
+                            std::vector<Record> & records, std::vector<Object *> & objects) const;
+
 private:
 	PolygonMesh * map_;
+
 };
 #endif // !RAY_TRACER_H

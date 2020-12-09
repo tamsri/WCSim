@@ -2,7 +2,6 @@
 
 #include "camera.hpp"
 #include "shader.hpp"
-
 Shader* Object::default_shader_;
 Shader* Object::ray_shader_;
 
@@ -14,7 +13,7 @@ void Object::DrawObject(Camera* camera) const
 		default_shader_->SetMat4("projection", camera->projection_);
 		default_shader_->SetMat4("view", camera->view_);
 		default_shader_->SetMat4("model", model_);
-	}
+    }
 	else {
 		shader_->Use();
 		shader_->SetMat4("projection", camera->projection_);
@@ -23,4 +22,11 @@ void Object::DrawObject(Camera* camera) const
 		shader_->SetVec4("input_color", color_);
 	}
 	Draw();
+}
+
+void Object::MoveTo(glm::vec3 position)
+{
+	transform_.position = position;
+	model_ = glm::translate(glm::mat4(1.0f), transform_.position);
+	model_ = glm::scale(model_, transform_.scale);
 }

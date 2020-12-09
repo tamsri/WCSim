@@ -12,6 +12,71 @@
 
 namespace ip = boost::asio::ip;
 
+void TCPServer(Engine * engine){
+    try{
+        boost::asio::io_context io_context;
+        ip::tcp::acceptor acceptor(io_context, ip::tcp::endpoint(ip::tcp::v4(), 8877));
+        std::cout << "Server is initialized, Waiting for incoming the client\n";
+        for (;;) {
+            ip::tcp::socket socket(io_context);
+            boost::array<char, 1024> data_buffer{};
+            acceptor.accept(socket); // if not accepted, continue the loop
+
+            boost::system::error_code ign_err; // param for ignoring the error.
+
+            // After the connection, the server says hello for testing the connection
+            std::cout << "The client has connected" << std::endl;
+            boost::asio::write(socket, boost::asio::buffer("Server: Hello Client"), ign_err);
+            // Then, the server waits for client to reply
+            size_t len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+            std::string rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+            std::cout << rec_data << std::endl;
+            std::cout << "Starting Engine & Communication" << std::endl;
+            // Initialize Window and Engine for the client.
+            // Communications
+            while (true) {
+                len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
+                rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
+
+                if (rec_data == "e") {
+                    std::cout << "Server: the client disconnected to the server.\n";
+                    //delete engine; // Engine automatically delete the window if window exists.
+                    boost::asio::write(socket, boost::asio::buffer("eok"), ign_err);
+                    socket.close();
+                    break;
+                }
+
+                switch (rec_data[0]) {
+                    case 'q': {
+                        engine->ExecuteQuestion(socket, ign_err, rec_data);
+                    }break;
+                    case 'c': {
+                        engine->ExecuteCommand(socket, ign_err, rec_data);
+                    }break;
+                    case 'r': {
+                        std::cout << "Server: the client commands to reset the environment.\n";
+                        engine->Reset();
+                        boost::asio::write(socket, boost::asio::buffer("rok"), ign_err);
+                    }break;
+                    case 'u': {
+                        std::cout << "Server: The client wants to update the result.\n";
+                        engine->UpdateResults();
+                    }
+                    default: {
+                        std::cout << "Server: " << rec_data << "Unknown command, Disconnecting the client.\n";
+                        goto end_connect;
+                    } break;
+                }
+
+            }
+            end_connect:;
+        }
+    }
+    catch(std::exception & err){
+        std::cerr << err.what() << std::endl;
+    }
+}
+
 int main(int argc, char *argv[]){
 
     std::cout 
@@ -53,92 +118,28 @@ int main(int argc, char *argv[]){
          if (window_answer == 'n') is_window_on = false;
      }
 
-    // Program
+
     Window * window;
     Engine* engine;
 
-    // Run as TCP Server
     if (is_tcp_on) {
-        try{
-            boost::asio::io_context io_context;
-            ip::tcp::acceptor acceptor(io_context, ip::tcp::endpoint(ip::tcp::v4(), 8877));
-            std::cout << "Server is initialized, Waiting for incoming the client\n";
-            for (;;) {
-                ip::tcp::socket socket(io_context);
-                boost::array<char, 1024> data_buffer{};
-                acceptor.accept(socket); // if not accepted, continue the loop 
-
-                boost::system::error_code ign_err; // param for ignoring the error.
-
-                // After the connection, the server says hello for testing the connection
-                std::cout << "The client has connected" << std::endl;
-                boost::asio::write(socket, boost::asio::buffer("Server: Hello Client"), ign_err);
-                // Then, the server waits for client to reply 
-                size_t len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-                std::string rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-                std::cout << rec_data << std::endl;
-                std::cout << "Starting Engine & Communication" << std::endl;
-                // Initialize Window and Engine for the client.
-
-                if (is_window_on) {
-                    window = new Window(800, 600);
-                    engine = new Engine(window);
-                    engine->InitializeWithWindow();
-                }
-                else {
-                    engine = new Engine();
-                    engine->InitializeWithoutWindow();
-                }
-
-                // Communications
-                while (true) {
-                    len = socket.read_some(boost::asio::buffer(data_buffer), ign_err);
-                    rec_data = std::string(data_buffer.begin(), data_buffer.begin() + len);
-
-                    if (rec_data == "e") {
-                        std::cout << "Server: the client disconnected to the server.\n";
-                        delete engine; // Engine automatically delete the window if window exists.
-                        boost::asio::write(socket, boost::asio::buffer("eok"), ign_err);
-                        socket.close();
-                        break;
-                    }
-
-                    switch (rec_data[0]) {
-                    case 'q': {
-                        engine->ExecuteQuestion(socket, ign_err, rec_data);
-                    }break;
-                    case 'c': {
-                        engine->ExecuteCommand(socket, ign_err, rec_data);
-                    }break;
-                    case 'r': {
-                        std::cout << "Server: the client commands to reset the environment.\n";
-                        engine->Reset();
-                        boost::asio::write(socket, boost::asio::buffer("rok"), ign_err);
-                    }break;
-                    default: {
-                        std::cout << "Server: " << rec_data << "Unknown command, Disconnecting the client.\n";
-                        goto end_connect;
-                    } break;
-                }
-               
-                }
-            end_connect:;
-            }
+        // Run as TCP Server
+        if(is_window_on){
+            window = new Window(800, 600);
+            engine = new Engine(window);
+            engine->InitializeWithWindow();
+            std::thread ServerThread(TCPServer, engine);
+            engine->RunWithWindow();
+            ServerThread.join();
+        }else{
+            engine = new Engine();
+            engine->InitializeWithoutWindow();
+            TCPServer(engine);
         }
-        catch(std::exception & err){
-            std::cerr << err.what() << std::endl;
-        }
-        return 0;
-    }
-    
-
-
-
-    // Run as Local Simulator
-    if (is_window_on) {
+    }else{
+        // Run as Local Simulator
         window = new Window(800, 600);
         engine = new Engine(window);
-        engine->AssignWindow(window);
         engine->InitializeWithWindow();
         engine->RunWithWindow();
     }
