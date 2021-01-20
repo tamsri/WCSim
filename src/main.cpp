@@ -12,11 +12,11 @@
 
 namespace ip = boost::asio::ip;
 
-void TCPServer(Engine * engine){
+static void TCPServer(Engine * engine){
     try{
         boost::asio::io_context io_context;
         ip::tcp::acceptor acceptor(io_context, ip::tcp::endpoint(ip::tcp::v4(), 8877));
-        std::cout << "Server is initialized, Waiting for incoming the client\n";
+        std::cout << "Server is initialized, Waiting for incoming client\n";
         for (;;) {
             ip::tcp::socket socket(io_context);
             boost::array<char, 1024> data_buffer{};
@@ -78,27 +78,12 @@ void TCPServer(Engine * engine){
 }
 
 int main(int argc, char *argv[]){
-
-    std::cout 
-        << "            ___           ___           ___                       ___     \n"
-        << "           /\\__\\         /\\  \\         /\\  \\          ___        /\\__\\    \n"
-        << "          /:/ _/_       /::\\  \\       /::\\  \\        /\\  \\      /::|  |   \n"
-        << "         /:/ /\\__\\     /:/\\:\\  \\     /:/\\ \\  \\       \\:\\  \\    /:|:|  |   \n"
-        << "        /:/ /:/ _/_   /:/  \\:\\  \\   _\\:\\~\\ \\  \\      /::\\__\\  /:/|:|__|__ \n"
-        << "       /:/_/:/ /\\__\\ /:/__/ \\:\\__\\ /\\ \\:\\ \\ \\__\\  __/:/\\/__/ /:/ |::::\\__\\\n"
-        << "       \\:\\/:/ /:/  / \\:\\  \\  \\/__/ \\:\\ \\:\\ \\/__/ /\\/:/  /    \\/__/~~/:/  /\n"
-        << "        \\::/_/:/  /   \\:\\  \\        \\:\\ \\:\\__\\   \\::/__/           /:/  / \n"
-        << "         \\:\\/:/  /     \\:\\  \\        \\:\\/:/  /    \\:\\__\\          /:/  /  \n"
-        << "          \\::/  /       \\:\\__\\        \\::/  /      \\/__/         /:/  /   \n"
-        << "           \\/__/         \\/__/         \\/__/                     \\/__/    \n"
-        << "                                                                By Supawat Tamsri\n"
-        << "                                                                   <meep@supawat.dev>\n";
     std::cout << "Welcome to WCSim, the Wireless Communication Simulator\n";
     
     // Question 1: Turn on TCP Server?
     std::cout << "Please select the mode.\n";
     char tcp_answer; bool is_tcp_on = false;
-    std::cout << "Would you like to turn on TCP server? [Y/N]\n";
+    std::cout << "Would you like to turn on TCP server? [y - yes/n - no]\n";
     do {
         std::cout << "[y/n]:";
         std::cin >> tcp_answer;
@@ -141,6 +126,9 @@ int main(int argc, char *argv[]){
         window = new Window(800, 600);
         engine = new Engine(window);
         engine->InitializeWithWindow();
+        engine->AddTransmitter(glm::vec3{ 0, 12.0f, 0 }, glm::vec3{ 0.0f, 0.0f, 0.0f }, 3e9);
+        engine->AddReceiver({ -20.0, 1.5, 40.0f });
+        engine->ConnectReceiverToTransmitter(1, 1);
         engine->RunWithWindow();
     }
 

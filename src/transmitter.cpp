@@ -58,6 +58,15 @@ void Transmitter::UpdateResult()
 	}
 }
 
+void Transmitter::UpdateResultWithVisual()
+{
+	if (receivers_.empty()) return;
+	for (auto itr = receivers_.begin(); itr != receivers_.end(); ++itr) {
+		itr->second->UpdateResult();
+		itr->second->VisualUpdate();
+	}
+}
+
 void Transmitter::Reset()
 {
 	rotation_speed_ = .5f;
@@ -218,7 +227,8 @@ void Transmitter::Move(const Direction direction, float delta_time)
 		transform_.position -= up_direction * distance;
 	}	break;
 	}
-	UpdateResult();
+	UpdateResultWithVisual();
+	VisualUpdate();
 }
 
 void Transmitter::Rotate(const Direction rotation, float delta_time)

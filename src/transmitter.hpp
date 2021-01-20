@@ -46,6 +46,7 @@ public:
 	void Rotate(Direction rotation, float delta_time);
 
 	void UpdateResult();
+	void UpdateResultWithVisual();
 	void Reset();
 	void Clear();
 

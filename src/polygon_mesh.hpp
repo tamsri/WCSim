@@ -7,7 +7,7 @@
 #include <utility>
 #include <map>
 #include <glm/glm.hpp>
-
+#include <unordered_map>
 #include "object.hpp"
 
 class Triangle;
@@ -41,7 +41,8 @@ public:
 	void GetBorders(float & min_x, float & max_x, float & min_z, float & max_z) const;
 	bool IsHit(Ray & ray, float & t) const; // return the nearest hit distance
 	bool IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const; // return the nearest hit triangle
-	bool IsHit(Ray& ray, std::set<std::pair<float, Triangle *>> & hit_triangles) const; // return the set of hit triangles
+	bool IsHit(Ray& ray, std::set<std::pair<float, const Triangle *>> & hit_triangles) const; // return the set of hit triangles
+	bool IsHit(Ray& ray, std::unordered_map<const Triangle*, float>& hit_triangles) const;
 
 	std::vector<const Triangle*> GetObjects();
 

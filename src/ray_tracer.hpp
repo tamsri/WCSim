@@ -83,6 +83,7 @@ public:
 	static float CalculateVOfEdge(glm::vec3 start_position, glm::vec3 edge_position, glm::vec3 end_position, float frequency) ;
 	static void CalculateCorrectionCosines(glm::vec3 start_position, std::vector<glm::vec3> edges, glm::vec3 end_position,
                                             std::pair<float, float> & calculated_cosines) ;
+
 	void CalculateDirectPath(const Record & record, Result & result, Transmitter * transmitter,
                                      Receiver * receiver) const ;
     void CalculateReflections(const Record & record, Result & result, Transmitter * transmitter,
@@ -100,12 +101,16 @@ public:
                               glm::vec3 rx_position, std::vector<Record> records,
                               Result& result) const;
 
+    // TODO[]: Fix the diffraction
+    float CalculateSingleEdgeDiffraction(glm::vec3 tx_pos, glm::vec3 edge_pos, glm::vec3 rx_pos, float tx_freq);
+    float CalculateDoubleEdgeDiffraction(glm::vec3 tx_pos, glm::vec3 edge1, glm::vec3 edge2, glm::vec3 rx_pos, float tx_freq);
+    float CalculateTripleEdgeDiffraction(glm::vec3 tx_pos, glm::vec3 edge1, glm::vec3 edge2, glm::vec3 edge3, glm::vec3 rx_pos, float tx_freq);
+
     // Visualization
     void GetDrawComponents( const glm::vec3 & start_position, const glm::vec3 &end_position,
                             std::vector<Record> & records, std::vector<Object *> & objects) const;
 
 private:
 	PolygonMesh * map_;
-
 };
 #endif // !RAY_TRACER_H
