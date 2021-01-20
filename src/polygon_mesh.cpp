@@ -229,7 +229,7 @@ bool PolygonMesh::IsHit(Ray& ray, float& t, Triangle *& hit_triangle) const
     return true;
 }
 
-bool PolygonMesh::IsHit(Ray& ray, std::set<std::pair<float, Triangle*>> & hit_triangles) const
+bool PolygonMesh::IsHit(Ray& ray, std::set<std::pair<float,const Triangle*>> & hit_triangles) const
 {
     float temp_t;
     //std::vector<float, Triangle *> hit_list;
@@ -242,6 +242,22 @@ bool PolygonMesh::IsHit(Ray& ray, std::set<std::pair<float, Triangle*>> & hit_tr
         }
     }
     //std::cout << "hit triangles : " << hit_triangles.size() << std::endl;
+    if (hit_triangles.size() == 0) return false;
+    return true;
+}
+
+bool PolygonMesh::IsHit(Ray& ray, std::unordered_map<const Triangle*, float> & hit_triangles) const
+{
+    float temp_t;
+    //std::vector<float, Triangle *> hit_list;
+
+    //return tree_->IsHit(ray, t); ; /// to implement kd-tree later, it hits but doesn't give correct t
+    for (auto object : objects_) {
+        Triangle* hit_triangle = nullptr;
+        if (object->IsHit(ray, temp_t, hit_triangle)) {
+            hit_triangles[hit_triangle] = temp_t;
+        }
+    }
     if (hit_triangles.size() == 0) return false;
     return true;
 }

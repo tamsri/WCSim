@@ -115,6 +115,8 @@ class Engine{
         Shader* default_shader_;
 
         bool IsWindowOn();
+        void SelectCurrentTransmitter();
+        void SelectCurrentReceiver();
 private:
         // Engine Parameters
         unsigned int engine_id_;

@@ -4,7 +4,6 @@
 #include <set>
 #include <utility>
 #include <iomanip>
-
 #include <algorithm>
 #include <cmath>
 #include <stack>
@@ -100,7 +99,7 @@ void RayTracer::Trace(const glm::vec3 start_position,
                       const glm::vec3 end_position,
                       std::vector<Record> & records) const
 {
-	// Multithreading (speed up 30%)
+	// Multithreading (speed up to 30%)
     std::thread line_tracer (&RayTracer::LineTrace, this, start_position, end_position, std::ref(records));
     std::thread reflect_tracer (&RayTracer::ReflectTrace, this, start_position, end_position, std::ref(records));
 
@@ -123,10 +122,10 @@ void RayTracer::TraceMap(   const glm::vec3 tx_position,
         records.emplace_back( RecordType::kReflect, reflected_points );
     }
 }
+
 void RayTracer::GetDrawComponents(const glm::vec3 & start_position, const glm::vec3 & end_position,
                                   std::vector<Record>& records, std::vector<Object*>& objects) const
 {
-	
 	for (auto record : records) {
 		switch (record.type) {
 		case RecordType::kDirect: {
@@ -505,6 +504,56 @@ bool RayTracer::CalculatePathLossMap(const glm::vec3 tx_position,  const float t
     return true;
 }
 
+float RayTracer::CalculateSingleEdgeDiffraction(glm::vec3 tx_pos, glm::vec3 edge_pos, glm::vec3 rx_pos, float tx_freq)
+{
+    float v = CalculateVOfEdge(tx_pos, edge_pos, rx_pos, tx_freq);
+    return CalculateDiffractionByV(v);
+}
+
+float RayTracer::CalculateDoubleEdgeDiffraction(glm::vec3 tx_pos, glm::vec3 edge1, glm::vec3 edge2, glm::vec3 rx_pos, float tx_freq)
+{
+    // Scan max v as main edge
+    float v1 = CalculateVOfEdge(tx_pos, edge1, rx_pos, tx_freq);
+    float v2 = CalculateVOfEdge(tx_pos, edge2, rx_pos, tx_freq);
+    float primary_diffraction = 0.0f, secondary_diffraction = 0.0f, secondary_v = 0.0f;
+    if (v1 > v2) {
+        // edge1 is the primary edge
+        primary_diffraction = CalculateDiffractionByV(v1);
+        secondary_diffraction = CalculateDiffractionByV(CalculateVOfEdge(edge1, edge2, rx_pos, tx_freq) );
+    }
+    else {
+        // edge2 is the primatry edge
+        primary_diffraction = CalculateDiffractionByV(v2);
+        secondary_diffraction = CalculateDiffractionByV(CalculateVOfEdge(tx_pos, edge1, edge2, tx_freq));
+    }
+    return primary_diffraction + secondary_diffraction;
+}
+
+float RayTracer::CalculateTripleEdgeDiffraction(glm::vec3 tx_pos, glm::vec3 edge1, glm::vec3 edge2, glm::vec3 edge3, glm::vec3 rx_pos, float tx_freq)
+{
+    float v1 = CalculateVOfEdge(tx_pos, edge1, rx_pos, tx_freq);
+    float v2 = CalculateVOfEdge(tx_pos, edge2, rx_pos, tx_freq);
+    float v3 = CalculateVOfEdge(tx_pos, edge3, rx_pos, tx_freq);
+    float max_v = std::max({v1, v2, v3});
+    float primary_diffraction = 0.0f, secondary1_diffraction = 0.0f, secondary2_diffraction = 0.0f;
+    if (max_v == v1) {
+        primary_diffraction = CalculateDiffractionByV(v1);
+        secondary1_diffraction = CalculateDiffractionByV(CalculateVOfEdge(edge1, edge2, edge3, tx_freq));
+        secondary2_diffraction = CalculateDiffractionByV(CalculateVOfEdge(edge2, edge3, rx_pos, tx_freq));
+    }
+    else if (max_v == v2) {
+        primary_diffraction = CalculateDiffractionByV(v2);
+        secondary1_diffraction = CalculateDiffractionByV(CalculateVOfEdge(tx_pos, edge1, edge2, tx_freq));
+        secondary2_diffraction = CalculateDiffractionByV(CalculateVOfEdge(edge2, edge3, rx_pos, tx_freq));
+    }
+    else {
+        primary_diffraction = CalculateDiffractionByV(v3);
+        secondary1_diffraction = CalculateDiffractionByV(CalculateVOfEdge(tx_pos, edge1, edge2, tx_freq));
+        secondary1_diffraction = CalculateDiffractionByV(CalculateVOfEdge(edge1, edge3, edge3, tx_freq));
+    }
+    return 0.0f;
+}
+
 bool RayTracer::IsDirectHit(glm::vec3 start_position,glm::vec3 end_position) const
 {
 	// get direction from start point to end point
@@ -539,7 +588,7 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
     check_triangles = map_->GetObjects();
 	// check the reflections points on matches triangles
 
-	for (const Triangle* matched_triangle : check_triangles) {
+	for (const Triangle * matched_triangle : check_triangles) {
 		// reflect one of the point on the triangle plane
 		glm::vec3 reflected_position = ReflectedPointOnTriangle(matched_triangle, start_position);
 
@@ -547,11 +596,11 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 		glm::vec3 ref_to_end_direction = glm::normalize(end_position - reflected_position);
 
 		Ray ref_to_end_ray{ reflected_position, ref_to_end_direction };
-		std::set<std::pair<float, Triangle*>> hit_triangles; // hit triangles from reflected_position to end_position
+        // hit triangles from reflected_position to end_position
+		std::unordered_map<const Triangle *, float > hit_triangles; 
 
-		glm::vec3 reflection_point_position;
-		if (map_->IsHit(ref_to_end_ray, hit_triangles)) {
-			for (auto const [distance, triangle] : hit_triangles) {
+		if (map_->IsHit(ref_to_end_ray, hit_triangles) && hit_triangles.find(matched_triangle) != hit_triangles.end()) {
+			/*for (auto const [triangle, distance] : hit_triangles) {
 				if (triangle == matched_triangle) {
 					reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
 					if (IsDirectHit(reflection_point_position, end_position) &&
@@ -559,7 +608,13 @@ bool RayTracer::IsReflected(const glm::vec3 start_position, const glm::vec3 end_
 						reflected_points.push_back(reflection_point_position);
 					break;
 				}
-			}
+			}*/
+            float distance = hit_triangles.find(matched_triangle)->second;
+            // add small value to move the point to surface.
+            glm::vec3 reflection_point_position = reflected_position + ref_to_end_direction * (distance + 0.001f);
+            if (IsDirectHit(reflection_point_position, end_position) &&
+                IsDirectHit(reflection_point_position, start_position))
+                reflected_points.push_back(reflection_point_position);
 		}
 	}
 	if (reflected_points.empty()) return false;
@@ -625,9 +680,9 @@ glm::vec3 RayTracer::ReflectedPointOnTriangle(const Triangle* triangle, glm::vec
 	return  points + 2 * t * n; // reverse average point from average point 
 }
 
-bool RayTracer::IsKnifeEdgeDiffraction(const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& edges_points) const
+bool RayTracer::IsKnifeEdgeDiffraction( const glm::vec3 start_position, const glm::vec3 end_position, std::vector<glm::vec3>& edges_points) const
 {
-	const unsigned int max_scan = 5; // Maximum Scan
+	const unsigned int max_scan = 10; // Maximum Scan
 	unsigned int current_scan = 0;
 
 	glm::vec3 left_position = start_position;
@@ -971,9 +1026,9 @@ void RayTracer::CalculateDiffraction(const Record &record, Result &result, Trans
         result.diffraction.rx_gain = rx_gain;
 
         // Calculate C1, C2, and C3.
-        float c1 = CalculateSingleKnifeEdge(tx_pos, near_tx_pos, center_pos, tx_freq);
+        float c1 = CalculateSingleKnifeEdge(tx_pos, near_tx_pos, rx_pos, tx_freq);
         float c2 = CalculateSingleKnifeEdge(tx_pos, center_pos, rx_pos, tx_freq);
-        float c3 = CalculateSingleKnifeEdge(center_pos, near_rx_pos, rx_pos, tx_freq);
+        float c3 = CalculateSingleKnifeEdge(tx_pos, near_rx_pos, rx_pos, tx_freq);
 
         // Calculate Corrections.
         std::pair<float, float> correction_cosines;
@@ -1076,4 +1131,3 @@ void RayTracer::CalculateReflection( const glm::vec3 & tx_position, const glm::v
 void RayTracer::GetMapBorder(float &min_x, float &max_x, float & min_z, float & max_z) const {
     map_->GetBorders(min_x, max_x, min_z, max_z);
 }
-

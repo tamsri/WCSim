@@ -82,7 +82,6 @@ void Engine::RunWithWindow()
 		std::cout << "Cannot run window without assigning the window\n";
 		return;
 	}
-	AddTransmitter(glm::vec3{ 0, 12.0f, 0 }, glm::vec3{ 0.0f, 0.0f, 0.0f }, 3e9);
 	window_->Run();
 }
 
@@ -535,7 +534,8 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
-	transmitter->AssignRadiationPattern(patterns_[0]);
+	transmitter->AssignRadiationPattern(patterns_[1]);
+	current_transmitter_ = transmitter;
 	// If window is on, Initialize the transmitter's object.
 	if (IsWindowOn()) updated_transmitters_.push_back(transmitter);
     transmitters_.insert(std::make_pair(transmitter->GetID(), transmitter));
@@ -550,7 +550,7 @@ bool Engine::AddReceiver(glm::vec3 position)
 	if (IsWindowOn()) updated_receivers_.push_back(receiver);
 	receivers_.insert(std::make_pair(receiver->GetID(), receiver));
 	// If the window is on, Initialize the receiver's object.
-
+	current_receiver_ = receiver;
 	return true;
 }
 
@@ -650,7 +650,7 @@ bool Engine::IsDirect(glm::vec3 start_position, glm::vec3 end_position)
 bool Engine::IsOutdoor(glm::vec3 position)
 {
 	// TODO[]: implement outdoor position reference
-	constexpr glm::vec3 outdoor_pos = glm::vec3(0.0f, 1.0f, 0.0f);
+	constexpr glm::vec3 outdoor_pos = glm::vec3(0.0f, 20.0f, 0.0f);
 	if (IsDirect(position, outdoor_pos))
 		return true;
 	std::vector<glm::vec3> dummer_edges;
@@ -695,6 +695,7 @@ void Engine::LoadRayTracer()
 	std::cout << "Loading Ray Tracer" << std::endl;
 	ray_tracer_ = new RayTracer(map_);
 	patterns_.push_back( new RadiationPattern("../assets/patterns/pattern-1.txt") );
+	patterns_.push_back(new RadiationPattern("../assets/patterns/pattern-2.txt"));
 	//recorder_ = new Recorder("../assets/records/");
 }
 
@@ -711,7 +712,7 @@ void Engine::LoadComponents()
 void Engine::LoadMap()
 {
 	// Load the map from .obj file
-	map_ = new PolygonMesh("../assets/obj/poznan.obj", default_shader_, window_ != nullptr);
+	map_ = new PolygonMesh("../assets/obj/poznan-best.obj", default_shader_, window_ != nullptr);
 }
 
 void Engine::LoadObjects()
@@ -744,18 +745,17 @@ void Engine::TransmitterMode(float delta_time)
 {
 	GLFWwindow* window = window_->GetGLFWWindow();
 	std::cout << "Transmitter Mode\n";
-	std::cout << "Press A - Add a transmitter\n";
+	std::cout << "Press G - Add a transmitter\n";
 	std::cout << "Press S - Select a transmitter\n";
 	std::cout << "Press L - Display transmitter IDs\n";
 	std::cout << "Press M - Control a transmitter\n";
 	std::cout << "Press V - Go back to View Mode";
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
-	    if(glfwGetKey(window, GLFW_KEY_V) != GLFW_PRESS)
         engine_mode_ = EngineMode::kView;
+		return;
     }
 
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        if(glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS) {
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
         Transform tx_trans;
 		std::cout << "Enter the transmitter's information.\n";
 		std::cout << "x: ";
@@ -773,7 +773,6 @@ void Engine::TransmitterMode(float delta_time)
 		Transmitter* tx = new Transmitter(tx_trans, frequency, power, ray_tracer_);
 		transmitters_.insert({ tx->GetID(), tx });
 		std::cout << "Transmitter #" << tx->GetID() << " added to the environment.\n";
-	    }
 	}
 
 }
@@ -840,8 +839,10 @@ void Engine::KeyViewMode(float delta_time)
         main_camera_->Rotate(Rotation::kPitch, -delta_time);
 
 	// Switch Mode Keys
-	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-        engine_mode_ = EngineMode::kTransmitter;
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+		engine_mode_ = EngineMode::kTransmitter;
+		
+	}
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
         engine_mode_ = EngineMode::kReceiver;
 }
@@ -867,7 +868,6 @@ void Engine::KeyTXMoveMode(float delta_time)
         current_transmitter_->Move(Direction::kUp, delta_time);
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         current_transmitter_->Move(Direction::kDown, delta_time);
-
     // TX Rotation Keys
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
         current_transmitter_->Rotate(Direction::kLeft, delta_time);
@@ -883,6 +883,7 @@ void Engine::KeyTXMoveMode(float delta_time)
         engine_mode_ = EngineMode::kView;
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
         engine_mode_ = EngineMode::kReceiver;
+
 }
 
 void Engine::KeyRXMoveMode(float delta_time)
@@ -1096,7 +1097,10 @@ std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int stat
     for(auto [id, rx]: tx->GetReceivers()) rx_positions->push_back(rx->GetPosition());
 
     std::vector<std::thread> threads;
-    unsigned int threads_limit = std::thread::hardware_concurrency()*20;
+    //unsigned int threads_limit = std::thread::hardware_concurrency()*100;
+
+	unsigned int threads_limit = 500;
+
     for(float x = x_start; x <= x_end; x+=x_step) {
         for (float z = z_start; z <= z_end; z += z_step) {
             const glm::vec3 position{x, tx_height, z};
@@ -1152,4 +1156,13 @@ void Engine::UpdateVisualComponents() {
 bool Engine::IsWindowOn() {
     return window_ != nullptr;
 }
+
+void Engine::SelectCurrentTransmitter() {
+	std::cout << "Please select a transmitter ID." << std::endl;
+
+};
+
+void Engine::SelectCurrentReceiver() {
+
+};
 

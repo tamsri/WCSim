@@ -67,8 +67,8 @@ void Camera::Reset()
 	camera_move_speed_ = 50.0f;
 	camera_rotate_speed_ = 100.0f;
 	yaw_ = -90.0f;
-	pitch_ = -10.0f;
-	position_ = glm::vec3(0.0f, 10.0f, 100.0f);
+	pitch_ = -27.0f;
+	position_ = glm::vec3(-18.7f, 106.78f, 187.187f);
 	up_direction_ = glm::vec3(0.0f, 1.0f, 0.0f);
 	UpdateRotation();
 	UpdateView();
