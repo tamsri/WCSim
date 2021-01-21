@@ -534,7 +534,7 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
-	transmitter->AssignRadiationPattern(patterns_[1]);
+	//transmitter->AssignRadiationPattern(patterns_[1]);
 	current_transmitter_ = transmitter;
 	// If window is on, Initialize the transmitter's object.
 	if (IsWindowOn()) updated_transmitters_.push_back(transmitter);
