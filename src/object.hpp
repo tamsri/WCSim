@@ -7,13 +7,13 @@
 
 class Camera;
 class Shader;
-
+class Transform;
 class Object {
 public:
 	virtual void Draw() const = 0;
 	void DrawObject(Camera* camera) const;
 	void MoveTo(glm::vec3 position);
-
+	void TransformTo(Transform transform);
 	Shader * shader_;
 	Transform transform_;
 	glm::mat4 model_;

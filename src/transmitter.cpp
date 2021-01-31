@@ -35,6 +35,7 @@ Transmitter::Transmitter(Transform transform,
 {
 	current_pattern_ = nullptr;
 	Reset();
+	std::cout << "Tx added: " << glm::to_string(transform_.position) << " , " << glm::to_string(transform.rotation) << ".\n";
 }
 
 Transmitter::~Transmitter()
@@ -105,6 +106,7 @@ void Transmitter::MoveTo(glm::vec3 position)
 void Transmitter::RotateTo(glm::vec3 rotation)
 {
 	transform_.rotation = rotation;
+	//std::cout << "rotated!\n";
 }
 
 Transform Transmitter::GetTransform() const
@@ -264,5 +266,6 @@ bool Transmitter::IsInitializedObject() {
 }
 void Transmitter::VisualUpdate(){
 	if (object_ == nullptr) return;
-	object_->MoveTo(transform_.position);
+	//object_->MoveTo(transform_.position);
+	object_->TransformTo(transform_);
 }
