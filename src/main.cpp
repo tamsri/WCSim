@@ -128,7 +128,7 @@ int main(int argc, char *argv[]){
         engine->InitializeWithWindow();
         engine->AddTransmitter(glm::vec3{ 0, 12.0f, 0 }, glm::vec3{ 0.0f, 0.0f, 0.0f }, 3e9);
         engine->AddReceiver({ -20.0, 1.5, 40.0f });
-        engine->ConnectReceiverToTransmitter(1, 1);
+        //engine->ConnectReceiverToTransmitter(1, 1);
         engine->RunWithWindow();
     }
 

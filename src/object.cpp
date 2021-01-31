@@ -30,3 +30,12 @@ void Object::MoveTo(glm::vec3 position)
 	model_ = glm::translate(glm::mat4(1.0f), transform_.position);
 	model_ = glm::scale(model_, transform_.scale);
 }
+
+void Object::TransformTo(Transform transform)
+{
+	transform_ = transform;
+	model_ = glm::translate(glm::mat4(1.0f), transform_.position);
+	//model_ = glm::scale(model_, transform.scale);
+	model_ = glm::rotate(model_, transform.rotation.x, glm::vec3{ 0.0, -1.0, 0.0 });
+	model_ = glm::rotate(model_, transform.rotation.y, glm::vec3{ 0.0, 0.0, -1.0 });
+}

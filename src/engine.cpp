@@ -402,7 +402,6 @@ void Engine::ExecuteQuestion(ip::tcp::socket& socket, boost::system::error_code&
         float z_step = (z_end - x_start) / (float) resolution;
 
         auto q_map = this->GetStationMap(station_id, x_step, z_step);
-
 		// Store the map locally.
 		{
 			std::string file_name = std::to_string(resolution) + "res" +
@@ -534,7 +533,7 @@ bool Engine::AddTransmitter(glm::vec3 position, glm::vec3 rotation, float freque
 	if (ray_tracer_ == nullptr) return false;
 	auto * transmitter = new Transmitter({position, glm::vec3(1.0f) ,rotation },
                                                 frequency, 0 ,ray_tracer_);
-	transmitter->AssignRadiationPattern(patterns_[1]);
+	transmitter->AssignRadiationPattern(patterns_[0]);
 	current_transmitter_ = transmitter;
 	// If window is on, Initialize the transmitter's object.
 	if (IsWindowOn()) updated_transmitters_.push_back(transmitter);
@@ -627,8 +626,13 @@ bool Engine::MoveTransmitterTo(unsigned int id, glm::vec3 position, glm::vec3 ro
     Transmitter* tx = transmitters_.find(id)->second;
 	tx->MoveTo(position);
 	tx->RotateTo(rotation);
-	if (IsWindowOn()) 
+	if (IsWindowOn()) {
+		tx->UpdateResultWithVisual();
 		updated_transmitters_.push_back(tx);
+	}
+	else {
+		tx->UpdateResult();
+	}
 	return true;
 }
 
@@ -637,8 +641,10 @@ bool Engine::MoveReceiverTo(unsigned int rx_id, glm::vec3 position)
     if(receivers_.find(rx_id) == receivers_.end()) return false;
 	Receiver* rx = receivers_.find(rx_id)->second;
 	rx->MoveTo(position);
-	if (IsWindowOn()) 
+	rx->UpdateResult();
+	if (IsWindowOn()) {
 		updated_receivers_.push_back(rx);
+	}
 	return true;
 }
 
@@ -1112,6 +1118,7 @@ std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int stat
             if(threads.size() == threads_limit){
                 for(auto & thread:threads) thread.join();
                 threads.clear();
+				std::cout << "Server: threads done" << std::endl;
             }
         }
 
@@ -1119,6 +1126,7 @@ std::map<std::pair<float, float>, float> Engine::GetStationMap(unsigned int stat
     // Join threads
     for(auto & thread:threads) thread.join();
     threads.clear();
+	std::cout << "Server: threads done" << std::endl;
     return q_map;
 }
 
